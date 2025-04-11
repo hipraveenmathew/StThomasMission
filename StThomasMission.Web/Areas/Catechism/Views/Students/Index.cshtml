@@ -1,0 +1,38 @@
+﻿@model IEnumerable<StThomasMission.Web.Areas.Catechism.Models.StudentViewModel>
+
+@{
+    ViewData["Title"] = "Students - Catechism";
+}
+
+<h1>Students in @ViewBag.Grade</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Grade</th>
+            <th>Group</th>
+            <th>Organisation</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var student in Model)
+        {
+            <tr>
+                <td>@student.FirstName @student.LastName</td>
+                <td>@student.Grade</td>
+                <td>@student.Group</td>
+                <td>@student.StudentOrganisation</td>
+                <td>@student.Status</td>
+                <td>
+                    <a asp-action="Details" asp-route-id="@student.Id">Details</a> |
+                    <a asp-action="MarkAttendance" asp-route-id="@student.Id">Mark Attendance</a> |
+                    <a asp-action="AddAssessment" asp-route-id="@student.Id">Add Assessment</a> |
+                    <a asp-action="MarkPassFail" asp-route-id="@student.Id">Mark Pass/Fail</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

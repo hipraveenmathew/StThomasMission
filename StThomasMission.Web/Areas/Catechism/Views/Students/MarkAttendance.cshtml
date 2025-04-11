@@ -1,0 +1,36 @@
+﻿@model StThomasMission.Web.Areas.Catechism.Models.AttendanceViewModel
+
+@{
+    ViewData["Title"] = "Mark Attendance";
+}
+
+<h1>Mark Attendance for @ViewBag.StudentName</h1>
+
+<form asp-action="MarkAttendance">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <input type="hidden" asp-for="StudentId" />
+    <div class="form-group">
+        <label asp-for="Date" class="control-label"></label>
+        <input asp-for="Date" class="form-control" type="date" />
+        <span asp-validation-for="Date" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Description" class="control-label"></label>
+        <input asp-for="Description" class="form-control" />
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="IsPresent" class="control-label"></label>
+        <input asp-for="IsPresent" type="checkbox" />
+        <span asp-validation-for="IsPresent" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <input type="submit" value="Save" class="btn btn-primary" />
+    </div>
+</form>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

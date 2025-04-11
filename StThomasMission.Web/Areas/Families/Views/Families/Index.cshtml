@@ -1,0 +1,54 @@
+﻿@model IEnumerable<StThomasMission.Core.Entities.Family>
+
+@{
+    ViewData["Title"] = "Families";
+}
+
+<h1>Families</h1>
+
+<p>
+    <a asp-action="Register" class="btn btn-primary">Register New Family</a>
+</p>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Family Name</th>
+            <th>Ward</th>
+            <th>Status</th>
+            <th>Members</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var family in Model)
+        {
+            <tr>
+                <td>@family.FamilyName</td>
+                <td>@family.Ward</td>
+                <td>@family.Status</td>
+                <td>
+                    <ul>
+                        @foreach (var member in family.Members)
+                        {
+                            <li>
+                                @member.FirstName @member.LastName
+                                @if (member.StudentProfile == null)
+                                {
+                                    <a asp-action="EnrollStudent" asp-route-familyMemberId="@member.Id">Enroll as Student</a>
+                                }
+                                else
+                                {
+                                    <span>(Enrolled)</span>
+                                }
+                            </li>
+                        }
+                    </ul>
+                </td>
+                <td>
+                    <a asp-action="AddMember" asp-route-familyId="@family.Id">Add Member</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

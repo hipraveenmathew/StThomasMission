@@ -1,0 +1,40 @@
+﻿@model StThomasMission.Web.Areas.Admin.Models.UserRoleViewModel
+
+@{
+    ViewData["Title"] = "Assign Role";
+}
+
+<h1>Assign Role to @Model.FullName</h1>
+
+<form asp-action="AssignRole">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <input type="hidden" asp-for="UserId" />
+    <div class="form-group">
+        <label asp-for="Email" class="control-label"></label>
+        <input asp-for="Email" class="form-control" disabled />
+    </div>
+    <div class="form-group">
+        <label asp-for="FullName" class="control-label"></label>
+        <input asp-for="FullName" class="form-control" disabled />
+    </div>
+    <div class="form-group">
+        <label asp-for="SelectedRole" class="control-label">Role</label>
+        <select asp-for="SelectedRole" class="form-control" asp-items="@(new SelectList(Model.AvailableRoles))">
+            <option value="">Select a role</option>
+        </select>
+        <span asp-validation-for="SelectedRole" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <input type="submit" value="Assign" class="btn btn-primary" />
+    </div>
+</form>
+
+<div>
+    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

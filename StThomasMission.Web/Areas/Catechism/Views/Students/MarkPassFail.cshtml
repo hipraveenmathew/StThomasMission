@@ -1,0 +1,26 @@
+﻿@model StThomasMission.Web.Areas.Catechism.Models.PassFailViewModel
+
+@{
+    ViewData["Title"] = "Mark Pass/Fail";
+}
+
+<h1>Mark Pass/Fail for @ViewBag.StudentName</h1>
+
+<form asp-action="MarkPassFail">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <input type="hidden" asp-for="StudentId" />
+    <div class="form-group">
+        <label asp-for="Passed" class="control-label"></label>
+        <input asp-for="Passed" type="checkbox" />
+        <span asp-validation-for="Passed" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <input type="submit" value="Save" class="btn btn-primary" />
+    </div>
+</form>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

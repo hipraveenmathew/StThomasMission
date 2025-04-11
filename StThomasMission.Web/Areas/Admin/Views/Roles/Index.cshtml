@@ -1,0 +1,48 @@
+﻿@model IEnumerable<StThomasMission.Web.Areas.Admin.Models.UserRoleViewModel>
+
+@{
+    ViewData["Title"] = "Manage Roles";
+}
+
+<h1>Manage Roles</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Email</th>
+            <th>Full Name</th>
+            <th>Roles</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in Model)
+        {
+            <tr>
+                <td>@user.Email</td>
+                <td>@user.FullName</td>
+                <td>
+                    @if (user.Roles.Any())
+                    {
+                        <ul>
+                            @foreach (var role in user.Roles)
+                            {
+                                <li>
+                                    @role
+                                    <a asp-action="RemoveRole" asp-route-userId="@user.UserId" asp-route-role="@role" class="text-danger">Remove</a>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <span>No roles assigned</span>
+                    }
+                </td>
+                <td>
+                    <a asp-action="AssignRole" asp-route-userId="@user.UserId" class="btn btn-primary">Assign Role</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
