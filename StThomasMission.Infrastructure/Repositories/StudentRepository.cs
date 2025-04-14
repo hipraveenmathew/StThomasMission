@@ -61,5 +61,11 @@ namespace StThomasMission.Infrastructure.Repositories
                 .Where(s => s.FamilyMember.FamilyId == familyId)
                 .ToListAsync();
         }
+        public async Task<IEnumerable<Student>> GetAllAsync()
+        {
+            return await _context.Students
+                .Include(s => s.FamilyMember)
+                .ToListAsync();
+        }
     }
 }

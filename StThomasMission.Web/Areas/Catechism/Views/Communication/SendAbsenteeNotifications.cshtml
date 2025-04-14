@@ -1,0 +1,24 @@
+﻿@model StThomasMission.Web.Areas.Catechism.Models.AbsenteeNotificationViewModel
+@{
+    ViewData["Title"] = "Send Absentee Notifications";
+}
+
+<h2>Send Absentee Notifications</h2>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+<form asp-action="SendAbsenteeNotifications" method="post">
+    <div class="form-group">
+        <label for="Grade">Grade</label>
+        <select name="Grade" class="form-control" required>
+            @for (int i = 1; i <= 12; i++)
+            {
+                <option value="@i">Year @i</option>
+            }
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Send Notifications</button>
+</form>

@@ -14,18 +14,40 @@ namespace StThomasMission.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<GroupActivity> AddAsync(GroupActivity groupActivity)
+        public async Task<GroupActivity> GetByIdAsync(int id)
         {
-            _context.GroupActivities.Add(groupActivity);
-            await _context.SaveChangesAsync();
-            return groupActivity;
+            return await _context.GroupActivities.FindAsync(id);
         }
 
-        public async Task<IEnumerable<GroupActivity>> GetByGroupNameAsync(string groupName)
+        public async Task<IEnumerable<GroupActivity>> GetAllAsync()
+        {
+            return await _context.GroupActivities.ToListAsync();
+        }
+
+        public async Task<IEnumerable<GroupActivity>> GetByGroupAsync(string group)
         {
             return await _context.GroupActivities
-                .Where(ga => ga.GroupName == groupName)
+                .Where(ga => ga.Group == group)
                 .ToListAsync();
+        }
+
+        public async Task AddAsync(GroupActivity groupActivity)
+        {
+            await _context.GroupActivities.AddAsync(groupActivity);
+        }
+
+        public async Task UpdateAsync(GroupActivity groupActivity)
+        {
+            _context.GroupActivities.Update(groupActivity);
+        }
+
+        public async Task DeleteAsync(int id)
+        {
+            var groupActivity = await GetByIdAsync(id);
+            if (groupActivity != null)
+            {
+                _context.GroupActivities.Remove(groupActivity);
+            }
         }
     }
 }

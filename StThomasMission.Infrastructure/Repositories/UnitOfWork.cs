@@ -10,6 +10,8 @@ namespace StThomasMission.Infrastructure.Repositories
         public IStudentRepository Students { get; private set; }
         public IAttendanceRepository Attendances { get; private set; }
         public IAssessmentRepository Assessments { get; private set; }
+        public IGroupActivityRepository GroupActivities { get; private set; } // Add this
+        private IFamilyMemberRepository _familyMembers;
 
         public UnitOfWork(StThomasMissionDbContext context)
         {
@@ -18,6 +20,7 @@ namespace StThomasMission.Infrastructure.Repositories
             Students = new StudentRepository(_context);
             Attendances = new AttendanceRepository(_context);
             Assessments = new AssessmentRepository(_context);
+            GroupActivities = new GroupActivityRepository(_context); // Add this
         }
 
         public async Task<int> CompleteAsync()

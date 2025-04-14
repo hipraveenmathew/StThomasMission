@@ -1,4 +1,6 @@
-﻿namespace StThomasMission.Core.Interfaces
+﻿using StThomasMission.Core.Interfaces;
+
+namespace StThomasMission.Core.Interfaces
 {
     public interface IUnitOfWork : IDisposable
     {
@@ -7,6 +9,7 @@
         IAttendanceRepository Attendances { get; }
         IAssessmentRepository Assessments { get; }
         IGroupActivityRepository GroupActivities { get; }
+        IFamilyMemberRepository FamilyMembers { get; }
         Task<int> CompleteAsync();
     }
 }

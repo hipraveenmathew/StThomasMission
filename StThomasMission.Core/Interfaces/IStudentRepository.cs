@@ -10,5 +10,6 @@ namespace StThomasMission.Core.Interfaces
         Task DeleteAsync(int id);
         Task<IEnumerable<Student>> GetByGradeAsync(string grade);
         Task<IEnumerable<Student>> GetByFamilyIdAsync(int familyId);
+        Task<IEnumerable<Student>> GetAllAsync();
     }
 }

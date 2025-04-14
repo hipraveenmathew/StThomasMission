@@ -34,28 +34,43 @@ namespace StThomasMission.Web.Areas.Catechism.Controllers
             return View(model);
         }
 
-        public async Task<IActionResult> MarkAttendance(int id)
+        [HttpGet]
+        public async Task<IActionResult> MarkAttendance(string grade)
         {
-            var student = await _catechismService.GetStudentByIdAsync(id);
-            if (student == null)
+            var students = await _catechismService.GetStudentsByGradeAsync(grade);
+            if (!students.Any()) return NotFound("No students found for this grade.");
+
+            var model = new ClassAttendanceViewModel
             {
-                return NotFound();
-            }
-            ViewBag.StudentName = $"{student.FamilyMember.FirstName} {student.FamilyMember.LastName}";
-            return View(new AttendanceViewModel { StudentId = id, Date = DateTime.Today });
+                Grade = grade,
+                Date = DateTime.Today,
+                Description = "Catechism Class",
+                Students = students.Select(s => new StudentAttendanceViewModel
+                {
+                    StudentId = s.Id,
+                    Name = $"{s.FamilyMember.FirstName} {s.FamilyMember.LastName}",
+                    IsPresent = false
+                }).ToList()
+            };
+            return View(model);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> MarkAttendance(AttendanceViewModel model)
+        public async Task<IActionResult> MarkAttendance(ClassAttendanceViewModel model)
         {
             if (ModelState.IsValid)
             {
-                await _catechismService.MarkAttendanceAsync(model.StudentId, model.Date, model.Description, model.IsPresent);
-                return RedirectToAction(nameof(Index), new { grade = ViewBag.Grade });
+                foreach (var student in model.Students)
+                {
+                    await _catechismService.MarkAttendanceAsync(
+                        student.StudentId,
+                        model.Date,
+                        model.Description,
+                        student.IsPresent);
+                }
+                return RedirectToAction(nameof(Index), new { grade = model.Grade });
             }
-            var student = await _catechismService.GetStudentByIdAsync(model.StudentId);
-            ViewBag.StudentName = $"{student?.FamilyMember.FirstName} {student?.FamilyMember.LastName}";
             return View(model);
         }
 
@@ -133,6 +148,25 @@ namespace StThomasMission.Web.Areas.Catechism.Controllers
                 Assessments = assessments.ToList()
             };
 
+            return View(model);
+        }
+        // Add to the existing StudentsController
+        public IActionResult AddGroupActivity(string group)
+        {
+            ViewBag.Group = group;
+            return View(new GroupActivityViewModel { Group = group });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddGroupActivity(GroupActivityViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                await _catechismService.AddGroupActivityAsync(model.Group, model.Name, model.Points);
+                return RedirectToAction(nameof(Index), new { grade = ViewBag.Grade });
+            }
+            ViewBag.Group = model.Group;
             return View(model);
         }
     }

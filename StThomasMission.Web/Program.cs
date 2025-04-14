@@ -29,8 +29,11 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ICatechismService, CatechismService>();
 builder.Services.AddScoped<IFamilyService, FamilyService>();
+builder.Services.AddScoped<ICommunicationService, CommunicationService>();
 
+builder.Services.AddScoped<IImportService, ImportService>();
 var app = builder.Build();
+
 
 if (!app.Environment.IsDevelopment())
 {

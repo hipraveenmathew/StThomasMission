@@ -104,10 +104,11 @@ namespace StThomasMission.Services.Services
         {
             var groupActivity = new GroupActivity
             {
-                GroupName = groupName,
-                ActivityName = activityName,
+                Group = groupName, // Changed from GroupName to Group
+                Name = activityName, // Changed from ActivityName to Name
                 Points = points,
-                Date = DateTime.UtcNow
+                Date = DateTime.UtcNow,
+                Status = "Active" // Added to match GroupActivity entity
             };
             await _unitOfWork.GroupActivities.AddAsync(groupActivity);
             await _unitOfWork.CompleteAsync();
@@ -130,7 +131,7 @@ namespace StThomasMission.Services.Services
 
         public async Task<IEnumerable<GroupActivity>> GetGroupActivitiesAsync(string groupName)
         {
-            return await _unitOfWork.GroupActivities.GetByGroupNameAsync(groupName);
+            return await _unitOfWork.GroupActivities.GetByGroupAsync(groupName);
         }
     }
 }

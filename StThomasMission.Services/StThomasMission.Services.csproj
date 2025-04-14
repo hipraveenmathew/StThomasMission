@@ -7,6 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="EPPlus" Version="8.0.1" />
+    <PackageReference Include="iTextSharp" Version="5.5.13.4" />
+    <PackageReference Include="Twilio" Version="7.10.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\StThomasMission.Core\StThomasMission.Core.csproj" />
   </ItemGroup>
 

@@ -1,36 +1,42 @@
-﻿@model StThomasMission.Web.Areas.Catechism.Models.AttendanceViewModel
-
+﻿@model StThomasMission.Web.Areas.Catechism.Models.ClassAttendanceViewModel
 @{
     ViewData["Title"] = "Mark Attendance";
 }
 
-<h1>Mark Attendance for @ViewBag.StudentName</h1>
+<h2>Mark Attendance for @Model.Grade</h2>
 
-<form asp-action="MarkAttendance">
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <input type="hidden" asp-for="StudentId" />
+<form asp-action="MarkAttendance" method="post">
+    <input type="hidden" name="Grade" value="@Model.Grade" />
     <div class="form-group">
-        <label asp-for="Date" class="control-label"></label>
-        <input asp-for="Date" class="form-control" type="date" />
-        <span asp-validation-for="Date" class="text-danger"></span>
+        <label for="Date">Date</label>
+        <input type="date" name="Date" class="form-control" value="@Model.Date.ToString("yyyy-MM-dd")" required />
     </div>
     <div class="form-group">
-        <label asp-for="Description" class="control-label"></label>
-        <input asp-for="Description" class="form-control" />
-        <span asp-validation-for="Description" class="text-danger"></span>
+        <label for="Description">Description</label>
+        <input type="text" name="Description" class="form-control" value="@Model.Description" />
     </div>
-    <div class="form-group">
-        <label asp-for="IsPresent" class="control-label"></label>
-        <input asp-for="IsPresent" type="checkbox" />
-        <span asp-validation-for="IsPresent" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <input type="submit" value="Save" class="btn btn-primary" />
-    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Present</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (int i = 0; i < Model.Students.Count; i++)
+            {
+                <tr>
+                    <td>
+                        @Model.Students[i].Name
+                        <input type="hidden" name="Students[@i].StudentId" value="@Model.Students[i].StudentId" />
+                        <input type="hidden" name="Students[@i].Name" value="@Model.Students[i].Name" />
+                    </td>
+                    <td>
+                        <input type="checkbox" name="Students[@i].IsPresent" checked="@Model.Students[i].IsPresent" />
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <button type="submit" class="btn btn-primary">Submit</button>
 </form>
-
-@section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
-}
