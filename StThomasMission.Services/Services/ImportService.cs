@@ -42,7 +42,9 @@ namespace StThomasMission.Services
             if (rowCount < 2) throw new InvalidOperationException("Excel file contains no data rows.");
 
             // Begin transaction
+            // Best Practice for EF Core Transaction
             using var transaction = await _unitOfWork.BeginTransactionAsync();
+
 
             try
             {

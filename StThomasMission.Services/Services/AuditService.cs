@@ -2,10 +2,14 @@
 using StThomasMission.Core.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace StThomasMission.Services
 {
+    /// <summary>
+    /// Service implementation for handling audit logging operations.
+    /// </summary>
     public class AuditService : IAuditService
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -39,6 +43,7 @@ namespace StThomasMission.Services
         public async Task<IEnumerable<AuditLog>> GetAuditLogsAsync(string? entityName = null, DateTime? startDate = null, DateTime? endDate = null)
         {
             var auditLogs = await _unitOfWork.AuditLogs.GetAllAsync();
+
             return auditLogs.Where(log =>
                 (entityName == null || log.EntityName == entityName) &&
                 (startDate == null || log.Timestamp >= startDate) &&

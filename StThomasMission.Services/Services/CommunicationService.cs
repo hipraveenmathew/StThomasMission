@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Twilio.Rest.Api.V2010.Account;
 using Twilio.Types;
 using System.Net.Mail;
+using StThomasMission.Core.Enums;
 
 namespace StThomasMission.Services
 {
@@ -49,18 +50,25 @@ namespace StThomasMission.Services
             if (string.IsNullOrEmpty(method)) throw new ArgumentException("Method is required.", nameof(method));
             if (string.IsNullOrEmpty(messageType)) throw new ArgumentException("Message type is required.", nameof(messageType));
 
+            if (!Enum.TryParse<CommunicationChannel>(method, true, out var parsedMethod))
+                throw new ArgumentException("Invalid communication method.", nameof(method));
+
+            if (!Enum.TryParse<MessageType>(messageType, true, out var parsedMessageType))
+                throw new ArgumentException("Invalid message type.", nameof(messageType));
+
             var log = new MessageLog
             {
                 Recipient = recipient,
                 Message = message,
-                Method = method,
-                MessageType = messageType,
+                Method = parsedMethod,
+                MessageType = parsedMessageType,
                 SentAt = DateTime.UtcNow
             };
 
             await _unitOfWork.MessageLogs.AddAsync(log);
             await _unitOfWork.CompleteAsync();
         }
+
 
         private async Task SendSmsAsync(string to, string message)
         {
@@ -182,21 +190,26 @@ namespace StThomasMission.Services
 
         public async Task SendAbsenteeNotificationAsync(int studentId, DateTime date, string method = "Email")
         {
-            if (!new[] { "SMS", "Email", "WhatsApp" }.Contains(method)) throw new ArgumentException("Invalid method.", nameof(method));
+            if (!new[] { "SMS", "Email", "WhatsApp" }.Contains(method))
+                throw new ArgumentException("Invalid method.", nameof(method));
 
             var student = await _unitOfWork.Students.GetByIdAsync(studentId);
-            if (student == null) throw new ArgumentException("Student not found.", nameof(studentId));
+            if (student == null)
+                throw new ArgumentException("Student not found.", nameof(studentId));
 
             var familyMember = await _unitOfWork.FamilyMembers.GetByIdAsync(student.FamilyMemberId);
             var family = await _unitOfWork.Families.GetByIdAsync(familyMember.FamilyId);
+
             var parents = (await _familyService.GetFamilyMembersByFamilyIdAsync(family.Id))
                 .Where(m => m.Role == "Parent" && (m.Contact != null || m.Email != null));
 
-            var attendance = (await _unitOfWork.Attendances.GetByStudentIdAsync(studentId))
-                .FirstOrDefault(a => a.Date.Date == date.Date && !a.IsPresent);
+            var attendance = (await (_unitOfWork.Attendances as IAttendanceRepository)!.GetByStudentIdAsync(studentId))
+                .FirstOrDefault(a => a.Date.Date == date.Date && a.Status == AttendanceStatus.Absent);
+
             if (attendance == null) return; // No absence to notify
 
             var template = await GetMessageTemplateAsync("AbsenteeNotification");
+
             foreach (var parent in parents)
             {
                 var formattedMessage = template
@@ -304,21 +317,28 @@ namespace StThomasMission.Services
 
         public async Task UpdateMessageTemplateAsync(string templateName, string templateContent)
         {
-            if (string.IsNullOrEmpty(templateName)) throw new ArgumentException("Template name is required.", nameof(templateName));
-            if (string.IsNullOrEmpty(templateContent)) throw new ArgumentException("Template content is required.", nameof(templateContent));
+            if (string.IsNullOrEmpty(templateName))
+                throw new ArgumentException("Template name is required.", nameof(templateName));
+
+            if (string.IsNullOrEmpty(templateContent))
+                throw new ArgumentException("Template content is required.", nameof(templateContent));
 
             _templates[templateName] = templateContent;
-            await Task.CompletedTask; // Simulate async operation
+
+            await Task.CompletedTask; // Simulated async call
         }
+
 
         public async Task<IEnumerable<MessageLog>> GetMessageLogsAsync(string? recipient = null, string? method = null, string? messageType = null, DateTime? startDate = null)
         {
             var logs = await _unitOfWork.MessageLogs.GetAllAsync();
+
             return logs.Where(log =>
                 (recipient == null || log.Recipient == recipient) &&
-                (method == null || log.Method == method) &&
-                (messageType == null || log.MessageType == messageType) &&
+                (method == null || log.Method.ToString() == method) &&
+                (messageType == null || log.MessageType.ToString() == messageType) &&
                 (startDate == null || log.SentAt >= startDate));
         }
+
     }
 }

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using StThomasMission.Core.Entities;
 using StThomasMission.Infrastructure.Data;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -36,7 +37,7 @@ namespace StThomasMission.Data
                 await userManager.AddToRoleAsync(adminUser, "Admin");
             }
 
-            // Seed ParishPriest User
+            // Seed Parish Priest User
             var priestUser = new IdentityUser { UserName = "priest@stthomasmission.com", Email = "priest@stthomasmission.com" };
             string priestPassword = "Priest@123";
             if (await userManager.FindByEmailAsync(priestUser.Email) == null)
@@ -54,7 +55,8 @@ namespace StThomasMission.Data
                     Ward = "St. John Ward",
                     IsRegistered = true,
                     ChurchRegistrationNumber = "108020001",
-                    Status = "Active"
+                    Status = Core.Enums.FamilyStatus.Active,
+                    CreatedDate = DateTime.UtcNow
                 };
                 context.Families.Add(family);
                 await context.SaveChangesAsync();
@@ -77,6 +79,7 @@ namespace StThomasMission.Data
                 {
                     await userManager.CreateAsync(parentUser, parentPassword);
                     await userManager.AddToRoleAsync(parentUser, "Parent");
+
                     familyMember.UserId = parentUser.Id;
                     context.FamilyMembers.Update(familyMember);
                     await context.SaveChangesAsync();
@@ -84,33 +87,33 @@ namespace StThomasMission.Data
 
                 var student = new Student
                 {
-                    FirstName = "Alice",
-                    LastName = "Smith",
                     FamilyMemberId = familyMember.Id,
                     Grade = "Year 1",
                     AcademicYear = 2025,
                     Group = "St. Peter Group",
-                    Status = "Active"
+                    Status = Core.Enums.StudentStatus.Active
                 };
                 context.Students.Add(student);
                 await context.SaveChangesAsync();
-                // After seeding students
+
                 if (!context.GroupActivities.Any())
                 {
                     context.GroupActivities.AddRange(
                         new GroupActivity
                         {
-                            GroupName = "St. Peter Group",
-                            ActivityName = "Charity Event",
+                            Group = "St. Peter Group",
+                            Name = "Charity Event",
                             Points = 10,
-                            Date = DateTime.Today.AddDays(5)
+                            Date = DateTime.Today.AddDays(5),
+                            Status = Core.Enums.ActivityStatus.Active
                         },
                         new GroupActivity
                         {
-                            GroupName = "St. Peter Group",
-                            ActivityName = "Community Prayer",
+                            Group = "St. Peter Group",
+                            Name = "Community Prayer",
                             Points = 5,
-                            Date = DateTime.Today.AddDays(15)
+                            Date = DateTime.Today.AddDays(15),
+                            Status = Core.Enums.ActivityStatus.Active
                         }
                     );
                     await context.SaveChangesAsync();

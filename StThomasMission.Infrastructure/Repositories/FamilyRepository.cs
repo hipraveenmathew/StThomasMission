@@ -1,7 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using StThomasMission.Core.Entities;
+using StThomasMission.Core.Enums;
 using StThomasMission.Core.Interfaces;
 using StThomasMission.Infrastructure.Data;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace StThomasMission.Infrastructure.Repositories
 {
@@ -14,18 +19,22 @@ namespace StThomasMission.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<Family> AddAsync(Family family)
+        // IRepository<Family> Implementation
+
+        public async Task<IEnumerable<Family>> GetAllAsync()
         {
-            _context.Families.Add(family);
-            await _context.SaveChangesAsync();
-            return family;
+            return await _context.Families.ToListAsync();
         }
 
-        public async Task<Family?> GetByIdAsync(int id)
+        public async Task<Family> GetByIdAsync(int id)
         {
-            return await _context.Families
-                .Include(f => f.Members)
-                .FirstOrDefaultAsync(f => f.Id == id);
+            return await _context.Families.FindAsync(id);
+        }
+
+        public async Task AddAsync(Family family)
+        {
+            await _context.Families.AddAsync(family);
+            await _context.SaveChangesAsync();
         }
 
         public async Task UpdateAsync(Family family)
@@ -36,18 +45,36 @@ namespace StThomasMission.Infrastructure.Repositories
 
         public async Task DeleteAsync(int id)
         {
-            var family = await GetByIdAsync(id);
-            if (family != null)
+            var entity = await _context.Families.FindAsync(id);
+            if (entity != null)
             {
-                _context.Families.Remove(family);
+                _context.Families.Remove(entity);
                 await _context.SaveChangesAsync();
             }
         }
 
-        public async Task<IEnumerable<Family>> GetAllAsync()
+        public Task DeleteAsync(Family entity)
+        {
+            _context.Families.Remove(entity);
+            return _context.SaveChangesAsync();
+        }
+
+        // IFamilyRepository Specific Methods
+
+        public async Task<IEnumerable<Family>> GetByWardAsync(string ward)
         {
             return await _context.Families
-                .Include(f => f.Members)
+                .Where(f => f.Ward == ward)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Family>> GetByStatusAsync(string status)
+        {
+            if (!Enum.TryParse<FamilyStatus>(status, true, out var parsedStatus))
+                throw new ArgumentException("Invalid family status.", nameof(status));
+
+            return await _context.Families
+                .Where(f => f.Status == parsedStatus)
                 .ToListAsync();
         }
     }

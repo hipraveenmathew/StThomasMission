@@ -1,4 +1,5 @@
 ﻿using StThomasMission.Core.Entities;
+using StThomasMission.Core.Enums;
 using StThomasMission.Core.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -20,19 +21,31 @@ namespace StThomasMission.Services
 
         public async Task<Family> RegisterFamilyAsync(string familyName, string ward, bool isRegistered, string? churchRegistrationNumber, string? temporaryId)
         {
-            if (string.IsNullOrEmpty(familyName)) throw new ArgumentException("Family name is required.", nameof(familyName));
-            if (string.IsNullOrEmpty(ward)) throw new ArgumentException("Ward is required.", nameof(ward));
-            if (isRegistered && string.IsNullOrEmpty(churchRegistrationNumber)) throw new ArgumentException("Church registration number is required for registered families.", nameof(churchRegistrationNumber));
-            if (!isRegistered && string.IsNullOrEmpty(temporaryId)) throw new ArgumentException("Temporary ID is required for unregistered families.", nameof(temporaryId));
-            if (churchRegistrationNumber != null && !Regex.IsMatch(churchRegistrationNumber, @"^10802\d{4}$")) throw new ArgumentException("Church registration number must be in format '10802XXXX'.", nameof(churchRegistrationNumber));
-            if (temporaryId != null && !Regex.IsMatch(temporaryId, @"^TMP-\d{4}$")) throw new ArgumentException("Temporary ID must be in format 'TMP-XXXX'.", nameof(temporaryId));
+            if (string.IsNullOrEmpty(familyName))
+                throw new ArgumentException("Family name is required.", nameof(familyName));
+
+            if (string.IsNullOrEmpty(ward))
+                throw new ArgumentException("Ward is required.", nameof(ward));
+
+            if (isRegistered && string.IsNullOrEmpty(churchRegistrationNumber))
+                throw new ArgumentException("Church registration number is required for registered families.", nameof(churchRegistrationNumber));
+
+            if (!isRegistered && string.IsNullOrEmpty(temporaryId))
+                throw new ArgumentException("Temporary ID is required for unregistered families.", nameof(temporaryId));
+
+            if (churchRegistrationNumber != null && !Regex.IsMatch(churchRegistrationNumber, @"^10802\d{4}$"))
+                throw new ArgumentException("Church registration number must be in format '10802XXXX'.", nameof(churchRegistrationNumber));
+
+            if (temporaryId != null && !Regex.IsMatch(temporaryId, @"^TMP-\d{4}$"))
+                throw new ArgumentException("Temporary ID must be in format 'TMP-XXXX'.", nameof(temporaryId));
 
             // Ensure ChurchRegistrationNumber is unique
             if (churchRegistrationNumber != null)
             {
                 var existingFamily = (await _unitOfWork.Families.GetAllAsync())
                     .FirstOrDefault(f => f.ChurchRegistrationNumber == churchRegistrationNumber);
-                if (existingFamily != null) throw new InvalidOperationException("Church registration number already exists.");
+                if (existingFamily != null)
+                    throw new InvalidOperationException("Church registration number already exists.");
             }
 
             var family = new Family
@@ -42,32 +55,49 @@ namespace StThomasMission.Services
                 IsRegistered = isRegistered,
                 ChurchRegistrationNumber = churchRegistrationNumber,
                 TemporaryID = temporaryId,
-                Status = "Active",
+                Status = FamilyStatus.Active,
                 CreatedDate = DateTime.UtcNow
             };
 
             await _unitOfWork.Families.AddAsync(family);
             await _unitOfWork.CompleteAsync();
+
             return family;
         }
+
 
         public async Task UpdateFamilyAsync(int familyId, string familyName, string ward, bool isRegistered, string? churchRegistrationNumber, string? temporaryId, string status, string? migratedTo)
         {
             var family = await GetFamilyByIdAsync(familyId);
-            if (string.IsNullOrEmpty(familyName)) throw new ArgumentException("Family name is required.", nameof(familyName));
-            if (string.IsNullOrEmpty(ward)) throw new ArgumentException("Ward is required.", nameof(ward));
-            if (isRegistered && string.IsNullOrEmpty(churchRegistrationNumber)) throw new ArgumentException("Church registration number is required for registered families.", nameof(churchRegistrationNumber));
-            if (!isRegistered && string.IsNullOrEmpty(temporaryId)) throw new ArgumentException("Temporary ID is required for unregistered families.", nameof(temporaryId));
-            if (churchRegistrationNumber != null && !Regex.IsMatch(churchRegistrationNumber, @"^10802\d{4}$")) throw new ArgumentException("Church registration number must be in format '10802XXXX'.", nameof(churchRegistrationNumber));
-            if (temporaryId != null && !Regex.IsMatch(temporaryId, @"^TMP-\d{4}$")) throw new ArgumentException("Temporary ID must be in format 'TMP-XXXX'.", nameof(temporaryId));
-            if (!new[] { "Active", "Migrated" }.Contains(status)) throw new ArgumentException("Invalid status.", nameof(status));
 
-            // Ensure ChurchRegistrationNumber is unique (excluding current family)
+            if (string.IsNullOrEmpty(familyName))
+                throw new ArgumentException("Family name is required.", nameof(familyName));
+
+            if (string.IsNullOrEmpty(ward))
+                throw new ArgumentException("Ward is required.", nameof(ward));
+
+            if (isRegistered && string.IsNullOrEmpty(churchRegistrationNumber))
+                throw new ArgumentException("Church registration number is required for registered families.", nameof(churchRegistrationNumber));
+
+            if (!isRegistered && string.IsNullOrEmpty(temporaryId))
+                throw new ArgumentException("Temporary ID is required for unregistered families.", nameof(temporaryId));
+
+            if (churchRegistrationNumber != null && !Regex.IsMatch(churchRegistrationNumber, @"^10802\d{4}$"))
+                throw new ArgumentException("Church registration number must be in format '10802XXXX'.", nameof(churchRegistrationNumber));
+
+            if (temporaryId != null && !Regex.IsMatch(temporaryId, @"^TMP-\d{4}$"))
+                throw new ArgumentException("Temporary ID must be in format 'TMP-XXXX'.", nameof(temporaryId));
+
+            if (!Enum.TryParse<FamilyStatus>(status, true, out var parsedStatus))
+                throw new ArgumentException("Invalid status.", nameof(status));
+
             if (churchRegistrationNumber != null && churchRegistrationNumber != family.ChurchRegistrationNumber)
             {
                 var existingFamily = (await _unitOfWork.Families.GetAllAsync())
                     .FirstOrDefault(f => f.ChurchRegistrationNumber == churchRegistrationNumber && f.Id != familyId);
-                if (existingFamily != null) throw new InvalidOperationException("Church registration number already exists.");
+
+                if (existingFamily != null)
+                    throw new InvalidOperationException("Church registration number already exists.");
             }
 
             family.FamilyName = familyName;
@@ -75,12 +105,13 @@ namespace StThomasMission.Services
             family.IsRegistered = isRegistered;
             family.ChurchRegistrationNumber = churchRegistrationNumber;
             family.TemporaryID = temporaryId;
-            family.Status = status;
+            family.Status = parsedStatus;
             family.MigratedTo = migratedTo;
 
             await _unitOfWork.Families.UpdateAsync(family);
             await _unitOfWork.CompleteAsync();
         }
+
 
         public async Task ConvertTemporaryIdToChurchIdAsync(int familyId, string churchRegistrationNumber)
         {
@@ -111,15 +142,20 @@ namespace StThomasMission.Services
 
         public async Task<IEnumerable<Family>> GetFamiliesByWardAsync(string ward)
         {
-            if (string.IsNullOrEmpty(ward)) throw new ArgumentException("Ward is required.", nameof(ward));
-            return await _unitOfWork.Families.GetByWardAsync(ward);
+            if (string.IsNullOrEmpty(ward))
+                throw new ArgumentException("Ward is required.", nameof(ward));
+
+            return await (_unitOfWork.Families as IFamilyRepository)!.GetByWardAsync(ward);
         }
 
         public async Task<IEnumerable<Family>> GetFamiliesByStatusAsync(string status)
         {
-            if (string.IsNullOrEmpty(status)) throw new ArgumentException("Status is required.", nameof(status));
-            return await _unitOfWork.Families.GetByStatusAsync(status);
+            if (string.IsNullOrEmpty(status))
+                throw new ArgumentException("Status is required.", nameof(status));
+
+            return await (_unitOfWork.Families as IFamilyRepository)!.GetByStatusAsync(status);
         }
+
 
         public async Task AddFamilyMemberAsync(int familyId, string firstName, string lastName, string? relation, DateTime dateOfBirth, string? contact, string? email, string? role)
         {
@@ -176,9 +212,10 @@ namespace StThomasMission.Services
 
         public async Task<IEnumerable<FamilyMember>> GetFamilyMembersByFamilyIdAsync(int familyId)
         {
-            await GetFamilyByIdAsync(familyId);
-            return await _unitOfWork.FamilyMembers.GetByFamilyIdAsync(familyId);
+            await GetFamilyByIdAsync(familyId); // Ensure family exists
+            return await (_unitOfWork.FamilyMembers as IFamilyMemberRepository)!.GetByFamilyIdAsync(familyId);
         }
+
 
         public async Task<string> GeneratePrintDataAsync(int familyId)
         {
@@ -186,11 +223,12 @@ namespace StThomasMission.Services
             var members = await GetFamilyMembersByFamilyIdAsync(familyId);
 
             var sb = new StringBuilder();
-            sb.AppendLine($"Family Registration Details");
-            sb.AppendLine($"--------------------------");
+            sb.AppendLine("Family Registration Details");
+            sb.AppendLine("--------------------------");
             sb.AppendLine($"Family Name: {family.FamilyName}");
             sb.AppendLine($"Ward: {family.Ward}");
             sb.AppendLine($"Status: {family.Status}");
+
             if (family.IsRegistered)
             {
                 sb.AppendLine($"Church Registration Number: {family.ChurchRegistrationNumber}");
@@ -199,14 +237,17 @@ namespace StThomasMission.Services
             {
                 sb.AppendLine($"Temporary ID: {family.TemporaryID}");
             }
-            if (family.Status == "Migrated")
+
+            if (family.Status == FamilyStatus.Migrated)
             {
                 sb.AppendLine($"Migrated To: {family.MigratedTo}");
             }
+
             sb.AppendLine($"Created Date: {family.CreatedDate:yyyy-MM-dd}");
             sb.AppendLine();
-            sb.AppendLine($"Family Members:");
-            sb.AppendLine($"---------------");
+            sb.AppendLine("Family Members:");
+            sb.AppendLine("---------------");
+
             foreach (var member in members)
             {
                 sb.AppendLine($"- {member.FirstName} {member.LastName}, Relation: {member.Relation ?? "N/A"}, DOB: {member.DateOfBirth:yyyy-MM-dd}, Role: {member.Role ?? "N/A"}");
@@ -215,5 +256,6 @@ namespace StThomasMission.Services
 
             return sb.ToString();
         }
+
     }
 }

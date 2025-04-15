@@ -31,29 +31,29 @@ namespace StThomasMission.Infrastructure.Repositories
         public async Task AddAsync(T entity)
         {
             await _entities.AddAsync(entity);
+            await _context.SaveChangesAsync();
         }
 
         public async Task UpdateAsync(T entity)
         {
             _entities.Update(entity);
-            await Task.CompletedTask;
+            await _context.SaveChangesAsync();
         }
 
         public async Task DeleteAsync(T entity)
         {
             _entities.Remove(entity);
-            await Task.CompletedTask;
+            await _context.SaveChangesAsync();
         }
 
         public async Task DeleteAsync(int id)
         {
             var entity = await GetByIdAsync(id);
             if (entity == null)
-            {
                 throw new ArgumentException($"Entity with ID {id} not found.", nameof(id));
-            }
+
             _entities.Remove(entity);
-            await Task.CompletedTask;
+            await _context.SaveChangesAsync();
         }
     }
 }

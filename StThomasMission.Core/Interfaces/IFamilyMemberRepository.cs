@@ -4,6 +4,9 @@ using System.Threading.Tasks;
 
 namespace StThomasMission.Core.Interfaces
 {
+    /// <summary>
+    /// Repository for FamilyMember-specific operations.
+    /// </summary>
     public interface IFamilyMemberRepository : IRepository<FamilyMember>
     {
         Task<IEnumerable<FamilyMember>> GetByFamilyIdAsync(int familyId);

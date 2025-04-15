@@ -1,12 +1,15 @@
 ﻿using StThomasMission.Core.Entities;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace StThomasMission.Core.Interfaces
 {
+    /// <summary>
+    /// Service interface for managing Catechism-related operations.
+    /// </summary>
     public interface ICatechismService
     {
-        // Student Management
         Task<Student> GetStudentByIdAsync(int studentId);
         Task<IEnumerable<Student>> GetStudentsByGradeAsync(string grade);
         Task<IEnumerable<Student>> GetStudentsByGroupAsync(string group);
@@ -15,19 +18,16 @@ namespace StThomasMission.Core.Interfaces
         Task MarkPassFailAsync(int studentId, bool passed);
         Task PromoteStudentsAsync(string grade, int academicYear);
 
-        // Attendance
         Task AddAttendanceAsync(int studentId, DateTime date, string description, bool isPresent);
         Task UpdateAttendanceAsync(int attendanceId, bool isPresent, string description);
         Task<IEnumerable<Attendance>> GetAttendanceByStudentAsync(int studentId, DateTime? startDate = null, DateTime? endDate = null);
         Task<IEnumerable<Attendance>> GetAttendanceByGradeAsync(string grade, DateTime date);
 
-        // Assessments
         Task AddAssessmentAsync(int studentId, string name, int marks, int totalMarks, DateTime date, bool isMajor);
         Task UpdateAssessmentAsync(int assessmentId, string name, int marks, int totalMarks, DateTime date, bool isMajor);
         Task<IEnumerable<Assessment>> GetAssessmentsByStudentAsync(int studentId, bool? isMajor = null);
         Task<IEnumerable<Assessment>> GetAssessmentsByGradeAsync(string grade, DateTime? startDate = null, DateTime? endDate = null);
 
-        // Group Activities
         Task AddGroupActivityAsync(string name, string description, DateTime date, string group, int points);
         Task UpdateGroupActivityAsync(int groupActivityId, string name, string description, DateTime date, string group, int points, string status);
         Task AddStudentToGroupActivityAsync(int studentId, int groupActivityId, DateTime participationDate);

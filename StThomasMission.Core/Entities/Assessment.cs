@@ -11,7 +11,7 @@ namespace StThomasMission.Core.Entities
         public int StudentId { get; set; }
 
         [Required(ErrorMessage = "Assessment name is required.")]
-        [MaxLength(150, ErrorMessage = "Assessment name cannot exceed 150 characters.")]
+        [StringLength(150, ErrorMessage = "Assessment name cannot exceed 150 characters.")]
         public string Name { get; set; } = string.Empty;
 
         [Range(0, int.MaxValue, ErrorMessage = "Marks cannot be negative.")]
@@ -24,7 +24,7 @@ namespace StThomasMission.Core.Entities
         public DateTime Date { get; set; } = DateTime.UtcNow;
 
         [Required(ErrorMessage = "Assessment type is required.")]
-        public AssessmentType Type { get; set; }  // ClassAssessment / SemesterExam
+        public AssessmentType Type { get; set; }
 
         public Student Student { get; set; } = null!;
     }

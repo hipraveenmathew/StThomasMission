@@ -14,7 +14,7 @@ namespace StThomasMission.Core.Entities
         public DateTime Date { get; set; } = DateTime.UtcNow;
 
         [Required(ErrorMessage = "Description is required.")]
-        [MaxLength(250)]
+        [StringLength(250, ErrorMessage = "Description cannot exceed 250 characters.")]
         public string Description { get; set; } = "Catechism Class";
 
         [Required]

@@ -12,23 +12,23 @@ namespace StThomasMission.Core.Entities
 
         [Required]
         [Range(1, 12, ErrorMessage = "Academic year must be between 1 and 12.")]
-        public int AcademicYear { get; set; }  // Year number (1-12)
+        public int AcademicYear { get; set; }
 
         [Required(ErrorMessage = "Grade is required.")]
-        [RegularExpression(@"^Year \d{1,2}$", ErrorMessage = "Grade must be in format 'Year X'.")]
-        [MaxLength(20)]
-        public string Grade { get; set; } = string.Empty; // e.g., Year 1
+        [RegularExpression(@"^Year \d{1,2}$", ErrorMessage = "Grade must be in the format 'Year X'.")]
+        [StringLength(20, ErrorMessage = "Grade cannot exceed 20 characters.")]
+        public string Grade { get; set; } = string.Empty;
 
-        [MaxLength(100)]
-        public string? Group { get; set; } // St. Peter Group etc.
+        [StringLength(100, ErrorMessage = "Group name cannot exceed 100 characters.")]
+        public string? Group { get; set; }
 
-        [MaxLength(150)]
+        [StringLength(150, ErrorMessage = "Organisation name cannot exceed 150 characters.")]
         public string? StudentOrganisation { get; set; }
 
         [Required(ErrorMessage = "Status is required.")]
         public StudentStatus Status { get; set; } = StudentStatus.Active;
 
-        [MaxLength(150)]
+        [StringLength(150, ErrorMessage = "Migration target name cannot exceed 150 characters.")]
         public string? MigratedTo { get; set; }
 
         public FamilyMember FamilyMember { get; set; } = null!;
