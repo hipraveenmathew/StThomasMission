@@ -1,0 +1,31 @@
+﻿@model StThomasMission.Core.Entities.Family
+
+@{
+    ViewData["Title"] = "Mark Family as Migrated";
+}
+
+<h1>Mark Family as Migrated</h1>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="MarkAsMigrated">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" name="familyId" value="@Model.Id" />
+            <div class="form-group mb-3">
+                <label class="control-label">Family Name</label>
+                <input class="form-control" value="@Model.FamilyName" readonly />
+            </div>
+            <div class="form-group mb-3">
+                <label class="control-label">Migrated To</label>
+                <input name="migratedTo" class="form-control" placeholder="e.g., St. Paul Parish, Canada" />
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Mark as Migrated</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

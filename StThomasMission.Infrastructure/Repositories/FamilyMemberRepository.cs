@@ -15,5 +15,10 @@ namespace StThomasMission.Infrastructure.Repositories
                 .Include(fm => fm.Family)
                 .FirstOrDefaultAsync(fm => fm.Id == id);
         }
+        public async Task<FamilyMember> GetByUserIdAsync(string userId)
+        {
+            return await _context.FamilyMembers
+                .FirstOrDefaultAsync(fm => fm.UserId == userId);
+        }
     }
 }

@@ -1,0 +1,48 @@
+﻿@model StThomasMission.Core.Entities.FamilyMember
+
+@{
+    ViewData["Title"] = "Add Family Member";
+    var familyName = ViewBag.FamilyName as string;
+}
+
+<h1>Add Family Member for @familyName</h1>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Add">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" name="familyId" value="@Model.FamilyId" />
+            <div class="form-group mb-3">
+                <label class="control-label">First Name</label>
+                <input name="firstName" class="form-control" />
+            </div>
+            <div class="form-group mb-3">
+                <label class="control-label">Last Name</label>
+                <input name="lastName" class="form-control" />
+            </div>
+            <div class="form-group mb-3">
+                <label class="control-label">Contact</label>
+                <input name="contact" class="form-control" placeholder="e.g., +1234567890" />
+            </div>
+            <div class="form-group mb-3">
+                <label class="control-label">Email</label>
+                <input name="email" class="form-control" placeholder="e.g., email@example.com" />
+            </div>
+            <div class="form-group mb-3">
+                <label class="control-label">Role</label>
+                <select name="role" class="form-control">
+                    <option value="Parent">Parent</option>
+                    <option value="Child">Child</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Add Member</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

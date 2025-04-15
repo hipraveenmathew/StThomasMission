@@ -17,6 +17,9 @@ namespace StThomasMission.Infrastructure.Data
         public DbSet<Attendance> Attendances { get; set; }
         public DbSet<Assessment> Assessments { get; set; }
         public DbSet<GroupActivity> GroupActivities { get; set; }
+        public DbSet<StudentGroupActivity> StudentGroupActivities { get; set; }
+        public DbSet<MessageLog> MessageLogs { get; set; }
+        public DbSet<AuditLog> AuditLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

@@ -1,55 +1,81 @@
-﻿@model IEnumerable<StThomasMission.Core.Entities.Family>
+﻿@model StThomasMission.Web.Models.PaginatedList<StThomasMission.Core.Entities.Family>
 
 @{
     ViewData["Title"] = "Families";
+    var searchString = ViewBag.SearchString as string;
 }
 
 <h1>Families</h1>
+<hr />
+<div>
+    <p>
+        <a asp-action="Register" class="btn btn-primary">Register New Family</a>
+        <a asp-controller="Import" asp-action="ImportFamilies" class="btn btn-secondary">Import Families</a>
+    </p>
+    <form asp-action="Index" method="get">
+        <div class="form-group mb-3">
+            <label class="control-label">Search</label>
+            <input name="searchString" class="form-control" value="@searchString" placeholder="Search by name or ward..." />
+            <button type="submit" class="btn btn-primary mt-2">Search</button>
+            @if (!string.IsNullOrEmpty(searchString))
+            {
+                <a asp-action="Index" class="btn btn-secondary mt-2">Clear</a>
+            }
+        </div>
+    </form>
+</div>
 
-<p>
-    <a asp-action="Register" class="btn btn-primary">Register New Family</a>
-<p><a asp-controller="Reports" asp-action="Index" class="btn btn-primary">View Reports</a></p>
-</p>
-
-<table class="table">
-    <thead>
-        <tr>
-            <th>Family Name</th>
-            <th>Ward</th>
-            <th>Status</th>
-            <th>Members</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var family in Model)
-        {
+@if (Model.Items.Any())
+{
+    <table class="table">
+        <thead>
             <tr>
-                <td>@family.FamilyName</td>
-                <td>@family.Ward</td>
-                <td>@family.Status</td>
-                <td>
-                    <ul>
-                        @foreach (var member in family.Members)
-                        {
-                            <li>
-                                @member.FirstName @member.LastName
-                                @if (member.StudentProfile == null)
-                                {
-                                    <a asp-action="EnrollStudent" asp-route-familyMemberId="@member.Id">Enroll as Student</a>
-                                }
-                                else
-                                {
-                                    <span>(Enrolled)</span>
-                                }
-                            </li>
-                        }
-                    </ul>
-                </td>
-                <td>
-                    <a asp-action="AddMember" asp-route-familyId="@family.Id">Add Member</a>
-                </td>
+                <th>
+                    <a asp-action="Index" asp-route-sortOrder="@ViewBag.NameSortParm" asp-route-searchString="@searchString">Family Name</a>
+                </th>
+                <th>
+                    <a asp-action="Index" asp-route-sortOrder="@ViewBag.WardSortParm" asp-route-searchString="@searchString">Ward</a>
+                </th>
+                <th>Status</th>
+                <th>Registration</th>
+                <th>Actions</th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @foreach (var family in Model.Items)
+            {
+                <tr>
+                    <td>@family.FamilyName</td>
+                    <td>@family.Ward</td>
+                    <td>@family.Status</td>
+                    <td>@(family.IsRegistered ? family.ChurchRegistrationNumber : family.TemporaryID)</td>
+                    <td>
+                        <a asp-action="Details" asp-route-id="@family.Id" class="btn btn-sm btn-primary">Details</a>
+                        <a asp-action="Edit" asp-route-id="@family.Id" class="btn btn-sm btn-primary">Edit</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <nav aria-label="Page navigation">
+        <ul class="pagination">
+            <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                <a class="page-link" asp-action="Index" asp-route-pageNumber="@(Model.PageIndex - 1)" asp-route-sortOrder="@ViewBag.CurrentSort" asp-route-searchString="@searchString">Previous</a>
+            </li>
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-pageNumber="@i" asp-route-sortOrder="@ViewBag.CurrentSort" asp-route-searchString="@searchString">@i</a>
+                </li>
+            }
+            <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                <a class="page-link" asp-action="Index" asp-route-pageNumber="@(Model.PageIndex + 1)" asp-route-sortOrder="@ViewBag.CurrentSort" asp-route-searchString="@searchString">Next</a>
+            </li>
+        </ul>
+    </nav>
+}
+else
+{
+    <p>No families found.</p>
+}

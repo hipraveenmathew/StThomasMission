@@ -1,38 +1,81 @@
-﻿@model IEnumerable<StThomasMission.Web.Areas.Catechism.Models.StudentViewModel>
+﻿@model StThomasMission.Web.Models.PaginatedList<StThomasMission.Core.Entities.Student>
 
 @{
-    ViewData["Title"] = "Students - Catechism";
+    ViewData["Title"] = "Students";
+    var searchString = ViewBag.SearchString as string;
 }
 
-<h1>Students in @ViewBag.Grade</h1>
+<h1>Students</h1>
+<hr />
+<div>
+    <p>
+        <a asp-controller="Import" asp-action="ImportStudents" class="btn btn-secondary">Import Students</a>
+    </p>
+    <form asp-action="Index" method="get">
+        <div class="form-group mb-3">
+            <label class="control-label">Search</label>
+            <input name="searchString" class="form-control" value="@searchString" placeholder="Search by name or grade..." />
+            <button type="submit" class="btn btn-primary mt-2">Search</button>
+            @if (!string.IsNullOrEmpty(searchString))
+            {
+                <a asp-action="Index" class="btn btn-secondary mt-2">Clear</a>
+            }
+        </div>
+    </form>
+</div>
 
-<table class="table">
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Grade</th>
-            <th>Group</th>
-            <th>Organisation</th>
-            <th>Status</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var student in Model)
-        {
+@if (Model.Items.Any())
+{
+    <table class="table">
+        <thead>
             <tr>
-                <td>@student.FirstName @student.LastName</td>
-                <td>@student.Grade</td>
-                <td>@student.Group</td>
-                <td>@student.StudentOrganisation</td>
-                <td>@student.Status</td>
-                <td>
-                    <a asp-action="Details" asp-route-id="@student.Id">Details</a> |
-                    <a asp-action="MarkAttendance" asp-route-id="@student.Id">Mark Attendance</a> |
-                    <a asp-action="AddAssessment" asp-route-id="@student.Id">Add Assessment</a> |
-                    <a asp-action="MarkPassFail" asp-route-id="@student.Id">Mark Pass/Fail</a>
-                </td>
+                <th>
+                    <a asp-action="Index" asp-route-sortOrder="@ViewBag.NameSortParm" asp-route-searchString="@searchString">Name</a>
+                </th>
+                <th>
+                    <a asp-action="Index" asp-route-sortOrder="@ViewBag.GradeSortParm" asp-route-searchString="@searchString">Grade</a>
+                </th>
+                <th>Academic Year</th>
+                <th>Group</th>
+                <th>Status</th>
+                <th>Actions</th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @foreach (var student in Model.Items)
+            {
+                <tr>
+                    <td>@student.FirstName @student.LastName</td>
+                    <td>@student.Grade</td>
+                    <td>@student.AcademicYear</td>
+                    <td>@student.Group</td>
+                    <td>@student.Status</td>
+                    <td>
+                        <a asp-action="Edit" asp-route-id="@student.Id" class="btn btn-sm btn-primary">Edit</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <nav aria-label="Page navigation">
+        <ul class="pagination">
+            <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                <a class="page-link" asp-action="Index" asp-route-pageNumber="@(Model.PageIndex - 1)" asp-route-sortOrder="@ViewBag.CurrentSort" asp-route-searchString="@searchString">Previous</a>
+            </li>
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-pageNumber="@i" asp-route-sortOrder="@ViewBag.CurrentSort" asp-route-searchString="@searchString">@i</a>
+                </li>
+            }
+            <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                <a class="page-link" asp-action="Index" asp-route-pageNumber="@(Model.PageIndex + 1)" asp-route-sortOrder="@ViewBag.CurrentSort" asp-route-searchString="@searchString">Next</a>
+            </li>
+        </ul>
+    </nav>
+}
+else
+{
+    <p>No students found.</p>
+}

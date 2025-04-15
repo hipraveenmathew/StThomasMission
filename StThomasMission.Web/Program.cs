@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using StThomasMission.Core.Entities;
 using StThomasMission.Core.Interfaces;
+using StThomasMission.Core.Services;
+using StThomasMission.Data;
 using StThomasMission.Infrastructure.Data;
 using StThomasMission.Infrastructure.Repositories;
 using StThomasMission.Services.Services;
@@ -30,6 +32,8 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ICatechismService, CatechismService>();
 builder.Services.AddScoped<IFamilyService, FamilyService>();
 builder.Services.AddScoped<ICommunicationService, CommunicationService>();
+builder.Services.AddScoped<IBackupService, BackupService>();
+builder.Services.AddScoped<IAuditService, AuditService>();
 
 builder.Services.AddScoped<IImportService, ImportService>();
 var app = builder.Build();
@@ -47,6 +51,8 @@ app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+await SeedData.InitializeAsync(app.Services);
 
 app.MapControllerRoute(
     name: "areas",

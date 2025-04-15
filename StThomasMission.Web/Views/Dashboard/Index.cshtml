@@ -1,0 +1,64 @@
+﻿@model StThomasMission.Web.Controllers.DashboardViewModel
+
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<h1>Dashboard</h1>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <h3>Recent Announcements</h3>
+        @if (Model.RecentAnnouncements.Any())
+        {
+            <ul class="list-group">
+                @foreach (var announcement in Model.RecentAnnouncements)
+                {
+                    <li class="list-group-item">
+                        <strong>@announcement.SentAt.ToString("g")</strong> (@announcement.Method): @announcement.Message
+                    </li>
+                }
+            </ul>
+        }
+        else
+        {
+            <p>No recent announcements.</p>
+        }
+    </div>
+    <div class="col-md-4">
+        <h3>Upcoming Events</h3>
+        @if (Model.UpcomingEvents.Any())
+        {
+            <ul class="list-group">
+                @foreach (var evt in Model.UpcomingEvents)
+                {
+                    <li class="list-group-item">
+                        <strong>@evt.Date.ToString("d")</strong> - @evt.GroupName: @evt.ActivityName (Points: @evt.Points)
+                    </li>
+                }
+            </ul>
+        }
+        else
+        {
+            <p>No upcoming events.</p>
+        }
+    </div>
+    <div class="col-md-4">
+        <h3>Student Progress</h3>
+        @if (Model.StudentProgress.Any())
+        {
+            <ul class="list-group">
+                @foreach (var student in Model.StudentProgress)
+                {
+                    <li class="list-group-item">
+                        <strong>@student.FirstName @student.LastName</strong> - Grade: @student.Grade, Status: @student.Status
+                    </li>
+                }
+            </ul>
+        }
+        else
+        {
+            <p>No student progress to display.</p>
+        }
+    </div>
+</div>

@@ -1,24 +1,36 @@
-﻿@model StThomasMission.Web.Areas.Catechism.Models.AbsenteeNotificationViewModel
+﻿@model StThomasMission.Web.Areas.Catechism.Controllers.SendAbsenteeNotificationsViewModel
+
 @{
     ViewData["Title"] = "Send Absentee Notifications";
 }
 
-<h2>Send Absentee Notifications</h2>
+<h1>Send Absentee Notifications</h1>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="SendAbsenteeNotifications">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group mb-3">
+                <label class="control-label">Grade</label>
+                <input asp-for="Grade" type="number" class="form-control" placeholder="e.g., 1 for Year 1" />
+                <span asp-validation-for="Grade" class="text-danger"></span>
+            </div>
+            <div class="form-group mb-3">
+                <label class="control-label">Communication Methods</label>
+                <div>
+                    <input type="checkbox" name="CommunicationMethods" value="SMS" checked /> SMS
+                    <input type="checkbox" name="CommunicationMethods" value="Email" /> Email
+                    <input type="checkbox" name="CommunicationMethods" value="WhatsApp" /> WhatsApp
+                </div>
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Send Notifications</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 @if (TempData["Success"] != null)
 {
     <div class="alert alert-success">@TempData["Success"]</div>
 }
-
-<form asp-action="SendAbsenteeNotifications" method="post">
-    <div class="form-group">
-        <label for="Grade">Grade</label>
-        <select name="Grade" class="form-control" required>
-            @for (int i = 1; i <= 12; i++)
-            {
-                <option value="@i">Year @i</option>
-            }
-        </select>
-    </div>
-    <button type="submit" class="btn btn-primary">Send Notifications</button>
-</form>

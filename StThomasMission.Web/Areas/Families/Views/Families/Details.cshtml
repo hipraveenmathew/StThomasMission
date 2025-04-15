@@ -1,0 +1,83 @@
+﻿@model StThomasMission.Core.Entities.Family
+
+@{
+    ViewData["Title"] = "Family Details";
+}
+
+<h1>Family Details - @Model.FamilyName</h1>
+<hr />
+<div>
+    <p><strong>Family Name:</strong> @Model.FamilyName</p>
+    <p><strong>Ward:</strong> @Model.Ward</p>
+    <p><strong>Status:</strong> @Model.Status</p>
+    @if (Model.IsRegistered)
+    {
+        <p><strong>Church Registration Number:</strong> @Model.ChurchRegistrationNumber</p>
+    }
+    else
+    {
+        <p><strong>Temporary ID:</strong> @Model.TemporaryID</p>
+    }
+    @if (!string.IsNullOrEmpty(Model.MigratedTo))
+    {
+        <p><strong>Migrated To:</strong> @Model.MigratedTo</p>
+    }
+</div>
+
+<div class="mt-4">
+    <h3>Family Members</h3>
+    <p>
+        <a asp-controller="FamilyMembers" asp-action="Add" asp-route-familyId="@Model.Id" class="btn btn-primary">Add Member</a>
+    </p>
+    @if (Model.Members != null && Model.Members.Any())
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Contact</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var member in Model.Members)
+                {
+                    <tr>
+                        <td>@member.FirstName</td>
+                        <td>@member.LastName</td>
+                        <td>@member.Contact</td>
+                        <td>@member.Email</td>
+                        <td>@member.Role</td>
+                        <td>
+                            <a asp-action="Edit" asp-controller="FamilyMembers" asp-route-id="@member.Id" class="btn btn-sm btn-primary">Edit</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p>No family members found.</p>
+    }
+</div>
+
+<div class="mt-4">
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit Family</a>
+    @if (Model.Status != "Migrated")
+    {
+        <a asp-action="MarkAsMigrated" asp-route-id="@Model.Id" class="btn btn-warning">Mark as Migrated</a>
+    }
+    @if (!Model.IsRegistered)
+    {
+        <a asp-action="ConvertToRegistered" asp-route-id="@Model.Id" class="btn btn-success">Convert to Registered</a>
+    }
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}

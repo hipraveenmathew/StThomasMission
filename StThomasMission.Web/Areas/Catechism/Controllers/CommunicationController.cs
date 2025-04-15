@@ -56,5 +56,37 @@ namespace StThomasMission.Web.Areas.Catechism.Controllers
             }
             return View(model);
         }
+        [HttpGet]
+        public IActionResult SendFeeReminder()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SendFeeReminder(int studentId, string feeDetails)
+        {
+            await _communicationService.SendFeeReminderAsync(studentId, feeDetails);
+            TempData["Success"] = "Fee reminder sent successfully!";
+            return RedirectToAction("SendFeeReminder");
+        }
+
+        [HttpGet]
+        public IActionResult SendGroupUpdate()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SendGroupUpdate(SendGroupUpdateViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            await _communicationService.SendGroupUpdateAsync(model.GroupName, model.UpdateMessage, model.CommunicationMethods);
+            TempData["Success"] = "Group update sent successfully!";
+            return RedirectToAction("SendGroupUpdate");
+        }
     }
 }

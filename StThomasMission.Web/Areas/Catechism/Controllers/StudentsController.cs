@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using StThomasMission.Core.Entities;
 using StThomasMission.Core.Interfaces;
+using StThomasMission.Infrastructure.Repositories;
 using StThomasMission.Web.Areas.Catechism.Models;
 
 namespace StThomasMission.Web.Areas.Catechism.Controllers
@@ -17,20 +18,34 @@ namespace StThomasMission.Web.Areas.Catechism.Controllers
             _catechismService = catechismService;
         }
 
-        public async Task<IActionResult> Index(string grade = "Year 1")
+        [HttpGet]
+        public async Task<IActionResult> Index(string searchString, string sortOrder, int pageNumber = 1, int pageSize = 10)
         {
-            var students = await _catechismService.GetStudentsByGradeAsync(grade);
-            var model = students.Select(s => new StudentViewModel
+            ViewBag.CurrentSort = sortOrder;
+            ViewBag.NameSortParm = string.IsNullOrEmpty(sortOrder) ? "name_desc" : "";
+            ViewBag.GradeSortParm = sortOrder == "grade" ? "grade_desc" : "grade";
+
+            var students = await _unitOfWork.Students.GetAllAsync();
+
+            if (!string.IsNullOrEmpty(searchString))
             {
-                Id = s.Id,
-                FirstName = s.FamilyMember.FirstName,
-                LastName = s.FamilyMember.LastName,
-                Grade = s.Grade,
-                Group = s.Group,
-                StudentOrganisation = s.StudentOrganisation,
-                Status = s.Status
-            }).ToList();
-            ViewBag.Grade = grade;
+                students = students.Where(s => (s.FirstName + " " + s.LastName).Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
+                                               s.Grade.Contains(searchString, StringComparison.OrdinalIgnoreCase)).ToList();
+            }
+
+            students = sortOrder switch
+            {
+                "name_desc" => students.OrderByDescending(s => s.FirstName).ToList(),
+                "grade" => students.OrderBy(s => s.Grade).ToList(),
+                "grade_desc" => students.OrderByDescending(s => s.Grade).ToList(),
+                _ => students.OrderBy(s => s.FirstName).ToList(),
+            };
+
+            int totalItems = students.Count;
+            var pagedStudents = students.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
+
+            var model = new PaginatedList<Student>(pagedStudents, totalItems, pageNumber, pageSize);
+            ViewBag.SearchString = searchString;
             return View(model);
         }
 
@@ -168,6 +183,39 @@ namespace StThomasMission.Web.Areas.Catechism.Controllers
             }
             ViewBag.Group = model.Group;
             return View(model);
+        }
+        [HttpGet]
+        public async Task<IActionResult> Edit(int id)
+        {
+            var student = await _unitOfWork.Students.GetByIdAsync(id);
+            if (student == null)
+            {
+                return NotFound();
+            }
+            return View(student);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Edit(int id, string firstName, string lastName, int familyMemberId, string grade, int academicYear, string group, string status)
+        {
+            var student = await _unitOfWork.Students.GetByIdAsync(id);
+            if (student == null)
+            {
+                return NotFound();
+            }
+
+            student.FirstName = firstName;
+            student.LastName = lastName;
+            student.FamilyMemberId = familyMemberId;
+            student.Grade = grade;
+            student.AcademicYear = academicYear;
+            student.Group = group;
+            student.Status = status;
+
+            await _unitOfWork.Students.UpdateAsync(student);
+            await _unitOfWork.CompleteAsync();
+            TempData["Success"] = "Student updated successfully!";
+            return RedirectToAction("Index");
         }
     }
 }

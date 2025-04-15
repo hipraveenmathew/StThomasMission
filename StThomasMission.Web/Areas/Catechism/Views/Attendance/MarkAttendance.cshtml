@@ -1,0 +1,76 @@
+﻿@model StThomasMission.Web.Areas.Catechism.Controllers.MarkAttendanceViewModel
+
+@{
+    ViewData["Title"] = "Mark Attendance";
+}
+
+<h1>Mark Attendance</h1>
+<hr />
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="MarkAttendance" method="get">
+            <div class="form-group mb-3">
+                <label class="control-label">Grade</label>
+                <input name="grade" class="form-control" value="@Model.Grade" placeholder="e.g., Year 1" />
+            </div>
+            <div class="form-group mb-3">
+                <label class="control-label">Date</label>
+                <input name="date" type="date" class="form-control" value="@(Model.Date != default ? Model.Date.ToString("yyyy-MM-dd") : "")" />
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Load Students</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (Model.AttendanceRecords.Any())
+{
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <h3>Attendance for @Model.Grade on @Model.Date.ToShortDateString()</h3>
+            <form asp-action="MarkAttendance" method="post">
+                <input type="hidden" name="grade" value="@Model.Grade" />
+                <input type="hidden" name="date" value="@Model.Date.ToString("o")" />
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Present</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int i = 0; i < Model.AttendanceRecords.Count; i++)
+                        {
+                            <tr>
+                                <td>
+                                    @Model.AttendanceRecords[i].StudentName
+                                    <input type="hidden" name="studentIds[@i]" value="@Model.AttendanceRecords[i].StudentId" />
+                                </td>
+                                <td>
+                                    <input type="checkbox" name="isPresent[@i]" @(Model.AttendanceRecords[i].IsPresent ? "checked" : "") />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">Save Attendance</button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

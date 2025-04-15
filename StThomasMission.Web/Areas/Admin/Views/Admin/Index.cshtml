@@ -1,0 +1,24 @@
+﻿@{
+    ViewData["Title"] = "Admin Panel";
+}
+
+<h1>Admin Panel</h1>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <h3>System Backup</h3>
+        <form asp-action="CreateBackup" method="post">
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Create Backup</button>
+            </div>
+        </form>
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success mt-3">@TempData["Success"]</div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger mt-3">@TempData["Error"]</div>
+        }
+    </div>
+</div>

@@ -6,10 +6,73 @@ namespace StThomasMission.Services.Services
     public class CatechismService : ICatechismService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IAuditService _auditService;
 
-        public CatechismService(IUnitOfWork unitOfWork)
+        public CatechismService(IUnitOfWork unitOfWork, IAuditService auditService)
         {
             _unitOfWork = unitOfWork;
+            _auditService = auditService;
+        }
+
+        public async Task PromoteStudentsAsync(string grade, int academicYear)
+        {
+            var students = await _unitOfWork.Students.GetByGradeAsync(grade);
+            students = students.Where(s => s.AcademicYear == academicYear && s.Status == "Active").ToList();
+
+            if (!students.Any()) return;
+
+            var gradeNumber = int.Parse(grade.Replace("Year ", ""));
+            foreach (var student in students)
+            {
+                if (gradeNumber >= 12)
+                {
+                    student.Status = "Graduated";
+                }
+                else
+                {
+                    student.Grade = $"Year {gradeNumber + 1}";
+                }
+                await _unitOfWork.Students.UpdateAsync(student);
+            }
+
+            await _unitOfWork.CompleteAsync();
+
+            await _auditService.LogActionAsync(
+                "system",
+                "PromoteStudents",
+                "Student",
+                0, // No single entity ID; can log individual student IDs if needed
+                $"Promoted students in {grade} for academic year {academicYear}"
+            );
+        }
+
+        public async Task RecordStudentGroupActivityAsync(int studentId, int groupActivityId)
+        {
+            var student = await _unitOfWork.Students.GetByIdAsync(studentId);
+            var groupActivity = await _unitOfWork.GroupActivities.GetByIdAsync(groupActivityId);
+
+            if (student == null || groupActivity == null)
+            {
+                throw new Exception("Student or Group Activity not found");
+            }
+
+            var studentGroupActivity = new StudentGroupActivity
+            {
+                StudentId = studentId,
+                GroupActivityId = groupActivityId,
+                ParticipationDate = DateTime.UtcNow
+            };
+
+            _unitOfWork._context.StudentGroupActivities.Add(studentGroupActivity);
+            await _unitOfWork.CompleteAsync();
+
+            await _auditService.LogActionAsync(
+                "system",
+                "RecordGroupActivity",
+                "Student",
+                studentId,
+                $"Recorded group activity participation for student {studentId}, activity {groupActivityId}"
+            );
         }
 
         public async Task<Student> AddStudentAsync(int familyMemberId, string grade, int academicYear, string group)
@@ -60,17 +123,7 @@ namespace StThomasMission.Services.Services
             await _unitOfWork.CompleteAsync();
         }
 
-        public async Task PromoteStudentsAsync(string grade, int academicYear)
-        {
-            var students = await _unitOfWork.Students.GetByGradeAsync(grade);
-            foreach (var student in students)
-            {
-                if (student.AcademicYear == academicYear)
-                {
-                    await MarkPassFailAsync(student.Id, true);
-                }
-            }
-        }
+       
 
         public async Task MarkAttendanceAsync(int studentId, DateTime date, string description, bool isPresent)
         {
@@ -133,5 +186,26 @@ namespace StThomasMission.Services.Services
         {
             return await _unitOfWork.GroupActivities.GetByGroupAsync(groupName);
         }
+        //public async Task RecordStudentGroupActivityAsync(int studentId, int groupActivityId)
+        //{
+        //    var student = await _unitOfWork.Students.GetByIdAsync(studentId);
+        //    var groupActivity = await _unitOfWork.GroupActivities.GetByIdAsync(groupActivityId);
+
+        //    if (student == null || groupActivity == null)
+        //    {
+        //        throw new Exception("Student or Group Activity not found");
+        //    }
+
+        //    var studentGroupActivity = new StudentGroupActivity
+        //    {
+        //        StudentId = studentId,
+        //        GroupActivityId = groupActivityId,
+        //        ParticipationDate = DateTime.UtcNow
+        //    };
+
+        //    // Assuming a DbSet for StudentGroupActivity exists in the DbContext
+        //    _unitOfWork._context.StudentGroupActivities.Add(studentGroupActivity);
+        //    await _unitOfWork.CompleteAsync();
+        //}
     }
 }

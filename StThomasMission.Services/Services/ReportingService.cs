@@ -107,8 +107,101 @@ namespace StThomasMission.Services.Services
                 document.Add(new Paragraph($"{group}: {totalPoints} points"));
             }
 
+            // Trend Analysis: Students by Academic Year
+            document.Add(new Paragraph("\nTrend Analysis (Students by Academic Year):"));
+            var studentsByYear = students.GroupBy(s => s.AcademicYear)
+                .OrderBy(g => g.Key)
+                .Select(g => new { Year = g.Key, Count = g.Count() });
+            foreach (var yearData in studentsByYear)
+            {
+                document.Add(new Paragraph($"{yearData.Year}: {yearData.Count} students"));
+            }
+
             document.Close();
             return memoryStream.ToArray();
+        }
+
+        //public async Task<byte[]> GenerateOverallCatechismReportPdfAsync()
+        //{
+        //    var students = await _unitOfWork.Students.GetAllAsync();
+        //    using var memoryStream = new MemoryStream();
+        //    var document = new PdfDocument();
+        //    PdfWriter.GetInstance(document, memoryStream);
+        //    document.Open();
+
+        //    document.Add(new Paragraph("Overall Catechism Report"));
+        //    document.Add(new Paragraph($"Total Students: {students.Count()}"));
+        //    document.Add(new Paragraph($"Graduated: {students.Count(s => s.Status == "Graduated")}"));
+        //    document.Add(new Paragraph($"Active: {students.Count(s => s.Status == "Active")}"));
+        //    document.Add(new Paragraph($"Migrated: {students.Count(s => s.Status == "Migrated")}"));
+
+        //    var groups = students.Where(s => !string.IsNullOrEmpty(s.Group)).Select(s => s.Group).Distinct();
+        //    document.Add(new Paragraph("\nGroup Rankings:"));
+        //    foreach (var group in groups)
+        //    {
+        //        var activities = await _unitOfWork.GroupActivities.GetByGroupAsync(group);
+        //        var totalPoints = activities.Sum(a => a.Points);
+        //        document.Add(new Paragraph($"{group}: {totalPoints} points"));
+        //    }
+
+        //    // Trend Analysis: Students by Academic Year
+        //    document.Add(new Paragraph("\nTrend Analysis (Students by Academic Year):"));
+        //    var studentsByYear = students.GroupBy(s => s.AcademicYear)
+        //        .OrderBy(g => g.Key)
+        //        .Select(g => new { Year = g.Key, Count = g.Count() });
+        //    foreach (var yearData in studentsByYear)
+        //    {
+        //        document.Add(new Paragraph($"{yearData.Year}: {yearData.Count} students"));
+        //    }
+
+        //    document.Close();
+        //    return memoryStream.ToArray();
+        //}
+
+        public async Task<byte[]> GenerateOverallCatechismReportExcelAsync()
+        {
+            var students = await _unitOfWork.Students.GetAllAsync();
+            using var package = new ExcelPackage();
+            var worksheet = package.Workbook.Worksheets.Add("Overall Catechism Report");
+            worksheet.Cells[1, 1].Value = "Overall Catechism Report";
+            worksheet.Cells[2, 1].Value = "Total Students";
+            worksheet.Cells[2, 2].Value = students.Count();
+            worksheet.Cells[3, 1].Value = "Graduated";
+            worksheet.Cells[3, 2].Value = students.Count(s => s.Status == "Graduated");
+            worksheet.Cells[4, 1].Value = "Active";
+            worksheet.Cells[4, 2].Value = students.Count(s => s.Status == "Active");
+            worksheet.Cells[5, 1].Value = "Migrated";
+            worksheet.Cells[5, 2].Value = students.Count(s => s.Status == "Migrated");
+
+            var groups = students.Where(s => !string.IsNullOrEmpty(s.Group)).Select(s => s.Group).Distinct();
+            worksheet.Cells[7, 1].Value = "Group Rankings";
+            worksheet.Cells[8, 1].Value = "Group";
+            worksheet.Cells[8, 2].Value = "Total Points";
+            int row = 9;
+            foreach (var group in groups)
+            {
+                var activities = await _unitOfWork.GroupActivities.GetByGroupAsync(group);
+                worksheet.Cells[row, 1].Value = group;
+                worksheet.Cells[row, 2].Value = activities.Sum(a => a.Points);
+                row++;
+            }
+
+            // Trend Analysis: Students by Academic Year
+            worksheet.Cells[row + 1, 1].Value = "Trend Analysis (Students by Academic Year)";
+            worksheet.Cells[row + 2, 1].Value = "Academic Year";
+            worksheet.Cells[row + 2, 2].Value = "Student Count";
+            row += 3;
+            var studentsByYear = students.GroupBy(s => s.AcademicYear)
+                .OrderBy(g => g.Key)
+                .Select(g => new { Year = g.Key, Count = g.Count() });
+            foreach (var yearData in studentsByYear)
+            {
+                worksheet.Cells[row, 1].Value = yearData.Year;
+                worksheet.Cells[row, 2].Value = yearData.Count;
+                row++;
+            }
+
+            return package.GetAsByteArray();
         }
 
         public async Task<byte[]> GenerateFamilyReportPdfAsync()
@@ -225,36 +318,36 @@ namespace StThomasMission.Services.Services
             return package.GetAsByteArray();
         }
 
-        public async Task<byte[]> GenerateOverallCatechismReportExcelAsync()
-        {
-            var students = await _unitOfWork.Students.GetAllAsync();
-            using var package = new ExcelPackage();
-            var worksheet = package.Workbook.Worksheets.Add("Overall Catechism Report");
-            worksheet.Cells[1, 1].Value = "Overall Catechism Report";
-            worksheet.Cells[2, 1].Value = "Total Students";
-            worksheet.Cells[2, 2].Value = students.Count();
-            worksheet.Cells[3, 1].Value = "Graduated";
-            worksheet.Cells[3, 2].Value = students.Count(s => s.Status == "Graduated");
-            worksheet.Cells[4, 1].Value = "Active";
-            worksheet.Cells[4, 2].Value = students.Count(s => s.Status == "Active");
-            worksheet.Cells[5, 1].Value = "Migrated";
-            worksheet.Cells[5, 2].Value = students.Count(s => s.Status == "Migrated");
+        //public async Task<byte[]> GenerateOverallCatechismReportExcelAsync()
+        //{
+        //    var students = await _unitOfWork.Students.GetAllAsync();
+        //    using var package = new ExcelPackage();
+        //    var worksheet = package.Workbook.Worksheets.Add("Overall Catechism Report");
+        //    worksheet.Cells[1, 1].Value = "Overall Catechism Report";
+        //    worksheet.Cells[2, 1].Value = "Total Students";
+        //    worksheet.Cells[2, 2].Value = students.Count();
+        //    worksheet.Cells[3, 1].Value = "Graduated";
+        //    worksheet.Cells[3, 2].Value = students.Count(s => s.Status == "Graduated");
+        //    worksheet.Cells[4, 1].Value = "Active";
+        //    worksheet.Cells[4, 2].Value = students.Count(s => s.Status == "Active");
+        //    worksheet.Cells[5, 1].Value = "Migrated";
+        //    worksheet.Cells[5, 2].Value = students.Count(s => s.Status == "Migrated");
 
-            var groups = students.Where(s => !string.IsNullOrEmpty(s.Group)).Select(s => s.Group).Distinct();
-            worksheet.Cells[7, 1].Value = "Group Rankings";
-            worksheet.Cells[8, 1].Value = "Group";
-            worksheet.Cells[8, 2].Value = "Total Points";
-            int row = 9;
-            foreach (var group in groups)
-            {
-                var activities = await _unitOfWork.GroupActivities.GetByGroupAsync(group);
-                worksheet.Cells[row, 1].Value = group;
-                worksheet.Cells[row, 2].Value = activities.Sum(a => a.Points);
-                row++;
-            }
+        //    var groups = students.Where(s => !string.IsNullOrEmpty(s.Group)).Select(s => s.Group).Distinct();
+        //    worksheet.Cells[7, 1].Value = "Group Rankings";
+        //    worksheet.Cells[8, 1].Value = "Group";
+        //    worksheet.Cells[8, 2].Value = "Total Points";
+        //    int row = 9;
+        //    foreach (var group in groups)
+        //    {
+        //        var activities = await _unitOfWork.GroupActivities.GetByGroupAsync(group);
+        //        worksheet.Cells[row, 1].Value = group;
+        //        worksheet.Cells[row, 2].Value = activities.Sum(a => a.Points);
+        //        row++;
+        //    }
 
-            return package.GetAsByteArray();
-        }
+        //    return package.GetAsByteArray();
+        //}
 
         public async Task<byte[]> GenerateFamilyReportExcelAsync()
         {

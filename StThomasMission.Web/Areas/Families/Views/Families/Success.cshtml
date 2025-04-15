@@ -1,16 +1,22 @@
 ﻿@model StThomasMission.Core.Entities.Family
+
 @{
     ViewData["Title"] = "Registration Success";
 }
 
-<h2>Family Registration Success</h2>
-<div class="alert alert-success">
-    Family @Model.FamilyName registered successfully! Church Registration Number: @Model.ChurchRegistrationNumber
+<h1>Family Registration Success</h1>
+<hr />
+<div>
+    <p>Family <strong>@Model.FamilyName</strong> registered successfully!</p>
+    @if (Model.IsRegistered)
+    {
+        <p>Church Registration Number: <strong>@Model.ChurchRegistrationNumber</strong></p>
+    }
+    else
+    {
+        <p>Temporary ID: <strong>@Model.TemporaryID</strong></p>
+    }
+    <p>Ward: @Model.Ward</p>
+    <p>Status: @Model.Status</p>
+    <button onclick="window.print()" class="btn btn-primary">Print</button>
 </div>
-<button onclick="window.print()" class="btn btn-primary">Print</button>
-
-<h3>Family Details</h3>
-<p>Family Name: @Model.FamilyName</p>
-<p>Ward: @Model.Ward</p>
-<p>Registration Status: @(Model.IsRegistered ? "Registered" : "Unregistered")</p>
-<p>Temporary ID: @(Model.TemporaryID ?? "N/A")</p>

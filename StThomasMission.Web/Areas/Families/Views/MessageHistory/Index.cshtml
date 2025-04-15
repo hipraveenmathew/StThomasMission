@@ -1,0 +1,72 @@
+﻿@model StThomasMission.Web.Models.PaginatedList<StThomasMission.Core.Entities.MessageLog>
+
+@{
+    ViewData["Title"] = "Message History";
+    var searchString = ViewBag.SearchString as string;
+}
+
+<h1>Message History</h1>
+<hr />
+<div>
+    <form asp-action="Index" method="get">
+        <div class="form-group mb-3">
+            <label class="control-label">Search</label>
+            <input name="searchString" class="form-control" value="@searchString" placeholder="Search by recipient or message..." />
+            <button type="submit" class="btn btn-primary mt-2">Search</button>
+            @if (!string.IsNullOrEmpty(searchString))
+            {
+                <a asp-action="Index" class="btn btn-secondary mt-2">Clear</a>
+            }
+        </div>
+    </form>
+</div>
+
+@if (Model.Items.Any())
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>
+                    <a asp-action="Index" asp-route-sortOrder="@ViewBag.DateSortParm" asp-route-searchString="@searchString">Sent At</a>
+                </th>
+                <th>
+                    <a asp-action="Index" asp-route-sortOrder="@ViewBag.MethodSortParm" asp-route-searchString="@searchString">Method</a>
+                </th>
+                <th>Recipient</th>
+                <th>Message</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var message in Model.Items)
+            {
+                <tr>
+                    <td>@message.SentAt.ToString("g")</td>
+                    <td>@message.Method</td>
+                    <td>@message.Recipient</td>
+                    <td>@message.Message</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <nav aria-label="Page navigation">
+        <ul class="pagination">
+            <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                <a class="page-link" asp-action="Index" asp-route-pageNumber="@(Model.PageIndex - 1)" asp-route-sortOrder="@ViewBag.CurrentSort" asp-route-searchString="@searchString">Previous</a>
+            </li>
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-pageNumber="@i" asp-route-sortOrder="@ViewBag.CurrentSort" asp-route-searchString="@searchString">@i</a>
+                </li>
+            }
+            <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                <a class="page-link" asp-action="Index" asp-route-pageNumber="@(Model.PageIndex + 1)" asp-route-sortOrder="@ViewBag.CurrentSort" asp-route-searchString="@searchString">Next</a>
+            </li>
+        </ul>
+    </nav>
+}
+else
+{
+    <p>No messages found.</p>
+}
