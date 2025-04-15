@@ -1,53 +1,67 @@
 ﻿using Microsoft.Extensions.Configuration;
 using StThomasMission.Core.Entities;
 using StThomasMission.Core.Interfaces;
-using System.Net.Mail;
+using SendGrid;
+using SendGrid.Helpers.Mail;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Twilio.Rest.Api.V2010.Account;
-using Twilio.TwiML.Messaging;
 using Twilio.Types;
+using System.Net.Mail;
 
-namespace StThomasMission.Services.Services
+namespace StThomasMission.Services
 {
     public class CommunicationService : ICommunicationService
     {
         private readonly IConfiguration _configuration;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IFamilyService _familyService;
         private readonly Dictionary<string, string> _templates;
 
-        public CommunicationService(IConfiguration configuration, IUnitOfWork unitOfWork)
+        public CommunicationService(IConfiguration configuration, IUnitOfWork unitOfWork, IFamilyService familyService)
         {
             _configuration = configuration;
             _unitOfWork = unitOfWork;
+            _familyService = familyService;
 
+            // Initialize Twilio client
             Twilio.TwilioClient.Init(
                 _configuration["Twilio:AccountSid"],
                 _configuration["Twilio:AuthToken"]
             );
 
-            // Load templates from configuration
+            // Load templates from configuration with defaults
             _templates = new Dictionary<string, string>
-    {
-        { "AbsenteeNotification", _configuration["Templates:AbsenteeNotification"] ?? "Dear {0}, we missed you in catechism class today. Hope to see you next time!" },
-        { "Announcement", _configuration["Templates:Announcement"] ?? "{0}" },
-        { "FeeReminder", _configuration["Templates:FeeReminder"] ?? "Dear {0}, this is a reminder to pay your catechism fees for {1}." },
-        { "GroupUpdate", _configuration["Templates:GroupUpdate"] ?? "Dear {0}, your group {1} has an update: {2}" }
-    };
+            {
+                { "AbsenteeNotification", _configuration["Templates:AbsenteeNotification"] ?? "Dear {ParentName}, your child {StudentName} was absent from {Description} on {Date}." },
+                { "Announcement", _configuration["Templates:Announcement"] ?? "Dear {Recipient}, {Message}" },
+                { "FeeReminder", _configuration["Templates:FeeReminder"] ?? "Dear {ParentName}, this is a reminder to pay your catechism fees for {FeeDetails}." },
+                { "GroupUpdate", _configuration["Templates:GroupUpdate"] ?? "Dear {ParentName}, your child's group {GroupName} has an update: {UpdateMessage}" }
+            };
         }
 
-        private async Task LogMessageAsync(string recipient, string message, string method)
+        private async Task LogMessageAsync(string recipient, string message, string method, string messageType)
         {
+            if (string.IsNullOrEmpty(recipient)) throw new ArgumentException("Recipient is required.", nameof(recipient));
+            if (string.IsNullOrEmpty(message)) throw new ArgumentException("Message is required.", nameof(message));
+            if (string.IsNullOrEmpty(method)) throw new ArgumentException("Method is required.", nameof(method));
+            if (string.IsNullOrEmpty(messageType)) throw new ArgumentException("Message type is required.", nameof(messageType));
+
             var log = new MessageLog
             {
                 Recipient = recipient,
                 Message = message,
                 Method = method,
+                MessageType = messageType,
                 SentAt = DateTime.UtcNow
             };
-            _unitOfWork._context.MessageLogs.Add(log);
+
+            await _unitOfWork.MessageLogs.AddAsync(log);
             await _unitOfWork.CompleteAsync();
         }
 
-        // Update SendSmsAsync, SendEmailAsync, SendWhatsAppAsync to log messages
         private async Task SendSmsAsync(string to, string message)
         {
             if (string.IsNullOrEmpty(to)) return;
@@ -60,11 +74,11 @@ namespace StThomasMission.Services.Services
 
             await Twilio.Rest.Api.V2010.Account.MessageResource.CreateAsync(
                 body: message,
-                from: new Twilio.Types.PhoneNumber(senderId),
-                to: new Twilio.Types.PhoneNumber(to)
+                from: new PhoneNumber(senderId),
+                to: new PhoneNumber(to)
             );
 
-            await LogMessageAsync(to, message, "SMS");
+            await LogMessageAsync(to, message, "SMS", "Notification");
         }
 
         private async Task SendEmailAsync(string to, string subject, string message)
@@ -84,281 +98,7 @@ namespace StThomasMission.Services.Services
             var msg = MailHelper.CreateSingleEmail(from, toAddress, subject, message, message);
             await client.SendEmailAsync(msg);
 
-            await LogMessageAsync(to, message, "Email");
-        }
-        public async Task SendAnnouncementAsync(string message, string? ward = null, List<string> communicationMethods = null)
-        {
-            communicationMethods ??= new List<string> { "SMS" }; // Default to SMS if not specified
-
-            var families = await _unitOfWork.Families.GetAllAsync();
-            if (!string.IsNullOrEmpty(ward))
-            {
-                families = families.Where(f => f.Ward == ward).ToList();
-            }
-
-            string messageTemplate = _templates["Announcement"];
-            string formattedMessage = string.Format(messageTemplate, message);
-
-            foreach (var family in families)
-            {
-                var members = family.Members.Where(m => !string.IsNullOrEmpty(m.Contact) || !string.IsNullOrEmpty(m.Email)).ToList();
-                foreach (var member in members)
-                {
-                    foreach (var method in communicationMethods)
-                    {
-                        if (method == "SMS" && !string.IsNullOrEmpty(member.Contact))
-                        {
-                            await SendSmsAsync(member.Contact, formattedMessage);
-                        }
-                        if (method == "Email" && !string.IsNullOrEmpty(member.Email))
-                        {
-                            await SendEmailAsync(member.Email, "Parish Announcement", formattedMessage);
-                        }
-                        if (method == "WhatsApp" && !string.IsNullOrEmpty(member.Contact))
-                        {
-                            await SendWhatsAppAsync(member.Contact, formattedMessage);
-                        }
-                    }
-                }
-            }
-        }
-
-        // Update other methods similarly (SendAbsenteeNotificationsAsync, SendFeeReminderAsync, SendGroupUpdateAsync)
-        public async Task SendAbsenteeNotificationsAsync(int grade, List<string> communicationMethods = null)
-        {
-            communicationMethods ??= new List<string> { "SMS" };
-
-            var students = await _unitOfWork.Students.GetByGradeAsync($"Year {grade}");
-            var today = DateTime.Today;
-            var attendanceRecords = await _unitOfWork.Attendances.GetByDateAsync(today);
-
-            var absentees = students
-                .Where(s => !attendanceRecords.Any(a => a.StudentId == s.Id && a.IsPresent))
-                .ToList();
-
-            if (!absentees.Any()) return;
-
-            string messageTemplate = _templates["AbsenteeNotification"];
-            foreach (var student in absentees)
-            {
-                var familyMember = await _unitOfWork.FamilyMembers.GetByIdAsync(student.FamilyMemberId);
-                if (familyMember == null) continue;
-
-                string message = string.Format(messageTemplate, familyMember.FirstName);
-                foreach (var method in communicationMethods)
-                {
-                    if (method == "SMS" && !string.IsNullOrEmpty(familyMember.Contact))
-                    {
-                        await SendSmsAsync(familyMember.Contact, message);
-                    }
-                    if (method == "Email" && !string.IsNullOrEmpty(familyMember.Email))
-                    {
-                        await SendEmailAsync(familyMember.Email, "Absentee Notification", message);
-                    }
-                    if (method == "WhatsApp" && !string.IsNullOrEmpty(familyMember.Contact))
-                    {
-                        await SendWhatsAppAsync(familyMember.Contact, message);
-                    }
-                }
-            }
-        }
-
-        public async Task SendFeeReminderAsync(int studentId, string feeDetails, List<string> communicationMethods = null)
-        {
-            communicationMethods ??= new List<string> { "SMS" };
-
-            var student = await _unitOfWork.Students.GetByIdAsync(studentId);
-            if (student == null) return;
-
-            var familyMember = await _unitOfWork.FamilyMembers.GetByIdAsync(student.FamilyMemberId);
-            if (familyMember == null) return;
-
-            string messageTemplate = _templates["FeeReminder"];
-            string message = string.Format(messageTemplate, familyMember.FirstName, feeDetails);
-
-            foreach (var method in communicationMethods)
-            {
-                if (method == "SMS" && !string.IsNullOrEmpty(familyMember.Contact))
-                {
-                    await SendSmsAsync(familyMember.Contact, message);
-                }
-                if (method == "Email" && !string.IsNullOrEmpty(familyMember.Email))
-                {
-                    await SendEmailAsync(familyMember.Email, "Fee Reminder", message);
-                }
-                if (method == "WhatsApp" && !string.IsNullOrEmpty(familyMember.Contact))
-                {
-                    await SendWhatsAppAsync(familyMember.Contact, message);
-                }
-            }
-        }
-
-        public async Task SendGroupUpdateAsync(string groupName, string updateMessage, List<string> communicationMethods = null)
-        {
-            communicationMethods ??= new List<string> { "SMS" };
-
-            var students = await _unitOfWork.Students.GetAllAsync();
-            var groupStudents = students.Where(s => s.Group == groupName).ToList();
-
-            string messageTemplate = _templates["GroupUpdate"];
-            foreach (var student in groupStudents)
-            {
-                var familyMember = await _unitOfWork.FamilyMembers.GetByIdAsync(student.FamilyMemberId);
-                if (familyMember == null) continue;
-
-                string message = string.Format(messageTemplate, familyMember.FirstName, groupName, updateMessage);
-                foreach (var method in communicationMethods)
-                {
-                    if (method == "SMS" && !string.IsNullOrEmpty(familyMember.Contact))
-                    {
-                        await SendSmsAsync(familyMember.Contact, message);
-                    }
-                    if (method == "Email" && !string.IsNullOrEmpty(familyMember.Email))
-                    {
-                        await SendEmailAsync(familyMember.Email, "Group Update", message);
-                    }
-                    if (method == "WhatsApp" && !string.IsNullOrEmpty(familyMember.Contact))
-                    {
-                        await SendWhatsAppAsync(familyMember.Contact, message);
-                    }
-                }
-            }
-        }
-
-        public async Task SendAbsenteeNotificationsAsync(int grade)
-        {
-            var students = await _unitOfWork.Students.GetByGradeAsync($"Year {grade}");
-            var today = DateTime.Today;
-            var attendanceRecords = await _unitOfWork.Attendances.GetByDateAsync(today);
-
-            var absentees = students
-                .Where(s => !attendanceRecords.Any(a => a.StudentId == s.Id && a.IsPresent))
-                .ToList();
-
-            if (!absentees.Any()) return;
-
-            string messageTemplate = _templates["AbsenteeNotification"];
-            foreach (var student in absentees)
-            {
-                var familyMember = await _unitOfWork.FamilyMembers.GetByIdAsync(student.FamilyMemberId);
-                if (!string.IsNullOrEmpty(familyMember?.Contact))
-                {
-                    string message = string.Format(messageTemplate, familyMember.FirstName);
-                    await SendSmsAsync(familyMember.Contact, message);
-                }
-                if (!string.IsNullOrEmpty(familyMember?.Email))
-                {
-                    await SendEmailAsync(familyMember.Email, "Absentee Notification", message);
-                }
-            }
-        }
-
-        public async Task SendFeeReminderAsync(int studentId, string feeDetails)
-        {
-            var student = await _unitOfWork.Students.GetByIdAsync(studentId);
-            if (student == null) return;
-
-            var familyMember = await _unitOfWork.FamilyMembers.GetByIdAsync(student.FamilyMemberId);
-            if (familyMember == null) return;
-
-            string messageTemplate = _templates["FeeReminder"];
-            string message = string.Format(messageTemplate, familyMember.FirstName, feeDetails);
-
-            if (!string.IsNullOrEmpty(familyMember.Contact))
-            {
-                await SendSmsAsync(familyMember.Contact, message);
-            }
-            if (!string.IsNullOrEmpty(familyMember.Email))
-            {
-                await SendEmailAsync(familyMember.Email, "Fee Reminder", message);
-            }
-        }
-
-        public async Task SendGroupUpdateAsync(string groupName, string updateMessage)
-        {
-            var students = await _unitOfWork.Students.GetAllAsync();
-            var groupStudents = students.Where(s => s.Group == groupName).ToList();
-
-            string messageTemplate = _templates["GroupUpdate"];
-            foreach (var student in groupStudents)
-            {
-                var familyMember = await _unitOfWork.FamilyMembers.GetByIdAsync(student.FamilyMemberId);
-                if (familyMember == null) continue;
-
-                string message = string.Format(messageTemplate, familyMember.FirstName, groupName, updateMessage);
-                if (!string.IsNullOrEmpty(familyMember.Contact))
-                {
-                    await SendSmsAsync(familyMember.Contact, message);
-                }
-                if (!string.IsNullOrEmpty(familyMember.Email))
-                {
-                    await SendEmailAsync(familyMember.Email, "Group Update", message);
-                }
-            }
-        }
-
-        public async Task SendAnnouncementAsync(string message, string? ward = null)
-        {
-            var families = await _unitOfWork.Families.GetAllAsync();
-            if (!string.IsNullOrEmpty(ward))
-            {
-                families = families.Where(f => f.Ward == ward).ToList();
-            }
-
-            string messageTemplate = _templates["Announcement"];
-            string formattedMessage = string.Format(messageTemplate, message);
-
-            foreach (var family in families)
-            {
-                var members = family.Members.Where(m => !string.IsNullOrEmpty(m.Contact) || !string.IsNullOrEmpty(m.Email)).ToList();
-                foreach (var member in members)
-                {
-                    if (!string.IsNullOrEmpty(member.Contact))
-                    {
-                        await SendSmsAsync(member.Contact, formattedMessage);
-                    }
-                    if (!string.IsNullOrEmpty(member.Email))
-                    {
-                        await SendEmailAsync(member.Email, "Parish Announcement", formattedMessage);
-                    }
-                }
-            }
-        }
-
-        public async Task SendSmsAsync(string toPhoneNumber, string message)
-        {
-            await Task.Run(() =>
-            {
-                MessageResource.Create(
-                    from: new PhoneNumber(_configuration["Twilio:SenderId"]),
-                    to: new PhoneNumber(toPhoneNumber),
-                    body: message
-                );
-            });
-        }
-
-        public async Task SendEmailAsync(string toEmail, string subject, string body)
-        {
-            var smtpClient = new SmtpClient("smtp.sendgrid.com")
-            {
-                Port = 587,
-                Credentials = new System.Net.NetworkCredential(
-                    "apikey",
-                    _configuration["SendGrid:ApiKey"]
-                ),
-                EnableSsl = true,
-            };
-
-            var mailMessage = new MailMessage
-            {
-                From = new MailAddress(_configuration["SendGrid:SenderEmail"]),
-                Subject = subject,
-                Body = body,
-                IsBodyHtml = true,
-            };
-            mailMessage.To.Add(toEmail);
-
-            await smtpClient.SendMailAsync(mailMessage);
+            await LogMessageAsync(to, message, "Email", "Notification");
         }
 
         private async Task SendWhatsAppAsync(string to, string message)
@@ -376,65 +116,209 @@ namespace StThomasMission.Services.Services
 
             await Twilio.Rest.Api.V2010.Account.MessageResource.CreateAsync(
                 body: message,
-                from: new Twilio.Types.PhoneNumber(whatsappFrom),
-                to: new Twilio.Types.PhoneNumber(whatsappTo)
+                from: new PhoneNumber(whatsappFrom),
+                to: new PhoneNumber(whatsappTo)
             );
 
-            // Log the message
-            await LogMessageAsync(to, message, "WhatsApp");
+            await LogMessageAsync(to, message, "WhatsApp", "Notification");
         }
 
-        //public async Task SendAbsenteeNotificationsAsync(int grade)
-        //{
-        //    var students = await _unitOfWork.Students.GetByGradeAsync($"Year {grade}");
-        //    var today = DateTime.Today;
-        //    var attendanceRecords = await _unitOfWork.Attendances.GetByDateAsync(today);
+        public async Task SendMessageAsync(string recipient, string message, string method, string messageType)
+        {
+            if (string.IsNullOrEmpty(recipient)) throw new ArgumentException("Recipient is required.", nameof(recipient));
+            if (string.IsNullOrEmpty(message)) throw new ArgumentException("Message is required.", nameof(message));
+            if (!new[] { "SMS", "Email", "WhatsApp" }.Contains(method)) throw new ArgumentException("Invalid method.", nameof(method));
+            if (string.IsNullOrEmpty(messageType)) throw new ArgumentException("Message type is required.", nameof(messageType));
 
-        //    var absentees = students
-        //        .Where(s => !attendanceRecords.Any(a => a.StudentId == s.Id && a.IsPresent))
-        //        .ToList();
+            if (method == "SMS")
+            {
+                await SendSmsAsync(recipient, message);
+            }
+            else if (method == "Email")
+            {
+                await SendEmailAsync(recipient, "St. Thomas Mission Notification", message);
+            }
+            else if (method == "WhatsApp")
+            {
+                await SendWhatsAppAsync(recipient, message);
+            }
+        }
 
-        //    if (!absentees.Any()) return;
+        public async Task SendAnnouncementAsync(string message, string? ward = null, string method = "Email")
+        {
+            if (string.IsNullOrEmpty(message)) throw new ArgumentException("Message is required.", nameof(message));
+            if (!new[] { "SMS", "Email", "WhatsApp" }.Contains(method)) throw new ArgumentException("Invalid method.", nameof(method));
 
-        //    string messageTemplate = "Dear {0}, we missed you in catechism class today. Hope to see you next time!";
-        //    foreach (var student in absentees)
-        //    {
-        //        var familyMember = await _unitOfWork.FamilyMembers.GetByIdAsync(student.FamilyMemberId);
-        //        if (!string.IsNullOrEmpty(familyMember?.Contact))
-        //        {
-        //            string message = string.Format(messageTemplate, familyMember.FirstName);
-        //            await SendSmsAsync(familyMember.Contact, message);
-        //        }
-        //        if (!string.IsNullOrEmpty(familyMember?.Email))
-        //        {
-        //            await SendEmailAsync(familyMember.Email, "Absentee Notification", messageTemplate.Replace("{0}", familyMember.FirstName));
-        //        }
-        //    }
-        //}
+            var families = ward == null
+                ? await _familyService.GetFamiliesByStatusAsync("Active")
+                : await _familyService.GetFamiliesByWardAsync(ward);
 
-        //public async Task SendAnnouncementAsync(string message, string? ward = null)
-        //{
-        //    var families = await _unitOfWork.Families.GetAllAsync();
-        //    if (!string.IsNullOrEmpty(ward))
-        //    {
-        //        families = families.Where(f => f.Ward == ward).ToList();
-        //    }
+            var template = await GetMessageTemplateAsync("Announcement");
+            foreach (var family in families)
+            {
+                var parents = (await _familyService.GetFamilyMembersByFamilyIdAsync(family.Id))
+                    .Where(m => m.Role == "Parent" && (m.Contact != null || m.Email != null));
+                foreach (var parent in parents)
+                {
+                    var formattedMessage = template
+                        .Replace("{Recipient}", $"{parent.FirstName} {parent.LastName}")
+                        .Replace("{Message}", message);
 
-        //    foreach (var family in families)
-        //    {
-        //        var members = family.Members.Where(m => !string.IsNullOrEmpty(m.Contact) || !string.IsNullOrEmpty(m.Email)).ToList();
-        //        foreach (var member in members)
-        //        {
-        //            if (!string.IsNullOrEmpty(member.Contact))
-        //            {
-        //                await SendSmsAsync(member.Contact, message);
-        //            }
-        //            if (!string.IsNullOrEmpty(member.Email))
-        //            {
-        //                await SendEmailAsync(member.Email, "Parish Announcement", message);
-        //            }
-        //        }
-        //    }
-        //}
+                    if (method == "SMS" && !string.IsNullOrEmpty(parent.Contact))
+                    {
+                        await SendMessageAsync(parent.Contact, formattedMessage, "SMS", "Announcement");
+                    }
+                    else if (method == "Email" && !string.IsNullOrEmpty(parent.Email))
+                    {
+                        await SendMessageAsync(parent.Email, formattedMessage, "Email", "Announcement");
+                    }
+                    else if (method == "WhatsApp" && !string.IsNullOrEmpty(parent.Contact))
+                    {
+                        await SendMessageAsync(parent.Contact, formattedMessage, "WhatsApp", "Announcement");
+                    }
+                }
+            }
+        }
+
+        public async Task SendAbsenteeNotificationAsync(int studentId, DateTime date, string method = "Email")
+        {
+            if (!new[] { "SMS", "Email", "WhatsApp" }.Contains(method)) throw new ArgumentException("Invalid method.", nameof(method));
+
+            var student = await _unitOfWork.Students.GetByIdAsync(studentId);
+            if (student == null) throw new ArgumentException("Student not found.", nameof(studentId));
+
+            var familyMember = await _unitOfWork.FamilyMembers.GetByIdAsync(student.FamilyMemberId);
+            var family = await _unitOfWork.Families.GetByIdAsync(familyMember.FamilyId);
+            var parents = (await _familyService.GetFamilyMembersByFamilyIdAsync(family.Id))
+                .Where(m => m.Role == "Parent" && (m.Contact != null || m.Email != null));
+
+            var attendance = (await _unitOfWork.Attendances.GetByStudentIdAsync(studentId))
+                .FirstOrDefault(a => a.Date.Date == date.Date && !a.IsPresent);
+            if (attendance == null) return; // No absence to notify
+
+            var template = await GetMessageTemplateAsync("AbsenteeNotification");
+            foreach (var parent in parents)
+            {
+                var formattedMessage = template
+                    .Replace("{ParentName}", $"{parent.FirstName} {parent.LastName}")
+                    .Replace("{StudentName}", $"{familyMember.FirstName} {familyMember.LastName}")
+                    .Replace("{Description}", attendance.Description)
+                    .Replace("{Date}", date.ToString("yyyy-MM-dd"));
+
+                if (method == "SMS" && !string.IsNullOrEmpty(parent.Contact))
+                {
+                    await SendMessageAsync(parent.Contact, formattedMessage, "SMS", "Notification");
+                }
+                else if (method == "Email" && !string.IsNullOrEmpty(parent.Email))
+                {
+                    await SendMessageAsync(parent.Email, formattedMessage, "Email", "Notification");
+                }
+                else if (method == "WhatsApp" && !string.IsNullOrEmpty(parent.Contact))
+                {
+                    await SendMessageAsync(parent.Contact, formattedMessage, "WhatsApp", "Notification");
+                }
+            }
+        }
+
+        public async Task SendFeeReminderAsync(int studentId, string feeDetails, string method = "Email")
+        {
+            if (!new[] { "SMS", "Email", "WhatsApp" }.Contains(method)) throw new ArgumentException("Invalid method.", nameof(method));
+
+            var student = await _unitOfWork.Students.GetByIdAsync(studentId);
+            if (student == null) throw new ArgumentException("Student not found.", nameof(studentId));
+
+            var familyMember = await _unitOfWork.FamilyMembers.GetByIdAsync(student.FamilyMemberId);
+            var family = await _unitOfWork.Families.GetByIdAsync(familyMember.FamilyId);
+            var parents = (await _familyService.GetFamilyMembersByFamilyIdAsync(family.Id))
+                .Where(m => m.Role == "Parent" && (m.Contact != null || m.Email != null));
+
+            var template = await GetMessageTemplateAsync("FeeReminder");
+            foreach (var parent in parents)
+            {
+                var formattedMessage = template
+                    .Replace("{ParentName}", $"{parent.FirstName} {parent.LastName}")
+                    .Replace("{FeeDetails}", feeDetails);
+
+                if (method == "SMS" && !string.IsNullOrEmpty(parent.Contact))
+                {
+                    await SendMessageAsync(parent.Contact, formattedMessage, "SMS", "Notification");
+                }
+                else if (method == "Email" && !string.IsNullOrEmpty(parent.Email))
+                {
+                    await SendMessageAsync(parent.Email, formattedMessage, "Email", "Notification");
+                }
+                else if (method == "WhatsApp" && !string.IsNullOrEmpty(parent.Contact))
+                {
+                    await SendMessageAsync(parent.Contact, formattedMessage, "WhatsApp", "Notification");
+                }
+            }
+        }
+
+        public async Task SendGroupUpdateAsync(string groupName, string updateMessage, string method = "Email")
+        {
+            if (string.IsNullOrEmpty(groupName)) throw new ArgumentException("Group name is required.", nameof(groupName));
+            if (string.IsNullOrEmpty(updateMessage)) throw new ArgumentException("Update message is required.", nameof(updateMessage));
+            if (!new[] { "SMS", "Email", "WhatsApp" }.Contains(method)) throw new ArgumentException("Invalid method.", nameof(method));
+
+            var students = await _unitOfWork.Students.GetByGroupAsync(groupName);
+            var template = await GetMessageTemplateAsync("GroupUpdate");
+
+            foreach (var student in students)
+            {
+                var familyMember = await _unitOfWork.FamilyMembers.GetByIdAsync(student.FamilyMemberId);
+                var family = await _unitOfWork.Families.GetByIdAsync(familyMember.FamilyId);
+                var parents = (await _familyService.GetFamilyMembersByFamilyIdAsync(family.Id))
+                    .Where(m => m.Role == "Parent" && (m.Contact != null || m.Email != null));
+
+                foreach (var parent in parents)
+                {
+                    var formattedMessage = template
+                        .Replace("{ParentName}", $"{parent.FirstName} {parent.LastName}")
+                        .Replace("{GroupName}", groupName)
+                        .Replace("{UpdateMessage}", updateMessage);
+
+                    if (method == "SMS" && !string.IsNullOrEmpty(parent.Contact))
+                    {
+                        await SendMessageAsync(parent.Contact, formattedMessage, "SMS", "Notification");
+                    }
+                    else if (method == "Email" && !string.IsNullOrEmpty(parent.Email))
+                    {
+                        await SendMessageAsync(parent.Email, formattedMessage, "Email", "Notification");
+                    }
+                    else if (method == "WhatsApp" && !string.IsNullOrEmpty(parent.Contact))
+                    {
+                        await SendMessageAsync(parent.Contact, formattedMessage, "WhatsApp", "Notification");
+                    }
+                }
+            }
+        }
+
+        public async Task<string> GetMessageTemplateAsync(string templateName)
+        {
+            if (!_templates.TryGetValue(templateName, out var template))
+            {
+                throw new ArgumentException($"Template '{templateName}' not found.", nameof(templateName));
+            }
+            return await Task.FromResult(template);
+        }
+
+        public async Task UpdateMessageTemplateAsync(string templateName, string templateContent)
+        {
+            if (string.IsNullOrEmpty(templateName)) throw new ArgumentException("Template name is required.", nameof(templateName));
+            if (string.IsNullOrEmpty(templateContent)) throw new ArgumentException("Template content is required.", nameof(templateContent));
+
+            _templates[templateName] = templateContent;
+            await Task.CompletedTask; // Simulate async operation
+        }
+
+        public async Task<IEnumerable<MessageLog>> GetMessageLogsAsync(string? recipient = null, string? method = null, string? messageType = null, DateTime? startDate = null)
+        {
+            var logs = await _unitOfWork.MessageLogs.GetAllAsync();
+            return logs.Where(log =>
+                (recipient == null || log.Recipient == recipient) &&
+                (method == null || log.Method == method) &&
+                (messageType == null || log.MessageType == messageType) &&
+                (startDate == null || log.SentAt >= startDate));
+        }
     }
 }

@@ -71,5 +71,23 @@ namespace StThomasMission.Infrastructure.Repositories
                 .Where(s => familyMembers.Contains(s.FamilyMemberId))
                 .ToListAsync();
         }
+        public async Task<IEnumerable<Student>> GetByGroupAsync(string group)
+        {
+            return await _entities
+                .Include(s => s.FamilyMember)
+                .Where(s => s.Group == group)
+                .ToListAsync();
+        }
+        public override async Task DeleteAsync(int id)
+        {
+            var entity = await GetByIdAsync(id);
+            if (entity == null)
+            {
+                throw new ArgumentException($"Student with ID {id} not found.", nameof(id));
+            }
+            _entities.Remove(entity);
+            await Task.CompletedTask;
+        }
+
     }
 }

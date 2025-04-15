@@ -1,14 +1,12 @@
-﻿namespace StThomasMission.Core.Interfaces
+﻿using System.Threading.Tasks;
+
+namespace StThomasMission.Core.Interfaces
 {
-    public interface IReportingService
+    public interface IReportService
     {
-        Task<byte[]> GenerateStudentReportPdfAsync(int studentId);
-        Task<byte[]> GenerateClassReportPdfAsync(string grade);
-        Task<byte[]> GenerateOverallCatechismReportPdfAsync();
-        Task<byte[]> GenerateFamilyReportPdfAsync();
-        Task<byte[]> GenerateStudentReportExcelAsync(int studentId);
-        Task<byte[]> GenerateClassReportExcelAsync(string grade);
-        Task<byte[]> GenerateOverallCatechismReportExcelAsync();
-        Task<byte[]> GenerateFamilyReportExcelAsync();
+        Task<byte[]> GenerateStudentReportAsync(int studentId, string format); // PDF or Excel
+        Task<byte[]> GenerateClassReportAsync(string grade, int academicYear, string format);
+        Task<byte[]> GenerateCatechismReportAsync(int academicYear, string format);
+        Task<byte[]> GenerateFamilyReportAsync(string? ward, string? status, string format);
     }
 }

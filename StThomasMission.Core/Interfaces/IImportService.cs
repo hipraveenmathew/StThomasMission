@@ -1,7 +1,9 @@
-﻿namespace StThomasMission.Core.Interfaces
+﻿using System.Threading.Tasks;
+
+namespace StThomasMission.Core.Interfaces
 {
     public interface IImportService
     {
-        Task<bool> ImportFamiliesAndStudentsAsync(Stream fileStream);
+        Task ImportFamiliesAndStudentsAsync(Stream fileStream, string fileType); // Supports Excel/CSV
     }
 }

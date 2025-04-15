@@ -1,13 +1,12 @@
 ﻿using StThomasMission.Core.Entities;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace StThomasMission.Core.Interfaces
 {
-    public interface IFamilyRepository
+    public interface IFamilyRepository : IRepository<Family>
     {
-        Task<Family> AddAsync(Family family);
-        Task<Family?> GetByIdAsync(int id);
-        Task UpdateAsync(Family family);
-        Task DeleteAsync(int id);
-        Task<IEnumerable<Family>> GetAllAsync();
+        Task<IEnumerable<Family>> GetByWardAsync(string ward);
+        Task<IEnumerable<Family>> GetByStatusAsync(string status);
     }
 }

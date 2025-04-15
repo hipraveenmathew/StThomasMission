@@ -1,14 +1,12 @@
 ﻿using StThomasMission.Core.Entities;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace StThomasMission.Core.Interfaces
 {
-    public interface IGroupActivityRepository
+    public interface IGroupActivityRepository : IRepository<GroupActivity>
     {
-        Task<GroupActivity> GetByIdAsync(int id);
-        Task<IEnumerable<GroupActivity>> GetAllAsync();
-        Task<IEnumerable<GroupActivity>> GetByGroupAsync(string group); // Add this
-        Task AddAsync(GroupActivity groupActivity);
-        Task UpdateAsync(GroupActivity groupActivity);
-        Task DeleteAsync(int id);
+        Task<IEnumerable<GroupActivity>> GetByGroupAsync(string group, DateTime? startDate = null, DateTime? endDate = null);
     }
 }

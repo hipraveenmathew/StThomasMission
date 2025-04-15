@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using StThomasMission.Core.Enums;
 
 namespace StThomasMission.Core.Entities
 {
@@ -10,6 +11,7 @@ namespace StThomasMission.Core.Entities
         public int StudentId { get; set; }
 
         [Required(ErrorMessage = "Assessment name is required.")]
+        [MaxLength(150, ErrorMessage = "Assessment name cannot exceed 150 characters.")]
         public string Name { get; set; } = string.Empty;
 
         [Range(0, int.MaxValue, ErrorMessage = "Marks cannot be negative.")]
@@ -19,9 +21,10 @@ namespace StThomasMission.Core.Entities
         public int TotalMarks { get; set; }
 
         [Required]
-        public DateTime Date { get; set; }
+        public DateTime Date { get; set; } = DateTime.UtcNow;
 
-        public bool IsMajor { get; set; }
+        [Required(ErrorMessage = "Assessment type is required.")]
+        public AssessmentType Type { get; set; }  // ClassAssessment / SemesterExam
 
         public Student Student { get; set; } = null!;
     }
