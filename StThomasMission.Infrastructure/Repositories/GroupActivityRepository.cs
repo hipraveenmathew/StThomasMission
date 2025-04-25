@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using StThomasMission.Core.Entities;
+using StThomasMission.Core.Enums;
 using StThomasMission.Core.Interfaces;
 using StThomasMission.Infrastructure.Data;
 using System;
@@ -9,31 +10,20 @@ using System.Threading.Tasks;
 
 namespace StThomasMission.Infrastructure.Repositories
 {
-    public class GroupActivityRepository : IGroupActivityRepository
+    public class GroupActivityRepository : Repository<GroupActivity>, IGroupActivityRepository
     {
         private readonly StThomasMissionDbContext _context;
 
-        public GroupActivityRepository(StThomasMissionDbContext context)
+        public GroupActivityRepository(StThomasMissionDbContext context) : base(context)
         {
             _context = context;
         }
 
-        public async Task<IEnumerable<GroupActivity>> GetAllAsync()
+        public async Task<IEnumerable<GroupActivity>> GetByGroupAsync(string group, DateTime? startDate = null, DateTime? endDate = null)
         {
-            return await _context.GroupActivities.ToListAsync();
-        }
-
-        public async Task<GroupActivity> GetByIdAsync(int id)
-        {
-            return await _context.GroupActivities.FindAsync(id);
-        }
-
-        public async Task<IEnumerable<GroupActivity>> GetByGroupAsync(string? group = null, DateTime? startDate = null, DateTime? endDate = null)
-        {
-            var query = _context.GroupActivities.AsQueryable();
-
-            if (!string.IsNullOrEmpty(group))
-                query = query.Where(ga => ga.Group == group);
+            var query = _context.GroupActivities
+                .AsNoTracking()
+                .Where(ga => ga.Group == group && ga.Status != ActivityStatus.Inactive);
 
             if (startDate.HasValue)
                 query = query.Where(ga => ga.Date >= startDate.Value);
@@ -44,32 +34,12 @@ namespace StThomasMission.Infrastructure.Repositories
             return await query.ToListAsync();
         }
 
-        public async Task AddAsync(GroupActivity groupActivity)
+        public async Task<IEnumerable<GroupActivity>> GetByStatusAsync(ActivityStatus status)
         {
-            await _context.GroupActivities.AddAsync(groupActivity);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task UpdateAsync(GroupActivity groupActivity)
-        {
-            _context.GroupActivities.Update(groupActivity);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task DeleteAsync(int id)
-        {
-            var entity = await GetByIdAsync(id);
-            if (entity != null)
-            {
-                _context.GroupActivities.Remove(entity);
-                await _context.SaveChangesAsync();
-            }
-        }
-
-        public Task DeleteAsync(GroupActivity entity)
-        {
-            _context.GroupActivities.Remove(entity);
-            return _context.SaveChangesAsync();
+            return await _context.GroupActivities
+                .AsNoTracking()
+                .Where(ga => ga.Status == status)
+                .ToListAsync();
         }
     }
 }

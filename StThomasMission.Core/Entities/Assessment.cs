@@ -9,6 +9,7 @@ namespace StThomasMission.Core.Entities
 
         [Required]
         public int StudentId { get; set; }
+        public Student Student { get; set; } = null!;
 
         [Required(ErrorMessage = "Assessment name is required.")]
         [StringLength(150, ErrorMessage = "Assessment name cannot exceed 150 characters.")]
@@ -26,6 +27,9 @@ namespace StThomasMission.Core.Entities
         [Required(ErrorMessage = "Assessment type is required.")]
         public AssessmentType Type { get; set; }
 
-        public Student Student { get; set; } = null!;
+        [StringLength(250, ErrorMessage = "Remarks cannot exceed 250 characters.")]
+        public string? Remarks { get; set; }
+
+        public double Percentage => TotalMarks > 0 ? Math.Round((double)Marks / TotalMarks * 100, 2) : 0;
     }
 }

@@ -2,7 +2,8 @@
 {
     public class AbsenteeNotificationViewModel
     {
-        public int Grade { get; set; }
+        public string Grade { get; set; }
+        public List<string> CommunicationMethods { get; set; } = new();
     }
 
     public class AnnouncementViewModel

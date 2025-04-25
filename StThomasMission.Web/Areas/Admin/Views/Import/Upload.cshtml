@@ -1,23 +1,35 @@
-﻿@model dynamic
-@{
-    ViewData["Title"] = "Upload Data";
+﻿@{
+    ViewData["Title"] = "Data Import";
 }
 
-<h2>Upload Families and Students</h2>
+<h2>Data Import</h2>
+
+<form asp-action="Upload" enctype="multipart/form-data" method="post">
+    <div class="mb-3">
+        <label>Select Import Type</label>
+        <select class="form-control" name="importType" required>
+            <option value="">-- Select --</option>
+            <option value="Families">Families</option>
+            <option value="Students">Students</option>
+            <option value="Both">Families & Students</option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label>Upload Excel File</label>
+        <input type="file" name="file" class="form-control" required />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Import</button>
+</form>
 
 @if (TempData["Success"] != null)
 {
-    <div class="alert alert-success">@TempData["Success"]</div>
-}
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger">@TempData["Error"]</div>
+    <div class="alert alert-success mt-3">@TempData["Success"]</div>
 }
 
-<form asp-action="Upload" method="post" enctype="multipart/form-data">
-    <div class="form-group">
-        <label for="file">Select Excel File</label>
-        <input type="file" name="file" class="form-control" accept=".xlsx" />
-    </div>
-    <button type="submit" class="btn btn-primary mt-2">Upload</button>
-</form>
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger mt-3">@TempData["Error"]</div>
+    @Html.Raw(TempData["Errors"])
+}

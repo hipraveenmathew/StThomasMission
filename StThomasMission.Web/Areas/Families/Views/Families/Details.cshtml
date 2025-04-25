@@ -69,11 +69,11 @@
     <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit Family</a>
     @if (Model.Status != "Migrated")
     {
-        <a asp-action="MarkAsMigrated" asp-route-id="@Model.Id" class="btn btn-warning">Mark as Migrated</a>
+        <a asp-action="MarkAsMigrated" asp-route-familyId="@Model.Id" class="btn btn-warning">Mark as Migrated</a>
     }
     @if (!Model.IsRegistered)
     {
-        <a asp-action="ConvertToRegistered" asp-route-id="@Model.Id" class="btn btn-success">Convert to Registered</a>
+        <a asp-action="ConvertToRegistered" asp-route-familyId="@Model.Id" class="btn btn-success">Convert to Registered</a>
     }
 </div>
 

@@ -30,7 +30,7 @@ namespace StThomasMission.Web.Areas.Catechism.Controllers
         {
             if (ModelState.IsValid)
             {
-                await _communicationService.SendAbsenteeNotificationsAsync(model.Grade);
+                await _communicationService.SendAbsenteeNotificationsAsync(model.Grade); // Correct
                 TempData["Success"] = "Absentee notifications sent successfully!";
                 return RedirectToAction(nameof(SendAbsenteeNotifications));
             }
@@ -56,6 +56,7 @@ namespace StThomasMission.Web.Areas.Catechism.Controllers
             }
             return View(model);
         }
+
         [HttpGet]
         public IActionResult SendFeeReminder()
         {
@@ -63,6 +64,7 @@ namespace StThomasMission.Web.Areas.Catechism.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> SendFeeReminder(int studentId, string feeDetails)
         {
             await _communicationService.SendFeeReminderAsync(studentId, feeDetails);
@@ -77,6 +79,7 @@ namespace StThomasMission.Web.Areas.Catechism.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> SendGroupUpdate(SendGroupUpdateViewModel model)
         {
             if (!ModelState.IsValid)
@@ -84,7 +87,11 @@ namespace StThomasMission.Web.Areas.Catechism.Controllers
                 return View(model);
             }
 
-            await _communicationService.SendGroupUpdateAsync(model.GroupName, model.UpdateMessage, model.CommunicationMethods);
+            foreach (var method in model.CommunicationMethods)
+            {
+                await _communicationService.SendGroupUpdateAsync(model.GroupName, model.UpdateMessage, method);
+            }
+
             TempData["Success"] = "Group update sent successfully!";
             return RedirectToAction("SendGroupUpdate");
         }

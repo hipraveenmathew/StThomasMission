@@ -1,12 +1,18 @@
-﻿@model IEnumerable<StThomasMission.Web.Areas.Admin.Models.UserRoleViewModel>
-
+﻿@model List<StThomasMission.Web.Areas.Admin.Models.UserRoleViewModel>
 @{
-    ViewData["Title"] = "Manage Roles";
+    ViewData["Title"] = "User Roles Management";
 }
 
-<h1>Manage Roles</h1>
+<h2>User Roles Management</h2>
 
-<table class="table">
+<form asp-action="CreateRole" method="post" class="mb-3">
+    <div class="input-group">
+        <input type="text" name="roleName" class="form-control" placeholder="New Role Name" required />
+        <button type="submit" class="btn btn-success">Create Role</button>
+    </div>
+</form>
+
+<table class="table table-bordered table-striped">
     <thead>
         <tr>
             <th>Email</th>
@@ -24,23 +30,19 @@
                 <td>
                     @if (user.Roles.Any())
                     {
-                        <ul>
-                            @foreach (var role in user.Roles)
-                            {
-                                <li>
-                                    @role
-                                    <a asp-action="RemoveRole" asp-route-userId="@user.UserId" asp-route-role="@role" class="text-danger">Remove</a>
-                                </li>
-                            }
-                        </ul>
+                        @foreach (var role in user.Roles)
+                        {
+                            <span class="badge bg-primary">@role</span>
+                            <a asp-action="RemoveRole" asp-route-userId="@user.UserId" asp-route-role="@role" class="text-danger ms-2">Remove</a>
+                        }
                     }
                     else
                     {
-                        <span>No roles assigned</span>
+                        <span>No Roles Assigned</span>
                     }
                 </td>
                 <td>
-                    <a asp-action="AssignRole" asp-route-userId="@user.UserId" class="btn btn-primary">Assign Role</a>
+                    <a asp-action="AssignRole" asp-route-userId="@user.UserId" class="btn btn-sm btn-secondary">Assign Role</a>
                 </td>
             </tr>
         }

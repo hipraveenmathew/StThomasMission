@@ -10,19 +10,21 @@ namespace StThomasMission.Core.Interfaces
     /// </summary>
     public interface IUnitOfWork : IDisposable
     {
-        // Repositories
         IStudentRepository Students { get; }
-        IRepository<Family> Families { get; }
-        IRepository<FamilyMember> FamilyMembers { get; }
-        IRepository<Attendance> Attendances { get; }
-        IRepository<Assessment> Assessments { get; }
-        IRepository<GroupActivity> GroupActivities { get; }
-        IRepository<StudentGroupActivity> StudentGroupActivities { get; }
+        IFamilyRepository Families { get; }
+        IFamilyMemberRepository FamilyMembers { get; }
+        IAttendanceRepository Attendances { get; }
+        IAssessmentRepository Assessments { get; }
+        IGroupActivityRepository GroupActivities { get; }
+        IStudentGroupActivityRepository StudentGroupActivities { get; }
         IRepository<MessageLog> MessageLogs { get; }
         IRepository<AuditLog> AuditLogs { get; }
+        IWardRepository Wards { get; }
+        IRepository<User> Users { get; }
 
         Task<IDbContextTransaction> BeginTransactionAsync();
+        Task CommitTransactionAsync();
+        Task RollbackTransactionAsync();
         Task CompleteAsync();
-        
     }
 }

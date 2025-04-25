@@ -45,11 +45,11 @@ namespace StThomasMission.Services
             return backupFilePath;
         }
 
-        public async Task<Stream?> GetBackupFileAsync(string backupFileName)
+        public async Task<Stream> GetBackupFileAsync(string backupFileName)
         {
             string backupFilePath = Path.Combine(_backupDirectory, backupFileName);
             if (!File.Exists(backupFilePath))
-                return null;
+                throw new FileNotFoundException("Backup file not found.", backupFileName);
 
             return new FileStream(backupFilePath, FileMode.Open, FileAccess.Read);
         }

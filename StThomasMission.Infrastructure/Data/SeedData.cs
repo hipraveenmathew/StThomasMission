@@ -118,6 +118,84 @@ namespace StThomasMission.Data
                     );
                     await context.SaveChangesAsync();
                 }
+                // Seed HeadTeacher User
+                var headTeacherEmail = "headteacher@stthomasmission.com";
+                var headTeacherPassword = "HeadTeacher@123";
+                var headTeacherUser = new IdentityUser { UserName = headTeacherEmail, Email = headTeacherEmail };
+
+                if (await userManager.FindByEmailAsync(headTeacherEmail) == null)
+                {
+                    await userManager.CreateAsync(headTeacherUser, headTeacherPassword);
+                    await userManager.AddToRoleAsync(headTeacherUser, "HeadTeacher");
+                }
+
+                // Seed ParishAdmin User
+                var parishAdminEmail = "parishadmin@stthomasmission.com";
+                var parishAdminPassword = "ParishAdmin@123";
+                var parishAdminUser = new IdentityUser { UserName = parishAdminEmail, Email = parishAdminEmail };
+
+                if (await userManager.FindByEmailAsync(parishAdminEmail) == null)
+                {
+                    await userManager.CreateAsync(parishAdminUser, parishAdminPassword);
+                    await userManager.AddToRoleAsync(parishAdminUser, "ParishAdmin");
+                }
+
+                // Seed 12 Teachers (Year 1 to Year 12)
+                for (int year = 1; year <= 12; year++)
+                {
+                    string grade = $"Year {year}";
+                    string group = $"Group {year}";
+                    string teacherEmail = $"teacher{year}@stthomasmission.com";
+                    string teacherPassword = $"Teacher@{year}";
+
+                    var teacherUser = new IdentityUser { UserName = teacherEmail, Email = teacherEmail };
+
+                    if (await userManager.FindByEmailAsync(teacherEmail) == null)
+                    {
+                        await userManager.CreateAsync(teacherUser, teacherPassword);
+                        await userManager.AddToRoleAsync(teacherUser, "Teacher");
+
+                        // Add Family for Teacher
+                        var teacherFamily = new Family
+                        {
+                            FamilyName = $"Teacher {year} Family",
+                            Ward = "Teachers Ward",
+                            IsRegistered = false,
+                            TemporaryID = $"TMP-{1000 + year}",
+                            Status = Core.Enums.FamilyStatus.Active,
+                            CreatedDate = DateTime.UtcNow
+                        };
+                        context.Families.Add(teacherFamily);
+                        await context.SaveChangesAsync();
+
+                        // Add FamilyMember (Teacher)
+                        var teacherMember = new FamilyMember
+                        {
+                            FamilyId = teacherFamily.Id,
+                            FirstName = $"Teacher{year}",
+                            LastName = "Mission",
+                            Email = teacherEmail,
+                            Role = "Teacher",
+                            UserId = teacherUser.Id
+                        };
+                        context.FamilyMembers.Add(teacherMember);
+                        await context.SaveChangesAsync();
+
+                        // Optionally create a default GroupActivity entry for the Group
+                        if (!context.GroupActivities.Any(ga => ga.Group == group))
+                        {
+                            context.GroupActivities.Add(new GroupActivity
+                            {
+                                Group = group,
+                                Name = "Initial Group Setup",
+                                Points = 0,
+                                Date = DateTime.Today
+                            });
+                            await context.SaveChangesAsync();
+                        }
+                    }
+                }
+
             }
         }
     }

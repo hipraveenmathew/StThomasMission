@@ -8,6 +8,13 @@ namespace StThomasMission.Core.Interfaces
     /// </summary>
     public interface IImportService
     {
-        Task ImportFamiliesAndStudentsAsync(Stream fileStream, string fileType);
+        Task ImportFamiliesAndStudentsAsync(Stream fileStream, ImportType fileType);
+        Task ImportWardsAsync(Stream fileStream, ImportType fileType);
+    }
+
+    public enum ImportType
+    {
+        Excel,
+        CSV
     }
 }

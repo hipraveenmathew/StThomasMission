@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using StThomasMission.Core.Entities;
+using StThomasMission.Core.Enums;
 using StThomasMission.Core.Interfaces;
 using SendGrid;
 using SendGrid.Helpers.Mail;
@@ -9,8 +10,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Twilio.Rest.Api.V2010.Account;
 using Twilio.Types;
-using System.Net.Mail;
-using StThomasMission.Core.Enums;
 
 namespace StThomasMission.Services
 {
@@ -27,13 +26,11 @@ namespace StThomasMission.Services
             _unitOfWork = unitOfWork;
             _familyService = familyService;
 
-            // Initialize Twilio client
             Twilio.TwilioClient.Init(
                 _configuration["Twilio:AccountSid"],
                 _configuration["Twilio:AuthToken"]
             );
 
-            // Load templates from configuration with defaults
             _templates = new Dictionary<string, string>
             {
                 { "AbsenteeNotification", _configuration["Templates:AbsenteeNotification"] ?? "Dear {ParentName}, your child {StudentName} was absent from {Description} on {Date}." },
@@ -43,25 +40,17 @@ namespace StThomasMission.Services
             };
         }
 
-        private async Task LogMessageAsync(string recipient, string message, string method, string messageType)
+        private async Task LogMessageAsync(string recipient, string message, CommunicationChannel method, MessageType messageType)
         {
             if (string.IsNullOrEmpty(recipient)) throw new ArgumentException("Recipient is required.", nameof(recipient));
             if (string.IsNullOrEmpty(message)) throw new ArgumentException("Message is required.", nameof(message));
-            if (string.IsNullOrEmpty(method)) throw new ArgumentException("Method is required.", nameof(method));
-            if (string.IsNullOrEmpty(messageType)) throw new ArgumentException("Message type is required.", nameof(messageType));
-
-            if (!Enum.TryParse<CommunicationChannel>(method, true, out var parsedMethod))
-                throw new ArgumentException("Invalid communication method.", nameof(method));
-
-            if (!Enum.TryParse<MessageType>(messageType, true, out var parsedMessageType))
-                throw new ArgumentException("Invalid message type.", nameof(messageType));
 
             var log = new MessageLog
             {
                 Recipient = recipient,
                 Message = message,
-                Method = parsedMethod,
-                MessageType = parsedMessageType,
+                Method = method,
+                MessageType = messageType,
                 SentAt = DateTime.UtcNow
             };
 
@@ -69,24 +58,21 @@ namespace StThomasMission.Services
             await _unitOfWork.CompleteAsync();
         }
 
-
         private async Task SendSmsAsync(string to, string message)
         {
             if (string.IsNullOrEmpty(to)) return;
 
             var senderId = _configuration["Twilio:SenderId"];
             if (string.IsNullOrEmpty(senderId))
-            {
                 throw new InvalidOperationException("Twilio SenderId is not configured.");
-            }
 
-            await Twilio.Rest.Api.V2010.Account.MessageResource.CreateAsync(
+            await MessageResource.CreateAsync(
                 body: message,
                 from: new PhoneNumber(senderId),
                 to: new PhoneNumber(to)
             );
 
-            await LogMessageAsync(to, message, "SMS", "Notification");
+            await LogMessageAsync(to, message, CommunicationChannel.SMS, MessageType.Notification);
         }
 
         private async Task SendEmailAsync(string to, string subject, string message)
@@ -96,9 +82,7 @@ namespace StThomasMission.Services
             var apiKey = _configuration["SendGrid:ApiKey"];
             var senderEmail = _configuration["SendGrid:SenderEmail"];
             if (string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(senderEmail))
-            {
                 throw new InvalidOperationException("SendGrid configuration is missing.");
-            }
 
             var client = new SendGridClient(apiKey);
             var from = new EmailAddress(senderEmail, "St. Thomas Mission");
@@ -106,7 +90,7 @@ namespace StThomasMission.Services
             var msg = MailHelper.CreateSingleEmail(from, toAddress, subject, message, message);
             await client.SendEmailAsync(msg);
 
-            await LogMessageAsync(to, message, "Email", "Notification");
+            await LogMessageAsync(to, message, CommunicationChannel.Email, MessageType.Notification);
         }
 
         private async Task SendWhatsAppAsync(string to, string message)
@@ -115,51 +99,48 @@ namespace StThomasMission.Services
 
             var whatsappSender = _configuration["Twilio:WhatsAppSender"];
             if (string.IsNullOrEmpty(whatsappSender))
-            {
                 throw new InvalidOperationException("WhatsApp sender is not configured.");
-            }
 
             var whatsappTo = $"whatsapp:{to}";
             var whatsappFrom = $"whatsapp:{whatsappSender}";
 
-            await Twilio.Rest.Api.V2010.Account.MessageResource.CreateAsync(
+            await MessageResource.CreateAsync(
                 body: message,
                 from: new PhoneNumber(whatsappFrom),
                 to: new PhoneNumber(whatsappTo)
             );
 
-            await LogMessageAsync(to, message, "WhatsApp", "Notification");
+            await LogMessageAsync(to, message, CommunicationChannel.WhatsApp, MessageType.Notification);
         }
 
-        public async Task SendMessageAsync(string recipient, string message, string method, string messageType)
+        public async Task SendMessageAsync(string recipient, string message, CommunicationChannel method, MessageType messageType)
         {
             if (string.IsNullOrEmpty(recipient)) throw new ArgumentException("Recipient is required.", nameof(recipient));
             if (string.IsNullOrEmpty(message)) throw new ArgumentException("Message is required.", nameof(message));
-            if (!new[] { "SMS", "Email", "WhatsApp" }.Contains(method)) throw new ArgumentException("Invalid method.", nameof(method));
-            if (string.IsNullOrEmpty(messageType)) throw new ArgumentException("Message type is required.", nameof(messageType));
 
-            if (method == "SMS")
+            switch (method)
             {
-                await SendSmsAsync(recipient, message);
-            }
-            else if (method == "Email")
-            {
-                await SendEmailAsync(recipient, "St. Thomas Mission Notification", message);
-            }
-            else if (method == "WhatsApp")
-            {
-                await SendWhatsAppAsync(recipient, message);
+                case CommunicationChannel.SMS:
+                    await SendSmsAsync(recipient, message);
+                    break;
+                case CommunicationChannel.Email:
+                    await SendEmailAsync(recipient, "St. Thomas Mission Notification", message);
+                    break;
+                case CommunicationChannel.WhatsApp:
+                    await SendWhatsAppAsync(recipient, message);
+                    break;
+                default:
+                    throw new ArgumentException("Invalid communication method.", nameof(method));
             }
         }
 
-        public async Task SendAnnouncementAsync(string message, string? ward = null, string method = "Email")
+        public async Task SendAnnouncementAsync(string message, string? ward = null, CommunicationChannel method = CommunicationChannel.Email)
         {
             if (string.IsNullOrEmpty(message)) throw new ArgumentException("Message is required.", nameof(message));
-            if (!new[] { "SMS", "Email", "WhatsApp" }.Contains(method)) throw new ArgumentException("Invalid method.", nameof(method));
 
             var families = ward == null
-                ? await _familyService.GetFamiliesByStatusAsync("Active")
-                : await _familyService.GetFamiliesByWardAsync(ward);
+                ? await _familyService.GetFamiliesByStatusAsync(FamilyStatus.Active)
+                : await _familyService.GetFamiliesByWardAsync(int.Parse(ward)); // Assuming ward is wardId as string
 
             var template = await GetMessageTemplateAsync("Announcement");
             foreach (var family in families)
@@ -172,27 +153,18 @@ namespace StThomasMission.Services
                         .Replace("{Recipient}", $"{parent.FirstName} {parent.LastName}")
                         .Replace("{Message}", message);
 
-                    if (method == "SMS" && !string.IsNullOrEmpty(parent.Contact))
-                    {
-                        await SendMessageAsync(parent.Contact, formattedMessage, "SMS", "Announcement");
-                    }
-                    else if (method == "Email" && !string.IsNullOrEmpty(parent.Email))
-                    {
-                        await SendMessageAsync(parent.Email, formattedMessage, "Email", "Announcement");
-                    }
-                    else if (method == "WhatsApp" && !string.IsNullOrEmpty(parent.Contact))
-                    {
-                        await SendMessageAsync(parent.Contact, formattedMessage, "WhatsApp", "Announcement");
-                    }
+                    if (method == CommunicationChannel.SMS && !string.IsNullOrEmpty(parent.Contact))
+                        await SendMessageAsync(parent.Contact, formattedMessage, CommunicationChannel.SMS, MessageType.Announcement);
+                    else if (method == CommunicationChannel.Email && !string.IsNullOrEmpty(parent.Email))
+                        await SendMessageAsync(parent.Email, formattedMessage, CommunicationChannel.Email, MessageType.Announcement);
+                    else if (method == CommunicationChannel.WhatsApp && !string.IsNullOrEmpty(parent.Contact))
+                        await SendMessageAsync(parent.Contact, formattedMessage, CommunicationChannel.WhatsApp, MessageType.Announcement);
                 }
             }
         }
 
-        public async Task SendAbsenteeNotificationAsync(int studentId, DateTime date, string method = "Email")
+        public async Task SendAbsenteeNotificationAsync(int studentId, DateTime date, CommunicationChannel method = CommunicationChannel.Email)
         {
-            if (!new[] { "SMS", "Email", "WhatsApp" }.Contains(method))
-                throw new ArgumentException("Invalid method.", nameof(method));
-
             var student = await _unitOfWork.Students.GetByIdAsync(studentId);
             if (student == null)
                 throw new ArgumentException("Student not found.", nameof(studentId));
@@ -203,10 +175,10 @@ namespace StThomasMission.Services
             var parents = (await _familyService.GetFamilyMembersByFamilyIdAsync(family.Id))
                 .Where(m => m.Role == "Parent" && (m.Contact != null || m.Email != null));
 
-            var attendance = (await (_unitOfWork.Attendances as IAttendanceRepository)!.GetByStudentIdAsync(studentId))
+            var attendance = (await _unitOfWork.Attendances.GetByStudentIdAsync(studentId))
                 .FirstOrDefault(a => a.Date.Date == date.Date && a.Status == AttendanceStatus.Absent);
 
-            if (attendance == null) return; // No absence to notify
+            if (attendance == null) return;
 
             var template = await GetMessageTemplateAsync("AbsenteeNotification");
 
@@ -218,25 +190,17 @@ namespace StThomasMission.Services
                     .Replace("{Description}", attendance.Description)
                     .Replace("{Date}", date.ToString("yyyy-MM-dd"));
 
-                if (method == "SMS" && !string.IsNullOrEmpty(parent.Contact))
-                {
-                    await SendMessageAsync(parent.Contact, formattedMessage, "SMS", "Notification");
-                }
-                else if (method == "Email" && !string.IsNullOrEmpty(parent.Email))
-                {
-                    await SendMessageAsync(parent.Email, formattedMessage, "Email", "Notification");
-                }
-                else if (method == "WhatsApp" && !string.IsNullOrEmpty(parent.Contact))
-                {
-                    await SendMessageAsync(parent.Contact, formattedMessage, "WhatsApp", "Notification");
-                }
+                if (method == CommunicationChannel.SMS && !string.IsNullOrEmpty(parent.Contact))
+                    await SendMessageAsync(parent.Contact, formattedMessage, CommunicationChannel.SMS, MessageType.Notification);
+                else if (method == CommunicationChannel.Email && !string.IsNullOrEmpty(parent.Email))
+                    await SendMessageAsync(parent.Email, formattedMessage, CommunicationChannel.Email, MessageType.Notification);
+                else if (method == CommunicationChannel.WhatsApp && !string.IsNullOrEmpty(parent.Contact))
+                    await SendMessageAsync(parent.Contact, formattedMessage, CommunicationChannel.WhatsApp, MessageType.Notification);
             }
         }
 
-        public async Task SendFeeReminderAsync(int studentId, string feeDetails, string method = "Email")
+        public async Task SendFeeReminderAsync(int studentId, string feeDetails, CommunicationChannel method = CommunicationChannel.Email)
         {
-            if (!new[] { "SMS", "Email", "WhatsApp" }.Contains(method)) throw new ArgumentException("Invalid method.", nameof(method));
-
             var student = await _unitOfWork.Students.GetByIdAsync(studentId);
             if (student == null) throw new ArgumentException("Student not found.", nameof(studentId));
 
@@ -252,26 +216,19 @@ namespace StThomasMission.Services
                     .Replace("{ParentName}", $"{parent.FirstName} {parent.LastName}")
                     .Replace("{FeeDetails}", feeDetails);
 
-                if (method == "SMS" && !string.IsNullOrEmpty(parent.Contact))
-                {
-                    await SendMessageAsync(parent.Contact, formattedMessage, "SMS", "Notification");
-                }
-                else if (method == "Email" && !string.IsNullOrEmpty(parent.Email))
-                {
-                    await SendMessageAsync(parent.Email, formattedMessage, "Email", "Notification");
-                }
-                else if (method == "WhatsApp" && !string.IsNullOrEmpty(parent.Contact))
-                {
-                    await SendMessageAsync(parent.Contact, formattedMessage, "WhatsApp", "Notification");
-                }
+                if (method == CommunicationChannel.SMS && !string.IsNullOrEmpty(parent.Contact))
+                    await SendMessageAsync(parent.Contact, formattedMessage, CommunicationChannel.SMS, MessageType.Notification);
+                else if (method == CommunicationChannel.Email && !string.IsNullOrEmpty(parent.Email))
+                    await SendMessageAsync(parent.Email, formattedMessage, CommunicationChannel.Email, MessageType.Notification);
+                else if (method == CommunicationChannel.WhatsApp && !string.IsNullOrEmpty(parent.Contact))
+                    await SendMessageAsync(parent.Contact, formattedMessage, CommunicationChannel.WhatsApp, MessageType.Notification);
             }
         }
 
-        public async Task SendGroupUpdateAsync(string groupName, string updateMessage, string method = "Email")
+        public async Task SendGroupUpdateAsync(string groupName, string updateMessage, CommunicationChannel method = CommunicationChannel.Email)
         {
             if (string.IsNullOrEmpty(groupName)) throw new ArgumentException("Group name is required.", nameof(groupName));
             if (string.IsNullOrEmpty(updateMessage)) throw new ArgumentException("Update message is required.", nameof(updateMessage));
-            if (!new[] { "SMS", "Email", "WhatsApp" }.Contains(method)) throw new ArgumentException("Invalid method.", nameof(method));
 
             var students = await _unitOfWork.Students.GetByGroupAsync(groupName);
             var template = await GetMessageTemplateAsync("GroupUpdate");
@@ -290,55 +247,61 @@ namespace StThomasMission.Services
                         .Replace("{GroupName}", groupName)
                         .Replace("{UpdateMessage}", updateMessage);
 
-                    if (method == "SMS" && !string.IsNullOrEmpty(parent.Contact))
-                    {
-                        await SendMessageAsync(parent.Contact, formattedMessage, "SMS", "Notification");
-                    }
-                    else if (method == "Email" && !string.IsNullOrEmpty(parent.Email))
-                    {
-                        await SendMessageAsync(parent.Email, formattedMessage, "Email", "Notification");
-                    }
-                    else if (method == "WhatsApp" && !string.IsNullOrEmpty(parent.Contact))
-                    {
-                        await SendMessageAsync(parent.Contact, formattedMessage, "WhatsApp", "Notification");
-                    }
+                    if (method == CommunicationChannel.SMS && !string.IsNullOrEmpty(parent.Contact))
+                        await SendMessageAsync(parent.Contact, formattedMessage, CommunicationChannel.SMS, MessageType.Notification);
+                    else if (method == CommunicationChannel.Email && !string.IsNullOrEmpty(parent.Email))
+                        await SendMessageAsync(parent.Email, formattedMessage, CommunicationChannel.Email, MessageType.Notification);
+                    else if (method == CommunicationChannel.WhatsApp && !string.IsNullOrEmpty(parent.Contact))
+                        await SendMessageAsync(parent.Contact, formattedMessage, CommunicationChannel.WhatsApp, MessageType.Notification);
                 }
+            }
+        }
+
+        public async Task SendAbsenteeNotificationsAsync(string grade, DateTime? date = null, CommunicationChannel method = CommunicationChannel.Email)
+        {
+            if (string.IsNullOrEmpty(grade))
+                throw new ArgumentException("Grade is required.", nameof(grade));
+
+            var students = await _unitOfWork.Students.GetByGradeAsync(grade);
+            var targetDate = date?.Date ?? DateTime.Today;
+
+            foreach (var student in students)
+            {
+                var attendanceRecords = await _unitOfWork.Attendances.GetByStudentIdAsync(student.Id);
+                var targetAttendance = attendanceRecords.FirstOrDefault(a => a.Date.Date == targetDate && a.Status == AttendanceStatus.Absent);
+
+                if (targetAttendance != null)
+                    await SendAbsenteeNotificationAsync(student.Id, targetDate, method);
             }
         }
 
         public async Task<string> GetMessageTemplateAsync(string templateName)
         {
             if (!_templates.TryGetValue(templateName, out var template))
-            {
                 throw new ArgumentException($"Template '{templateName}' not found.", nameof(templateName));
-            }
-            return await Task.FromResult(template);
+            return template;
         }
 
         public async Task UpdateMessageTemplateAsync(string templateName, string templateContent)
         {
             if (string.IsNullOrEmpty(templateName))
                 throw new ArgumentException("Template name is required.", nameof(templateName));
-
             if (string.IsNullOrEmpty(templateContent))
                 throw new ArgumentException("Template content is required.", nameof(templateContent));
 
             _templates[templateName] = templateContent;
-
-            await Task.CompletedTask; // Simulated async call
+            await Task.CompletedTask;
         }
 
-
-        public async Task<IEnumerable<MessageLog>> GetMessageLogsAsync(string? recipient = null, string? method = null, string? messageType = null, DateTime? startDate = null)
+        public async Task<IEnumerable<MessageLog>> GetMessageLogsAsync(string? recipient = null, CommunicationChannel? method = null, MessageType? messageType = null, DateTime? startDate = null)
         {
             var logs = await _unitOfWork.MessageLogs.GetAllAsync();
 
             return logs.Where(log =>
                 (recipient == null || log.Recipient == recipient) &&
-                (method == null || log.Method.ToString() == method) &&
-                (messageType == null || log.MessageType.ToString() == messageType) &&
+                (method == null || log.Method == method) &&
+                (messageType == null || log.MessageType == messageType) &&
                 (startDate == null || log.SentAt >= startDate));
         }
-
     }
 }

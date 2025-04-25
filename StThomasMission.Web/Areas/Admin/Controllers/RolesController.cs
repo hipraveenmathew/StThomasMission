@@ -111,6 +111,7 @@ namespace StThomasMission.Web.Areas.Admin.Controllers
             return RedirectToAction(nameof(Index));
         }
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateRole(string roleName)
         {
             if (!string.IsNullOrWhiteSpace(roleName) && !await _roleManager.RoleExistsAsync(roleName))
@@ -119,12 +120,8 @@ namespace StThomasMission.Web.Areas.Admin.Controllers
             }
             return RedirectToAction("Index");
         }
+
     }
 
-    public class UserRolesViewModel
-    {
-        public string UserId { get; set; }
-        public string Email { get; set; }
-        public List<string> Roles { get; set; }
-    }
+
 }

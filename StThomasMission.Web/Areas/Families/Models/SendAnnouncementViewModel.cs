@@ -1,4 +1,4 @@
-﻿namespace StThomasMission.Web.Areas.Families.Controllers
+﻿namespace StThomasMission.Web.Areas.Families.Models
 {
     public class SendAnnouncementViewModel
     {

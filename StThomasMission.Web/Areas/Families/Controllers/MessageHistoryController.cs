@@ -5,6 +5,7 @@ using StThomasMission.Core.Interfaces;
 using StThomasMission.Web.Models;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace StThomasMission.Web.Areas.Families.Controllers
 {
@@ -26,7 +27,7 @@ namespace StThomasMission.Web.Areas.Families.Controllers
             ViewBag.DateSortParm = string.IsNullOrEmpty(sortOrder) ? "date_desc" : "";
             ViewBag.MethodSortParm = sortOrder == "method" ? "method_desc" : "method";
 
-            var messages = await _unitOfWork._context.MessageLogs.ToListAsync();
+            var messages = await _unitOfWork.MessageLogs.GetAllAsync();
 
             if (!string.IsNullOrEmpty(searchString))
             {
@@ -42,7 +43,7 @@ namespace StThomasMission.Web.Areas.Families.Controllers
                 _ => messages.OrderBy(m => m.SentAt).ToList(),
             };
 
-            int totalItems = messages.Count;
+            int totalItems = messages.Count();
             var pagedMessages = messages.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
 
             var model = new PaginatedList<MessageLog>(pagedMessages, totalItems, pageNumber, pageSize);

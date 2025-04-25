@@ -1,0 +1,24 @@
+﻿@model StThomasMission.Core.Entities.GroupActivity
+
+@{
+    ViewData["Title"] = "Delete Group Activity";
+}
+
+<h2>Delete Group Activity</h2>
+
+<div class="alert alert-warning">
+    Are you sure you want to delete this group activity?
+</div>
+
+<div>
+    <h4>Activity: @Model.Name</h4>
+    <p><strong>Group:</strong> @Model.Group</p>
+    <p><strong>Points:</strong> @Model.Points</p>
+    <p><strong>Date:</strong> @Model.Date.ToShortDateString()</p>
+</div>
+
+<form asp-action="DeleteConfirmed">
+    <input type="hidden" asp-for="Id" />
+    <button type="submit" class="btn btn-danger">Delete</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+</form>

@@ -10,59 +10,20 @@ using System.Threading.Tasks;
 
 namespace StThomasMission.Infrastructure.Repositories
 {
-    public class AttendanceRepository : IAttendanceRepository
+    public class AttendanceRepository : Repository<Attendance>, IAttendanceRepository
     {
         private readonly StThomasMissionDbContext _context;
 
-        public AttendanceRepository(StThomasMissionDbContext context)
+        public AttendanceRepository(StThomasMissionDbContext context) : base(context)
         {
             _context = context;
         }
 
-        // IRepository<Attendance> methods
-        public async Task<IEnumerable<Attendance>> GetAllAsync()
-        {
-            return await _context.Attendances.ToListAsync();
-        }
-
-        public async Task<Attendance> GetByIdAsync(int id)
-        {
-            return await _context.Attendances.FindAsync(id);
-        }
-
-        public async Task AddAsync(Attendance attendance)
-        {
-            await _context.Attendances.AddAsync(attendance);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task UpdateAsync(Attendance attendance)
-        {
-            _context.Attendances.Update(attendance);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task DeleteAsync(int id)
-        {
-            var entity = await GetByIdAsync(id);
-            if (entity != null)
-            {
-                _context.Attendances.Remove(entity);
-                await _context.SaveChangesAsync();
-            }
-        }
-
-        public async Task DeleteAsync(Attendance entity)
-        {
-            _context.Attendances.Remove(entity);
-            await _context.SaveChangesAsync();
-        }
-
-        // IAttendanceRepository specific methods
         public async Task<IEnumerable<Attendance>> GetByStudentIdAsync(int studentId, DateTime? startDate = null, DateTime? endDate = null)
         {
             var query = _context.Attendances
-                .Where(a => a.StudentId == studentId);
+                .AsNoTracking()
+                .Where(a => a.StudentId == studentId && a.Student.Status != StudentStatus.Deleted);
 
             if (startDate.HasValue)
                 query = query.Where(a => a.Date >= startDate.Value);
@@ -76,8 +37,18 @@ namespace StThomasMission.Infrastructure.Repositories
         public async Task<IEnumerable<Attendance>> GetByGradeAsync(string grade, DateTime date)
         {
             return await _context.Attendances
+                .AsNoTracking()
                 .Include(a => a.Student)
-                .Where(a => a.Student.Grade == grade && a.Date.Date == date.Date)
+                .Where(a => a.Student.Grade == grade && a.Date.Date == date.Date && a.Student.Status != StudentStatus.Deleted)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Attendance>> GetByGradeAndStatusAsync(string grade, DateTime date, StudentStatus status)
+        {
+            return await _context.Attendances
+                .AsNoTracking()
+                .Include(a => a.Student)
+                .Where(a => a.Student.Grade == grade && a.Date.Date == date.Date && a.Student.Status == status)
                 .ToListAsync();
         }
     }

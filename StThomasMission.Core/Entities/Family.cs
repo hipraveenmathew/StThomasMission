@@ -12,8 +12,8 @@ namespace StThomasMission.Core.Entities
         public string FamilyName { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Ward is required.")]
-        [StringLength(100, ErrorMessage = "Ward name cannot exceed 100 characters.")]
-        public string Ward { get; set; } = string.Empty;
+        public int WardId { get; set; } // Foreign key to Ward
+        public Ward Ward { get; set; } = null!; // Navigation property
 
         public bool IsRegistered { get; set; }
 
@@ -26,10 +26,13 @@ namespace StThomasMission.Core.Entities
         [Required(ErrorMessage = "Status is required.")]
         public FamilyStatus Status { get; set; } = FamilyStatus.Active;
 
+        [StringLength(150, ErrorMessage = "Migration target cannot exceed 150 characters.")]
         public string? MigratedTo { get; set; }
 
         [Required]
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+
+        public DateTime? UpdatedDate { get; set; } // Tracks status changes
 
         public ICollection<FamilyMember> Members { get; set; } = new List<FamilyMember>();
     }

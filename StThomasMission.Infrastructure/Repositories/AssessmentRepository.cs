@@ -6,64 +6,29 @@ using StThomasMission.Infrastructure.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace StThomasMission.Infrastructure.Repositories
 {
-    public class AssessmentRepository : IAssessmentRepository
+    public class AssessmentRepository : Repository<Assessment>, IRepository<Assessment>
     {
         private readonly StThomasMissionDbContext _context;
 
-        public AssessmentRepository(StThomasMissionDbContext context)
+        public AssessmentRepository(StThomasMissionDbContext context) : base(context)
         {
             _context = context;
         }
 
-        public async Task<IEnumerable<Assessment>> GetAllAsync()
+        public async Task<IEnumerable<Assessment>> GetByStudentIdAsync(int studentId, AssessmentType? type = null)
         {
-            return await _context.Assessments.ToListAsync();
-        }
+            var query = _context.Assessments
+                .AsNoTracking()
+                .Where(a => a.StudentId == studentId && a.Student.Status != StudentStatus.Deleted);
 
-        public async Task<Assessment> GetByIdAsync(int id)
-        {
-            return await _context.Assessments.FindAsync(id);
-        }
-
-        public async Task AddAsync(Assessment assessment)
-        {
-            await _context.Assessments.AddAsync(assessment);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task UpdateAsync(Assessment assessment)
-        {
-            _context.Assessments.Update(assessment);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task DeleteAsync(int id)
-        {
-            var entity = await GetByIdAsync(id);
-            if (entity != null)
+            if (type.HasValue)
             {
-                _context.Assessments.Remove(entity);
-                await _context.SaveChangesAsync();
-            }
-        }
-
-        public async Task DeleteAsync(Assessment entity)
-        {
-            _context.Assessments.Remove(entity);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task<IEnumerable<Assessment>> GetByStudentIdAsync(int studentId, bool? isMajor = null)
-        {
-            var query = _context.Assessments.Where(a => a.StudentId == studentId);
-
-            if (isMajor.HasValue)
-            {
-                query = query.Where(a => a.Type == (isMajor.Value ? AssessmentType.SemesterExam : AssessmentType.ClassAssessment));
+                query = query.Where(a => a.Type == type.Value);
             }
 
             return await query.ToListAsync();
@@ -72,8 +37,9 @@ namespace StThomasMission.Infrastructure.Repositories
         public async Task<IEnumerable<Assessment>> GetByGradeAsync(string grade, DateTime? startDate = null, DateTime? endDate = null)
         {
             var query = _context.Assessments
+                .AsNoTracking()
                 .Include(a => a.Student)
-                .Where(a => a.Student.Grade == grade);
+                .Where(a => a.Student.Grade == grade && a.Student.Status != StudentStatus.Deleted);
 
             if (startDate.HasValue)
                 query = query.Where(a => a.Date >= startDate.Value);

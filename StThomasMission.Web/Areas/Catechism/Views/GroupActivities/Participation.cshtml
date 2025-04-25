@@ -1,0 +1,27 @@
+﻿@model IEnumerable<StThomasMission.Core.Entities.StudentGroupActivity>
+@{
+    ViewData["Title"] = "Participants";
+    var groupId = ViewBag.GroupActivityId;
+}
+
+<h2>Participants for Activity ID: @groupId</h2>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Student ID</th>
+            <th>Student Name</th>
+            <th>Date</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var s in Model)
+        {
+            <tr>
+                <td>@s.StudentId</td>
+                <td>@s.Student?.FamilyMember?.FirstName @s.Student?.FamilyMember?.LastName</td>
+                <td>@s.ParticipationDate.ToShortDateString()</td>
+            </tr>
+        }
+    </tbody>
+</table>

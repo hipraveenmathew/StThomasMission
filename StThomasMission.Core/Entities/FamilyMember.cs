@@ -9,8 +9,10 @@ namespace StThomasMission.Core.Entities
 
         [Required]
         public int FamilyId { get; set; }
-        public string? UserId { get; set; }
+        public Family Family { get; set; } = null!;
 
+        public string? UserId { get; set; }
+        public ApplicationUser? User { get; set; }
 
         [Required(ErrorMessage = "First name is required.")]
         [StringLength(100, ErrorMessage = "First name cannot exceed 100 characters.")]
@@ -21,7 +23,7 @@ namespace StThomasMission.Core.Entities
         public string LastName { get; set; } = string.Empty;
 
         [StringLength(50, ErrorMessage = "Relation cannot exceed 50 characters.")]
-        public string? Relation { get; set; } // Father, Mother, Son, Daughter etc.
+        public string? Relation { get; set; } // Father, Mother, Son, Daughter, etc.
 
         [Required]
         public DateTime DateOfBirth { get; set; }
@@ -35,12 +37,10 @@ namespace StThomasMission.Core.Entities
         public string? Email { get; set; }
 
         [StringLength(50, ErrorMessage = "Role cannot exceed 50 characters.")]
-        public string? Role { get; set; } // For Identity/SeedData compatibility (e.g., Parent)
-
-        public Family Family { get; set; } = null!;
+        public string? Role { get; set; } // For use in seeding or internal app role distinction (e.g., Parent)
 
         public Student? StudentProfile { get; set; }
-        public ApplicationUser? User { get; set; }
 
+        public string FullName => $"{FirstName} {LastName}";
     }
 }

@@ -9,6 +9,7 @@ namespace StThomasMission.Core.Entities
 
         [Required]
         public int StudentId { get; set; }
+        public Student Student { get; set; } = null!;
 
         [Required]
         public DateTime Date { get; set; } = DateTime.UtcNow;
@@ -20,6 +21,10 @@ namespace StThomasMission.Core.Entities
         [Required]
         public AttendanceStatus Status { get; set; } = AttendanceStatus.Present;
 
-        public Student Student { get; set; } = null!;
+        [StringLength(250, ErrorMessage = "Remarks cannot exceed 250 characters.")]
+        public string? Remarks { get; set; }
+
+        [StringLength(50)]
+        public string? RecordedBy { get; set; } // Optionally log the teacher username
     }
 }

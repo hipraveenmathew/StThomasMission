@@ -4,37 +4,36 @@
     ViewData["Title"] = "Assign Role";
 }
 
-<h1>Assign Role to @Model.FullName</h1>
+<h4>Assign Role to @Model.FullName</h4>
+<hr />
 
-<form asp-action="AssignRole">
+<form asp-action="AssignRole" method="post">
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
     <input type="hidden" asp-for="UserId" />
-    <div class="form-group">
-        <label asp-for="Email" class="control-label"></label>
+
+    <div class="form-group mb-3">
+        <label asp-for="Email" class="form-label">Email</label>
         <input asp-for="Email" class="form-control" disabled />
     </div>
-    <div class="form-group">
-        <label asp-for="FullName" class="control-label"></label>
+
+    <div class="form-group mb-3">
+        <label asp-for="FullName" class="form-label">Full Name</label>
         <input asp-for="FullName" class="form-control" disabled />
     </div>
-    <div class="form-group">
-        <label asp-for="SelectedRole" class="control-label">Role</label>
-        <select asp-for="SelectedRole" class="form-control" asp-items="@(new SelectList(Model.AvailableRoles))">
-            <option value="">Select a role</option>
+
+    <div class="form-group mb-4">
+        <label asp-for="SelectedRole" class="form-label">Select Role</label>
+        <select asp-for="SelectedRole" class="form-select" asp-items="@(new SelectList(Model.AvailableRoles))">
+            <option value="">-- Select a role --</option>
         </select>
         <span asp-validation-for="SelectedRole" class="text-danger"></span>
     </div>
-    <div class="form-group">
-        <input type="submit" value="Assign" class="btn btn-primary" />
-    </div>
+
+    <button type="submit" class="btn btn-primary">Assign</button>
+    <a asp-action="Index" class="btn btn-secondary ms-2">Cancel</a>
 </form>
 
-<div>
-    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
-</div>
-
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
+    @await Html.PartialAsync("_ValidationScriptsPartial")
 }

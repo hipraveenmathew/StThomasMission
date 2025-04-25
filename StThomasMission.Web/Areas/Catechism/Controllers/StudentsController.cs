@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StThomasMission.Core.Entities;
+using StThomasMission.Core.Enums;
 using StThomasMission.Core.Interfaces;
 using StThomasMission.Infrastructure.Repositories;
 using StThomasMission.Web.Areas.Catechism.Models;
+using StThomasMission.Web.Models;
 
 namespace StThomasMission.Web.Areas.Catechism.Controllers
 {
@@ -12,6 +14,14 @@ namespace StThomasMission.Web.Areas.Catechism.Controllers
     public class StudentsController : Controller
     {
         private readonly ICatechismService _catechismService;
+        private readonly IUnitOfWork _unitOfWork;
+
+        public StudentsController(ICatechismService catechismService, IUnitOfWork unitOfWork)
+        {
+            _catechismService = catechismService;
+            _unitOfWork = unitOfWork;
+        }
+
 
         public StudentsController(ICatechismService catechismService)
         {
@@ -29,25 +39,27 @@ namespace StThomasMission.Web.Areas.Catechism.Controllers
 
             if (!string.IsNullOrEmpty(searchString))
             {
-                students = students.Where(s => (s.FirstName + " " + s.LastName).Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
-                                               s.Grade.Contains(searchString, StringComparison.OrdinalIgnoreCase)).ToList();
+                students = students.Where(s =>
+                    (s.FamilyMember.FirstName + " " + s.FamilyMember.LastName).Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
+                    s.Grade.Contains(searchString, StringComparison.OrdinalIgnoreCase)).ToList();
             }
 
             students = sortOrder switch
             {
-                "name_desc" => students.OrderByDescending(s => s.FirstName).ToList(),
+                "name_desc" => students.OrderByDescending(s => s.FamilyMember.FirstName).ToList(),
                 "grade" => students.OrderBy(s => s.Grade).ToList(),
                 "grade_desc" => students.OrderByDescending(s => s.Grade).ToList(),
-                _ => students.OrderBy(s => s.FirstName).ToList(),
+                _ => students.OrderBy(s => s.FamilyMember.FirstName).ToList(),
             };
 
-            int totalItems = students.Count;
+            int totalItems = students.Count();
             var pagedStudents = students.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
 
             var model = new PaginatedList<Student>(pagedStudents, totalItems, pageNumber, pageSize);
             ViewBag.SearchString = searchString;
             return View(model);
         }
+
 
         [HttpGet]
         public async Task<IActionResult> MarkAttendance(string grade)
@@ -78,7 +90,7 @@ namespace StThomasMission.Web.Areas.Catechism.Controllers
             {
                 foreach (var student in model.Students)
                 {
-                    await _catechismService.MarkAttendanceAsync(
+                    await _catechismService.AddAttendanceAsync(
                         student.StudentId,
                         model.Date,
                         model.Description,
@@ -106,7 +118,8 @@ namespace StThomasMission.Web.Areas.Catechism.Controllers
         {
             if (ModelState.IsValid)
             {
-                await _catechismService.AddAssessmentAsync(model.StudentId, model.Name, model.Marks, model.TotalMarks, model.IsMajor);
+                await _catechismService.AddAssessmentAsync(model.StudentId, model.Name, model.Marks, model.TotalMarks, DateTime.Today, model.IsMajor);
+
                 return RedirectToAction(nameof(Index), new { grade = ViewBag.Grade });
             }
             var student = await _catechismService.GetStudentByIdAsync(model.StudentId);
@@ -153,15 +166,16 @@ namespace StThomasMission.Web.Areas.Catechism.Controllers
             var model = new StudentDetailsViewModel
             {
                 Id = student.Id,
-                FirstName = student.FamilyMember.FirstName,
-                LastName = student.FamilyMember.LastName,
+                FirstName = student.FamilyMember?.FirstName ?? "N/A",
+                LastName = student.FamilyMember?.LastName ?? "N/A",
                 Grade = student.Grade,
                 Group = student.Group,
                 StudentOrganisation = student.StudentOrganisation,
-                Status = student.Status,
-                Attendances = attendances.ToList(),
-                Assessments = assessments.ToList()
+                Status = student.Status.ToString(), // Ensure this if Status is an enum
+                Attendances = attendances?.ToList() ?? new List<Attendance>(),
+                Assessments = assessments?.ToList() ?? new List<Assessment>()
             };
+
 
             return View(model);
         }
@@ -178,7 +192,8 @@ namespace StThomasMission.Web.Areas.Catechism.Controllers
         {
             if (ModelState.IsValid)
             {
-                await _catechismService.AddGroupActivityAsync(model.Group, model.Name, model.Points);
+                await _catechismService.AddGroupActivityAsync(model.Group, model.Name, DateTime.Today, "Auto-added activity", model.Points);
+
                 return RedirectToAction(nameof(Index), new { grade = ViewBag.Grade });
             }
             ViewBag.Group = model.Group;
@@ -204,18 +219,63 @@ namespace StThomasMission.Web.Areas.Catechism.Controllers
                 return NotFound();
             }
 
-            student.FirstName = firstName;
-            student.LastName = lastName;
+            // Update student fields
             student.FamilyMemberId = familyMemberId;
             student.Grade = grade;
             student.AcademicYear = academicYear;
             student.Group = group;
-            student.Status = status;
+
+            // Ensure status is properly converted to enum if needed
+            if (Enum.TryParse(status, out StudentStatus parsedStatus))
+            {
+                student.Status = parsedStatus;
+            }
+
+            // Update FamilyMember name (optional)
+            if (student.FamilyMember != null)
+            {
+                student.FamilyMember.FirstName = firstName;
+                student.FamilyMember.LastName = lastName;
+            }
 
             await _unitOfWork.Students.UpdateAsync(student);
             await _unitOfWork.CompleteAsync();
             TempData["Success"] = "Student updated successfully!";
             return RedirectToAction("Index");
         }
+
+        [HttpGet]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var student = await _catechismService.GetStudentByIdAsync(id);
+            if (student == null)
+            {
+                return NotFound();
+            }
+
+            var model = new StudentDetailsViewModel
+            {
+                Id = student.Id,
+                FirstName = student.FamilyMember?.FirstName,
+                LastName = student.FamilyMember?.LastName,
+                Grade = student.Grade,
+                Status = student.Status.ToString(),
+                Group = student.Group,
+                StudentOrganisation = student.StudentOrganisation
+            };
+
+            return View(model);
+        }
+
+
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            await _catechismService.DeleteStudentAsync(id);
+            TempData["Success"] = "Student deleted successfully!";
+            return RedirectToAction(nameof(Index));
+        }
+
     }
 }

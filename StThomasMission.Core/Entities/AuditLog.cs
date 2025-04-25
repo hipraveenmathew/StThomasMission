@@ -7,7 +7,7 @@ namespace StThomasMission.Core.Entities
         public int Id { get; set; }
 
         [Required]
-        [StringLength(450)] // Align with Identity UserId length
+        [StringLength(450)] // Matches ASP.NET Identity default
         public string UserId { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Action is required.")]
@@ -27,5 +27,12 @@ namespace StThomasMission.Core.Entities
 
         [Required]
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
+        [StringLength(45, ErrorMessage = "IP address cannot exceed 45 characters.")]
+        public string? IpAddress { get; set; } // Supports IPv6 too
+
+        [StringLength(250)]
+        public string? PerformedBy { get; set; } // Optional: name or username of actor
     }
+
 }

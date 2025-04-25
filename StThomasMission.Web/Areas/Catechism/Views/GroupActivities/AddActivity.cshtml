@@ -4,22 +4,27 @@
 
 <h1>Add Group Activity</h1>
 <hr />
+
 <div class="row">
-    <div class="col-md-4">
-        <form asp-action="AddActivity">
+    <div class="col-md-6">
+        <form asp-action="AddActivity" method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
             <div class="form-group mb-3">
-                <label class="control-label">Group Name</label>
-                <input name="groupName" class="form-control" placeholder="e.g., St. Peter Group" />
+                <label for="groupName" class="control-label">Group Name</label>
+                <input name="groupName" class="form-control" placeholder="e.g., St. Peter Group" required />
             </div>
+
             <div class="form-group mb-3">
-                <label class="control-label">Activity Name</label>
-                <input name="activityName" class="form-control" placeholder="e.g., Charity Event" />
+                <label for="activityName" class="control-label">Activity Name</label>
+                <input name="activityName" class="form-control" placeholder="e.g., Charity Event" required />
             </div>
+
             <div class="form-group mb-3">
-                <label class="control-label">Points</label>
-                <input name="points" type="number" class="form-control" placeholder="e.g., 10" />
+                <label for="points" class="control-label">Points</label>
+                <input name="points" type="number" class="form-control" placeholder="e.g., 10" required min="1" />
             </div>
+
             <div class="form-group">
                 <button type="submit" class="btn btn-primary">Add Activity</button>
             </div>
@@ -29,7 +34,12 @@
 
 @if (TempData["Success"] != null)
 {
-    <div class="alert alert-success">@TempData["Success"]</div>
+    <div class="alert alert-success mt-3">@TempData["Success"]</div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger mt-3">@TempData["Error"]</div>
 }
 
 @section Scripts {

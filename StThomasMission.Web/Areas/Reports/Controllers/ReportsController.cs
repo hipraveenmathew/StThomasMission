@@ -23,95 +23,59 @@ namespace StThomasMission.Web.Areas.Reports.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> StudentReport(int studentId, string format)
+        public async Task<IActionResult> StudentReport(int studentId, string format = "pdf")
         {
-            byte[] report;
-            string contentType;
-            string fileExtension;
+            var report = await _reportingService.GenerateStudentReportAsync(studentId, format.ToLower());
+            string contentType = GetContentType(format);
+            string fileName = $"StudentReport_{studentId}.{GetFileExtension(format)}";
 
-            if (format.ToLower() == "pdf")
-            {
-                report = await _reportingService.GenerateStudentReportPdfAsync(studentId);
-                contentType = "application/pdf";
-                fileExtension = "pdf";
-            }
-            else
-            {
-                report = await _reportingService.GenerateStudentReportExcelAsync(studentId);
-                contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-                fileExtension = "xlsx";
-            }
-
-            return File(report, contentType, $"StudentReport_{studentId}.{fileExtension}");
+            return File(report, contentType, fileName);
         }
 
         [HttpGet]
-        public async Task<IActionResult> ClassReport(string grade, string format)
+        public async Task<IActionResult> ClassReport(string grade, int academicYear, string format = "pdf")
         {
-            byte[] report;
-            string contentType;
-            string fileExtension;
+            var report = await _reportingService.GenerateClassReportAsync(grade, academicYear, format.ToLower());
+            string contentType = GetContentType(format);
+            string fileName = $"ClassReport_{grade}_{academicYear}.{GetFileExtension(format)}";
 
-            if (format.ToLower() == "pdf")
-            {
-                report = await _reportingService.GenerateClassReportPdfAsync(grade);
-                contentType = "application/pdf";
-                fileExtension = "pdf";
-            }
-            else
-            {
-                report = await _reportingService.GenerateClassReportExcelAsync(grade);
-                contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-                fileExtension = "xlsx";
-            }
-
-            return File(report, contentType, $"ClassReport_{grade}.{fileExtension}");
+            return File(report, contentType, fileName);
         }
 
         [HttpGet]
-        public async Task<IActionResult> OverallCatechismReport(string format)
+        public async Task<IActionResult> OverallCatechismReport(int academicYear, string format = "pdf")
         {
-            byte[] report;
-            string contentType;
-            string fileExtension;
+            var report = await _reportingService.GenerateCatechismReportAsync(academicYear, format.ToLower());
+            string contentType = GetContentType(format);
+            string fileName = $"OverallCatechismReport_{academicYear}.{GetFileExtension(format)}";
 
-            if (format.ToLower() == "pdf")
-            {
-                report = await _reportingService.GenerateOverallCatechismReportPdfAsync();
-                contentType = "application/pdf";
-                fileExtension = "pdf";
-            }
-            else
-            {
-                report = await _reportingService.GenerateOverallCatechismReportExcelAsync();
-                contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-                fileExtension = "xlsx";
-            }
-
-            return File(report, contentType, $"OverallCatechismReport.{fileExtension}");
+            return File(report, contentType, fileName);
         }
 
         [HttpGet]
-        public async Task<IActionResult> FamilyReport(string format)
+        public async Task<IActionResult> FamilyReport(string? ward, string? status, string format = "pdf")
         {
-            byte[] report;
-            string contentType;
-            string fileExtension;
+            var report = await _reportingService.GenerateFamilyReportAsync(ward, status, format.ToLower());
+            string contentType = GetContentType(format);
+            string fileName = $"FamilyReport.{GetFileExtension(format)}";
 
-            if (format.ToLower() == "pdf")
-            {
-                report = await _reportingService.GenerateFamilyReportPdfAsync();
-                contentType = "application/pdf";
-                fileExtension = "pdf";
-            }
-            else
-            {
-                report = await _reportingService.GenerateFamilyReportExcelAsync();
-                contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-                fileExtension = "xlsx";
-            }
+            return File(report, contentType, fileName);
+        }
 
-            return File(report, contentType, $"FamilyReport.{fileExtension}");
+        // Helper methods
+        private string GetContentType(string format)
+        {
+            return format.ToLower() switch
+            {
+                "pdf" => "application/pdf",
+                "excel" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                _ => "application/octet-stream"
+            };
+        }
+
+        private string GetFileExtension(string format)
+        {
+            return format.ToLower() == "excel" ? "xlsx" : "pdf";
         }
     }
 }

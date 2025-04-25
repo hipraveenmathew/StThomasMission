@@ -27,5 +27,8 @@ namespace StThomasMission.Core.Entities
 
         [Range(0, int.MaxValue, ErrorMessage = "Points cannot be negative.")]
         public int Points { get; set; }
+
+        public ICollection<StudentGroupActivity> Participants { get; set; } = new List<StudentGroupActivity>();
     }
+
 }

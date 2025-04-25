@@ -1,24 +1,32 @@
 ﻿@{
-    ViewData["Title"] = "Admin Panel";
+    ViewData["Title"] = "Admin Dashboard";
 }
 
-<h1>Admin Panel</h1>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <h3>System Backup</h3>
+<h2 class="mt-4">Admin Dashboard</h2>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["Success"]
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">
+        @TempData["Error"]
+    </div>
+}
+
+<div class="card shadow-sm mt-3">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Database Backup</h5>
+    </div>
+    <div class="card-body">
         <form asp-action="CreateBackup" method="post">
-            <div class="form-group">
-                <button type="submit" class="btn btn-primary">Create Backup</button>
-            </div>
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-download"></i> Create New Backup
+            </button>
         </form>
-        @if (TempData["Success"] != null)
-        {
-            <div class="alert alert-success mt-3">@TempData["Success"]</div>
-        }
-        @if (TempData["Error"] != null)
-        {
-            <div class="alert alert-danger mt-3">@TempData["Error"]</div>
-        }
     </div>
 </div>
+

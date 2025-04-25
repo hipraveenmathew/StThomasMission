@@ -1,23 +1,38 @@
 ﻿@model StThomasMission.Web.Areas.Catechism.Models.AnnouncementViewModel
+
 @{
     ViewData["Title"] = "Send Announcement";
 }
 
-<h2>Send Announcement</h2>
+<h2 class="mb-4">Send Announcement</h2>
 
 @if (TempData["Success"] != null)
 {
     <div class="alert alert-success">@TempData["Success"]</div>
 }
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
 
 <form asp-action="SendAnnouncement" method="post">
-    <div class="form-group">
-        <label for="Message">Message</label>
-        <textarea name="Message" class="form-control" required></textarea>
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="mb-3">
+        <label asp-for="Message" class="form-label">Message</label>
+        <textarea asp-for="Message" class="form-control" rows="4" required></textarea>
+        <span asp-validation-for="Message" class="text-danger"></span>
     </div>
-    <div class="form-group">
-        <label for="Ward">Ward (Optional)</label>
-        <input type="text" name="Ward" class="form-control" value="@Model.Ward" />
+
+    <div class="mb-3">
+        <label asp-for="Ward" class="form-label">Ward (Optional)</label>
+        <input asp-for="Ward" class="form-control" />
+        <span asp-validation-for="Ward" class="text-danger"></span>
     </div>
+
     <button type="submit" class="btn btn-primary">Send Announcement</button>
 </form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,29 +1,29 @@
-﻿@model StThomasMission.Core.Entities.Family
+﻿@model StThomasMission.Web.Areas.Parents.Models.ParentPortalViewModel
+
 @{
     ViewData["Title"] = "Parent Portal";
-    var students = ViewBag.Students as IEnumerable<StThomasMission.Core.Entities.Student>;
 }
 
 <h1>Parent Portal</h1>
 <hr />
 <div>
     <h3>Family Details</h3>
-    <p><strong>Family Name:</strong> @Model.FamilyName</p>
-    <p><strong>Ward:</strong> @Model.Ward</p>
-    <p><strong>Status:</strong> @Model.Status</p>
-    @if (Model.IsRegistered)
+    <p><strong>Family Name:</strong> @Model.Family.FamilyName</p>
+    <p><strong>Ward:</strong> @Model.Family.Ward</p>
+    <p><strong>Status:</strong> @Model.Family.Status</p>
+    @if (Model.Family.IsRegistered)
     {
-        <p><strong>Church Registration Number:</strong> @Model.ChurchRegistrationNumber</p>
+        <p><strong>Church Registration Number:</strong> @Model.Family.ChurchRegistrationNumber</p>
     }
     else
     {
-        <p><strong>Temporary ID:</strong> @Model.TemporaryID</p>
+        <p><strong>Temporary ID:</strong> @Model.Family.TemporaryID</p>
     }
 </div>
 
 <div class="mt-4">
     <h3>Students</h3>
-    @if (students != null && students.Any())
+    @if (Model.Students != null && Model.Students.Any())
     {
         <table class="table">
             <thead>
@@ -37,11 +37,11 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var student in students)
+                @foreach (var student in Model.Students)
                 {
                     <tr>
-                        <td>@student.FirstName</td>
-                        <td>@student.LastName</td>
+                        <td>@student.FamilyMember.FirstName</td>
+                        <td>@student.FamilyMember.LastName</td>
                         <td>@student.Grade</td>
                         <td>@student.AcademicYear</td>
                         <td>@student.Group</td>

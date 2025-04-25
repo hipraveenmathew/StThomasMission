@@ -1,0 +1,53 @@
+﻿@model List<StThomasMission.Core.Entities.Attendance>
+
+@{
+    ViewData["Title"] = "Attendance Records";
+}
+
+<h1>Attendance Records</h1>
+<hr />
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <form asp-action="Index" method="get">
+            <div class="form-group mb-2">
+                <label>Grade</label>
+                <input type="text" name="grade" class="form-control" value="@ViewBag.Grade" placeholder="e.g., Year 1" />
+            </div>
+            <div class="form-group mb-2">
+                <label>Date</label>
+                <input type="date" name="date" class="form-control" value="@ViewBag.Date" />
+            </div>
+            <button type="submit" class="btn btn-primary">Filter</button>
+        </form>
+    </div>
+</div>
+
+@if (Model.Any())
+{
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Student Name</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var record in Model)
+            {
+                <tr>
+                    <td>@record.Student.FamilyMember.FirstName @record.Student.FamilyMember.LastName</td>
+                    <td>@record.Date.ToString("yyyy-MM-dd")</td>
+                    <td>@record.Status</td>
+                    <td>@record.Description</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No attendance records found.</p>
+}

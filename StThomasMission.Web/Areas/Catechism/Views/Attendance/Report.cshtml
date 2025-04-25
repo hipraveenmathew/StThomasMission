@@ -1,0 +1,41 @@
+﻿@model IEnumerable<StThomasMission.Core.Entities.Student>
+
+@{
+    ViewData["Title"] = "Attendance Report";
+}
+
+<h1>Attendance Report</h1>
+<hr />
+
+<h4>Grade: @ViewBag.Grade | Academic Year: @ViewBag.Year</h4>
+
+@if (Model.Any())
+{
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Student Name</th>
+                <th>Attendance %</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var student in Model)
+            {
+                var total = student.Attendances.Count();
+                var present = student.Attendances.Count(a => a.Status == StThomasMission.Core.Enums.AttendanceStatus.Present);
+                var percentage = total > 0 ? (present * 100 / total) : 0;
+
+                <tr>
+                    <td>@student.FamilyMember.FirstName @student.FamilyMember.LastName</td>
+                    <td>@percentage %</td>
+                    <td>@student.Status</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No students found for this Grade and Year.</p>
+}

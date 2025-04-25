@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StThomasMission.Core.Interfaces;
+using StThomasMission.Web.Areas.Families.Models;
 using System.Threading.Tasks;
 
 namespace StThomasMission.Web.Areas.Families.Controllers
@@ -23,6 +24,7 @@ namespace StThomasMission.Web.Areas.Families.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> SendAnnouncement(SendAnnouncementViewModel model)
         {
             if (!ModelState.IsValid)
@@ -30,7 +32,11 @@ namespace StThomasMission.Web.Areas.Families.Controllers
                 return View(model);
             }
 
-            await _communicationService.SendAnnouncementAsync(model.Message, model.Ward, model.CommunicationMethods);
+            foreach (var method in model.CommunicationMethods)
+            {
+                await _communicationService.SendAnnouncementAsync(model.Message, model.Ward, method);
+            }
+
             TempData["Success"] = "Announcement sent successfully!";
             return RedirectToAction("SendAnnouncement");
         }

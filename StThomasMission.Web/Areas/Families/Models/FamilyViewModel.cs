@@ -18,6 +18,7 @@
         public DateTime DateOfBirth { get; set; }
         public string? Contact { get; set; }
         public string? Email { get; set; }
+        public string? Role { get; set; }
     }
 
     public class StudentEnrollmentViewModel

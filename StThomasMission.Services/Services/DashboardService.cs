@@ -10,16 +10,18 @@ namespace StThomasMission.Services
     public class DashboardService : IDashboardService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IFamilyService _familyService;
 
-        public DashboardService(IUnitOfWork unitOfWork)
+        public DashboardService(IUnitOfWork unitOfWork, IFamilyService familyService)
         {
             _unitOfWork = unitOfWork;
+            _familyService = familyService;
         }
 
         public async Task<DashboardSummaryDto> GetDashboardSummaryAsync()
         {
             var students = await _unitOfWork.Students.GetAllAsync();
-            var families = await _unitOfWork.Families.GetAllAsync();
+            var families = await _familyService.GetFamiliesByStatusAsync(FamilyStatus.Active);
             var groupActivities = await _unitOfWork.GroupActivities.GetAllAsync();
 
             return new DashboardSummaryDto

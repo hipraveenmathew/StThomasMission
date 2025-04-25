@@ -1,64 +1,89 @@
-﻿@model StThomasMission.Web.Controllers.DashboardViewModel
-
+﻿@model StThomasMission.Web.Models.DashboardViewModel
 @{
     ViewData["Title"] = "Dashboard";
 }
 
-<h1>Dashboard</h1>
-<hr />
-<div class="row">
+<h2 class="mt-4">Dashboard</h2>
+
+<div class="row mt-3">
+    <!-- Announcements -->
     <div class="col-md-4">
-        <h3>Recent Announcements</h3>
-        @if (Model.RecentAnnouncements.Any())
-        {
-            <ul class="list-group">
-                @foreach (var announcement in Model.RecentAnnouncements)
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Recent Announcements</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.RecentAnnouncements?.Any() == true)
                 {
-                    <li class="list-group-item">
-                        <strong>@announcement.SentAt.ToString("g")</strong> (@announcement.Method): @announcement.Message
-                    </li>
+                    <ul class="list-group list-group-flush">
+                        @foreach (var msg in Model.RecentAnnouncements)
+                        {
+                            <li class="list-group-item">
+                                <small class="text-muted">@msg.SentAt.ToString("dd MMM yyyy")</small><br />
+                                @msg.Message
+                            </li>
+                        }
+                    </ul>
                 }
-            </ul>
-        }
-        else
-        {
-            <p>No recent announcements.</p>
-        }
+                else
+                {
+                    <p>No recent announcements.</p>
+                }
+            </div>
+        </div>
     </div>
+
+    <!-- Upcoming Events -->
     <div class="col-md-4">
-        <h3>Upcoming Events</h3>
-        @if (Model.UpcomingEvents.Any())
-        {
-            <ul class="list-group">
-                @foreach (var evt in Model.UpcomingEvents)
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Upcoming Events</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.UpcomingEvents?.Any() == true)
                 {
-                    <li class="list-group-item">
-                        <strong>@evt.Date.ToString("d")</strong> - @evt.GroupName: @evt.ActivityName (Points: @evt.Points)
-                    </li>
+                    <ul class="list-group list-group-flush">
+                        @foreach (var ev in Model.UpcomingEvents)
+                        {
+                            <li class="list-group-item">
+                                <strong>@ev.Group</strong><br />
+                                @ev.Date.ToString("dd MMM yyyy") - @ev.Description
+                            </li>
+                        }
+                    </ul>
                 }
-            </ul>
-        }
-        else
-        {
-            <p>No upcoming events.</p>
-        }
+                else
+                {
+                    <p>No upcoming events in the next 30 days.</p>
+                }
+            </div>
+        </div>
     </div>
+
+    <!-- Student Progress -->
     <div class="col-md-4">
-        <h3>Student Progress</h3>
-        @if (Model.StudentProgress.Any())
-        {
-            <ul class="list-group">
-                @foreach (var student in Model.StudentProgress)
+        <div class="card shadow-sm">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Student Progress</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.StudentProgress?.Any() == true)
                 {
-                    <li class="list-group-item">
-                        <strong>@student.FirstName @student.LastName</strong> - Grade: @student.Grade, Status: @student.Status
-                    </li>
+                    <ul class="list-group list-group-flush">
+                        @foreach (var student in Model.StudentProgress)
+                        {
+                            <li class="list-group-item">
+                                @student.FamilyMember?.FirstName @student.FamilyMember?.LastName <br />
+                                <small>Grade: @student.Grade | Year: @student.AcademicYear | Status: @student.Status</small>
+                            </li>
+                        }
+                    </ul>
                 }
-            </ul>
-        }
-        else
-        {
-            <p>No student progress to display.</p>
-        }
+                else
+                {
+                    <p>No student progress available.</p>
+                }
+            </div>
+        </div>
     </div>
 </div>

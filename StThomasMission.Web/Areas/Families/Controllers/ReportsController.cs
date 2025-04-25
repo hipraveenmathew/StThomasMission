@@ -29,13 +29,13 @@ namespace StThomasMission.Web.Areas.Families.Controllers
 
             if (format.ToLower() == "pdf")
             {
-                fileContent = await _reportingService.GenerateFamilyReportPdfAsync();
+                fileContent = await _reportingService.GenerateFamilyReportAsync(null, null, "pdf");
                 contentType = "application/pdf";
                 fileName = "FamilyReport.pdf";
             }
             else
             {
-                fileContent = await _reportingService.GenerateFamilyReportExcelAsync();
+                fileContent = await _reportingService.GenerateFamilyReportAsync(null, null, "excel");
                 contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
                 fileName = "FamilyReport.xlsx";
             }

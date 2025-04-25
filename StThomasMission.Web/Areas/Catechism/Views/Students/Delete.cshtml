@@ -1,0 +1,26 @@
+﻿@model StThomasMission.Web.Areas.Catechism.Models.StudentDetailsViewModel
+
+@{
+    ViewData["Title"] = "Delete Student";
+}
+
+<h2>Confirm Deletion</h2>
+<hr />
+<p>Are you sure you want to delete the student below?</p>
+
+<dl class="row">
+    <dt class="col-sm-3">Name</dt>
+    <dd class="col-sm-9">@Model.FirstName @Model.LastName</dd>
+
+    <dt class="col-sm-3">Grade</dt>
+    <dd class="col-sm-9">@Model.Grade</dd>
+
+    <dt class="col-sm-3">Status</dt>
+    <dd class="col-sm-9">@Model.Status</dd>
+</dl>
+
+<form asp-action="Delete">
+    <input type="hidden" asp-for="Id" />
+    <button type="submit" class="btn btn-danger">Yes, Delete</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+</form>

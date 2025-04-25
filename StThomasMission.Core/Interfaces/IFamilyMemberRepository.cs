@@ -10,6 +10,7 @@ namespace StThomasMission.Core.Interfaces
     public interface IFamilyMemberRepository : IRepository<FamilyMember>
     {
         Task<IEnumerable<FamilyMember>> GetByFamilyIdAsync(int familyId);
-        Task<FamilyMember> GetByUserIdAsync(string userId);
+        Task<FamilyMember?> GetByUserIdAsync(string userId);
+        Task<IEnumerable<FamilyMember>> GetByRoleAsync(string role);
     }
 }

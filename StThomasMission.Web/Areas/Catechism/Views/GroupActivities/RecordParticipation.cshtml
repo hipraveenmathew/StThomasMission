@@ -4,18 +4,22 @@
 
 <h1>Record Student Participation</h1>
 <hr />
+
 <div class="row">
-    <div class="col-md-4">
-        <form asp-action="RecordParticipation">
+    <div class="col-md-6">
+        <form asp-action="RecordParticipation" method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
             <div class="form-group mb-3">
                 <label class="control-label">Student ID</label>
-                <input name="studentId" type="number" class="form-control" />
+                <input name="studentId" type="number" class="form-control" placeholder="Enter Student ID" required min="1" />
             </div>
+
             <div class="form-group mb-3">
                 <label class="control-label">Group Activity ID</label>
-                <input name="groupActivityId" type="number" class="form-control" />
+                <input name="groupActivityId" type="number" class="form-control" placeholder="Enter Activity ID" required min="1" />
             </div>
+
             <div class="form-group">
                 <button type="submit" class="btn btn-primary">Record Participation</button>
             </div>
@@ -25,7 +29,11 @@
 
 @if (TempData["Success"] != null)
 {
-    <div class="alert alert-success">@TempData["Success"]</div>
+    <div class="alert alert-success mt-3">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger mt-3">@TempData["Error"]</div>
 }
 
 @section Scripts {
