@@ -2,47 +2,71 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using StThomasMission.Core.Entities;
 using StThomasMission.Core.Interfaces;
-using StThomasMission.Data;
 using StThomasMission.Infrastructure;
 using StThomasMission.Infrastructure.Data;
 using StThomasMission.Infrastructure.Repositories;
 using StThomasMission.Services;
+using Microsoft.AspNetCore.Mvc.Filters;
+using Serilog;
+using Microsoft.AspNetCore.Mvc;
+using StThomasMission.Data;
+using StThomasMission.Web.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container
-builder.Services.AddControllersWithViews();
+// Configure Serilog for structured logging
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.File("Logs/log-.txt", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
 
+builder.Host.UseSerilog();
+
+// Add services to the container
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.Add(typeof(GlobalExceptionFilter)); // Use typeof to resolve dependency injection
+});
+
+// Add DbContext with SQL Server
 builder.Services.AddDbContext<StThomasMissionDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Identity Configuration
+// Configure Identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
     options.SignIn.RequireConfirmedAccount = false;
     options.Password.RequireDigit = true;
     options.Password.RequiredLength = 8;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireLowercase = false;
 })
 .AddEntityFrameworkStores<StThomasMissionDbContext>()
 .AddDefaultTokenProviders();
 
-// Authorization
+// Add Authorization
 builder.Services.AddAuthorization();
 
-// Register Repositories & Services
+// Register Repositories and Unit of Work
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-// Services
+// Register Services
 builder.Services.AddScoped<ICatechismService, CatechismService>();
 builder.Services.AddScoped<IFamilyService, FamilyService>();
+builder.Services.AddScoped<IStudentService, StudentService>(); // Added
 builder.Services.AddScoped<ICommunicationService, CommunicationService>();
 builder.Services.AddScoped<IBackupService, BackupService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IImportService, ImportService>();
+builder.Services.AddScoped<IReportingService, ReportingService>(); // Added
+builder.Services.AddScoped<IGroupService, GroupService>(); // Added for group-related operations
 
 var app = builder.Build();
 
-// Error Handling
+// Configure the HTTP request pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -60,8 +84,16 @@ app.UseAuthorization();
 // Seed Roles & Data
 using (var scope = app.Services.CreateScope())
 {
-    await SeedRolesAsync(scope.ServiceProvider);
-    await SeedData.InitializeAsync(scope.ServiceProvider);
+    try
+    {
+        await SeedRolesAsync(scope.ServiceProvider);
+        await SeedData.InitializeAsync(scope.ServiceProvider);
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "An error occurred while seeding the database.");
+        throw; // Optionally rethrow to stop the application if seeding fails
+    }
 }
 
 // Route Configuration
@@ -77,7 +109,6 @@ app.MapRazorPages();
 
 app.Run();
 
-
 // Seed Roles Method
 static async Task SeedRolesAsync(IServiceProvider serviceProvider)
 {
@@ -89,7 +120,43 @@ static async Task SeedRolesAsync(IServiceProvider serviceProvider)
     {
         if (!await roleManager.RoleExistsAsync(role))
         {
-            await roleManager.CreateAsync(new IdentityRole(role));
+            var result = await roleManager.CreateAsync(new IdentityRole(role));
+            if (!result.Succeeded)
+            {
+                Log.Error("Failed to create role {Role}: {Errors}", role, string.Join(", ", result.Errors.Select(e => e.Description)));
+            }
+            else
+            {
+                Log.Information("Created role: {Role}", role);
+            }
         }
     }
 }
+
+// Global Exception Filter (Optional)
+public class GlobalExceptionFilter : IExceptionFilter
+{
+    private readonly ILogger<GlobalExceptionFilter> _logger;
+
+    public GlobalExceptionFilter(ILogger<GlobalExceptionFilter> logger)
+    {
+        _logger = logger;
+    }
+
+    public void OnException(ExceptionContext context)
+    {
+        _logger.LogError(context.Exception, "An unhandled exception occurred.");
+        context.Result = new ViewResult
+        {
+            ViewName = "Error",
+            ViewData = new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(
+                new Microsoft.AspNetCore.Mvc.ModelBinding.EmptyModelMetadataProvider(),
+                context.ModelState)
+            {
+                Model = new ErrorViewModel { Message = "An unexpected error occurred. Please try again later." }
+            }
+        };
+        context.ExceptionHandled = true;
+    }
+}
+

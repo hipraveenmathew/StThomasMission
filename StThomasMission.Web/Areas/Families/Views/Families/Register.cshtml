@@ -1,45 +1,65 @@
 ﻿@model StThomasMission.Web.Areas.Families.Models.FamilyViewModel
-
 @{
     ViewData["Title"] = "Register Family";
 }
 
-<h1>Register Family</h1>
+<div class="card">
+    <div class="card-header">
+        <h3 class="mb-0">Register Family</h3>
+    </div>
+    <div class="card-body">
+        <form asp-action="Register" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-<form asp-action="Register">
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <div class="form-group">
-        <label asp-for="FamilyName" class="control-label"></label>
-        <input asp-for="FamilyName" class="form-control" />
-        <span asp-validation-for="FamilyName" class="text-danger"></span>
+            <div class="mb-3">
+                <label asp-for="FamilyName" class="form-label"></label>
+                <input asp-for="FamilyName" class="form-control" />
+                <span asp-validation-for="FamilyName" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Ward" class="form-label"></label>
+                <input asp-for="Ward" type="number" class="form-control" />
+                <span asp-validation-for="Ward" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3 form-check">
+                <input asp-for="IsRegistered" type="checkbox" class="form-check-input" id="isRegistered" />
+                <label class="form-check-label" for="isRegistered">Is Registered?</label>
+            </div>
+
+            <div class="mb-3" id="churchRegSection" style="@(Model.IsRegistered ? "" : "display:none;")">
+                <label asp-for="ChurchRegistrationNumber" class="form-label"></label>
+                <input asp-for="ChurchRegistrationNumber" class="form-control" placeholder="e.g., 108021234" />
+                <span asp-validation-for="ChurchRegistrationNumber" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3" id="tempIdSection" style="@(Model.IsRegistered ? "display:none;" : "")">
+                <label asp-for="TemporaryId" class="form-label"></label>
+                <input asp-for="TemporaryId" class="form-control" placeholder="e.g., TMP-1234" />
+                <span asp-validation-for="TemporaryId" class="text-danger"></span>
+            </div>
+
+            <button type="submit" class="btn btn-modern">Register</button>
+            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+        </form>
     </div>
-    <div class="form-group">
-        <label asp-for="Ward" class="control-label"></label>
-        <input asp-for="Ward" class="form-control" />
-        <span asp-validation-for="Ward" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="IsRegistered" class="control-label"></label>
-        <input asp-for="IsRegistered" type="checkbox" />
-        <span asp-validation-for="IsRegistered" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="ChurchRegistrationNumber" class="control-label"></label>
-        <input asp-for="ChurchRegistrationNumber" class="form-control" />
-        <span asp-validation-for="ChurchRegistrationNumber" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="TemporaryId" class="control-label"></label>
-        <input asp-for="TemporaryId" class="form-control" />
-        <span asp-validation-for="TemporaryId" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <input type="submit" value="Register" class="btn btn-primary" />
-    </div>
-</form>
+</div>
 
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $("#isRegistered").change(function () {
+                if (this.checked) {
+                    $("#churchRegSection").show();
+                    $("#tempIdSection").hide();
+                } else {
+                    $("#churchRegSection").hide();
+                    $("#tempIdSection").show();
+                }
+            });
+        });
+    </script>
 }

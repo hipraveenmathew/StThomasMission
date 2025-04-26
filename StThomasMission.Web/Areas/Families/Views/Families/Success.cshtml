@@ -1,22 +1,20 @@
-﻿@model StThomasMission.Core.Entities.Family
-
+﻿@model StThomasMission.Web.Areas.Families.Models.FamilyViewModel
 @{
-    ViewData["Title"] = "Registration Success";
+    ViewData["Title"] = "Registration Successful";
 }
 
-<h1>Family Registration Success</h1>
-<hr />
-<div>
-    <p>Family <strong>@Model.FamilyName</strong> registered successfully!</p>
-    @if (Model.IsRegistered)
-    {
-        <p>Church Registration Number: <strong>@Model.ChurchRegistrationNumber</strong></p>
-    }
-    else
-    {
-        <p>Temporary ID: <strong>@Model.TemporaryID</strong></p>
-    }
-    <p>Ward: @Model.Ward</p>
-    <p>Status: @Model.Status</p>
-    <button onclick="window.print()" class="btn btn-primary">Print</button>
+<div class="card">
+    <div class="card-header">
+        <h3 class="mb-0">Registration Successful</h3>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-success">
+            <h4>Family Registered Successfully!</h4>
+            <p>Family Name: @Model.FamilyName</p>
+            <p>Ward: @Model.Ward</p>
+            <p>Registration: @(Model.IsRegistered ? Model.ChurchRegistrationNumber : Model.TemporaryId)</p>
+        </div>
+        <a asp-action="AddMember" asp-route-familyId="@Model.Id" class="btn btn-modern">Add Family Member</a>
+        <a asp-action="Index" class="btn btn-secondary">Back to Families</a>
+    </div>
 </div>

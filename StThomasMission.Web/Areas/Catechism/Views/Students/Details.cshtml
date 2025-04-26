@@ -1,77 +1,81 @@
 ﻿@model StThomasMission.Web.Areas.Catechism.Models.StudentDetailsViewModel
-
 @{
     ViewData["Title"] = "Student Details";
 }
 
-<h1>Student Details: @Model.FirstName @Model.LastName</h1>
+<div class="card">
+    <div class="card-header">
+        <h3 class="mb-0">Student Details: @Model.FirstName @Model.LastName</h3>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Name:</strong> @Model.FirstName @Model.LastName</p>
+                <p><strong>Grade:</strong> @Model.Grade</p>
+                <p><strong>Group:</strong> @Model.GroupId</p>
+                <p><strong>Student Organisation:</strong> @Model.StudentOrganisation</p>
+                <p><strong>Status:</strong> @Model.Status</p>
+            </div>
+        </div>
 
-<div>
-    <h4>Profile</h4>
-    <hr />
-    <dl class="row">
-        <dt class="col-sm-2">Grade</dt>
-        <dd class="col-sm-10">@Model.Grade</dd>
-        <dt class="col-sm-2">Group</dt>
-        <dd class="col-sm-10">@Model.Group</dd>
-        <dt class="col-sm-2">Organisation</dt>
-        <dd class="col-sm-10">@Model.StudentOrganisation</dd>
-        <dt class="col-sm-2">Status</dt>
-        <dd class="col-sm-10">@Model.Status</dd>
-    </dl>
-</div>
+        <h5 class="mt-4">Attendance Records</h5>
+        @if (Model.Attendances.Any())
+        {
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var attendance in Model.Attendances)
+                    {
+                        <tr>
+                            <td>@attendance.Date.ToString("yyyy-MM-dd")</td>
+                            <td>@attendance.Status</td>
+                            <td>@attendance.Description</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p>No attendance records found.</p>
+        }
 
-<div>
-    <h4>Attendance History</h4>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Description</th>
-                <th>Present</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var attendance in Model.Attendances)
-            {
-                <tr>
-                    <td>@attendance.Date.ToShortDateString()</td>
-                    <td>@attendance.Description</td>
-                    <td>@(attendance.IsPresent ? "Yes" : "No")</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-</div>
+        <h5 class="mt-4">Assessments</h5>
+        @if (Model.Assessments.Any())
+        {
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Marks</th>
+                        <th>Total Marks</th>
+                        <th>Type</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var assessment in Model.Assessments)
+                    {
+                        <tr>
+                            <td>@assessment.Name</td>
+                            <td>@assessment.Marks</td>
+                            <td>@assessment.TotalMarks</td>
+                            <td>@assessment.Type </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p>No assessments found.</p>
+        }
 
-<div>
-    <h4>Assessment History</h4>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Date</th>
-                <th>Marks</th>
-                <th>Total Marks</th>
-                <th>Type</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var assessment in Model.Assessments)
-            {
-                <tr>
-                    <td>@assessment.Name</td>
-                    <td>@assessment.Date.ToShortDateString()</td>
-                    <td>@assessment.Marks</td>
-                    <td>@assessment.TotalMarks</td>
-                    <td>@(assessment.IsMajor ? "Major" : "Minor")</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-</div>
-
-<div>
-    <a asp-action="Index" asp-route-grade="@ViewBag.Grade" class="btn btn-primary">Back to List</a>
-    <p><a asp-action="AddGroupActivity" asp-route-group="@Model.Group" class="btn btn-primary">Add Group Activity</a></p>
+        <a asp-action="Index" class="btn btn-secondary">Back to Students</a>
+    </div>
 </div>

@@ -1,53 +1,83 @@
-﻿@model List<StThomasMission.Core.Entities.Attendance>
-
+﻿@model StThomasMission.Web.Models.PaginatedList<StThomasMission.Core.Entities.Attendance>
 @{
     ViewData["Title"] = "Attendance Records";
 }
 
-<h1>Attendance Records</h1>
-<hr />
-
-<div class="row mb-3">
-    <div class="col-md-6">
-        <form asp-action="Index" method="get">
-            <div class="form-group mb-2">
-                <label>Grade</label>
-                <input type="text" name="grade" class="form-control" value="@ViewBag.Grade" placeholder="e.g., Year 1" />
+<div class="card">
+    <div class="card-header">
+        <h3 class="mb-0">Attendance Records</h3>
+    </div>
+    <div class="card-body">
+        <form asp-action="Index" method="get" class="mb-4">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="grade" class="form-label">Grade</label>
+                        <input type="text" name="grade" class="form-control" value="@ViewData["Grade"]" placeholder="e.g., Year 1" required />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="date" class="form-label">Date</label>
+                        <input type="date" name="date" class="form-control" value="@ViewData["Date"]" required />
+                    </div>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-modern w-100">Filter</button>
+                </div>
             </div>
-            <div class="form-group mb-2">
-                <label>Date</label>
-                <input type="date" name="date" class="form-control" value="@ViewBag.Date" />
-            </div>
-            <button type="submit" class="btn btn-primary">Filter</button>
         </form>
+
+        @if (Model.Count == 0)
+        {
+            <p>No attendance records found.</p>
+        }
+        else
+        {
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var attendance in Model)
+                    {
+                        <tr>
+                            <td>@(attendance.Student?.FamilyMember?.FirstName ?? "N/A") @(attendance.Student?.FamilyMember?.LastName ?? "N/A")</td>
+                            <td>@attendance.Date.ToString("yyyy-MM-dd")</td>
+                            <td>@attendance.Status</td>
+                            <td>@attendance.Description</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <nav aria-label="Page navigation">
+                <ul class="pagination">
+                    @if (Model.HasPreviousPage)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.PageIndex - 1, pageSize = Model.PageSize, grade = ViewData["Grade"], date = ViewData["Date"] })">Previous</a>
+                        </li>
+                    }
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                            <a class="page-link" href="@Url.Action("Index", new { pageNumber = i, pageSize = Model.PageSize, grade = ViewData["Grade"], date = ViewData["Date"] })">@i</a>
+                        </li>
+                    }
+                    @if (Model.HasNextPage)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.PageIndex + 1, pageSize = Model.PageSize, grade = ViewData["Grade"], date = ViewData["Date"] })">Next</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        }
     </div>
 </div>
-
-@if (Model.Any())
-{
-    <table class="table table-bordered table-striped">
-        <thead>
-            <tr>
-                <th>Student Name</th>
-                <th>Date</th>
-                <th>Status</th>
-                <th>Description</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var record in Model)
-            {
-                <tr>
-                    <td>@record.Student.FamilyMember.FirstName @record.Student.FamilyMember.LastName</td>
-                    <td>@record.Date.ToString("yyyy-MM-dd")</td>
-                    <td>@record.Status</td>
-                    <td>@record.Description</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
-else
-{
-    <p>No attendance records found.</p>
-}

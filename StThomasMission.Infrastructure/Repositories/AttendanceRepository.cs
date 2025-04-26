@@ -6,6 +6,7 @@ using StThomasMission.Infrastructure.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace StThomasMission.Infrastructure.Repositories
@@ -41,6 +42,12 @@ namespace StThomasMission.Infrastructure.Repositories
                 .Include(a => a.Student)
                 .Where(a => a.Student.Grade == grade && a.Date.Date == date.Date && a.Student.Status != StudentStatus.Deleted)
                 .ToListAsync();
+        }
+        public IQueryable<Attendance> GetAttendanceQueryable(Expression<Func<Attendance, bool>> predicate)
+        {
+            return _context.Attendances
+                .Where(predicate)
+                .AsQueryable();
         }
     }
 }

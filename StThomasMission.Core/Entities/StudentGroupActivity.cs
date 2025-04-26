@@ -13,7 +13,7 @@ namespace StThomasMission.Core.Entities
         [Required]
         public int GroupActivityId { get; set; } // Foreign key to GroupActivity
         public GroupActivity GroupActivity { get; set; } = null!; // Navigation property
-
+        public DateTime Date { get; set; }
         [Required]
         public DateTime ParticipationDate { get; set; } = DateTime.UtcNow;
 

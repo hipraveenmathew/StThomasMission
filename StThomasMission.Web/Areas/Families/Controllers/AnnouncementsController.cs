@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using StThomasMission.Core.Interfaces;
 using StThomasMission.Web.Areas.Families.Models;
+using System;
 using System.Threading.Tasks;
 
 namespace StThomasMission.Web.Areas.Families.Controllers
@@ -18,27 +19,43 @@ namespace StThomasMission.Web.Areas.Families.Controllers
         }
 
         [HttpGet]
-        public IActionResult SendAnnouncement()
+        public IActionResult Index()
         {
             return View(new SendAnnouncementViewModel());
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SendAnnouncement(SendAnnouncementViewModel model)
+        public async Task<IActionResult> Send(SendAnnouncementViewModel model)
         {
             if (!ModelState.IsValid)
             {
-                return View(model);
+                return View("Index", model);
             }
 
-            foreach (var method in model.CommunicationMethods)
+            try
             {
-                await _communicationService.SendAnnouncementAsync(model.Message, model.Ward, method);
+                if (!model.CommunicationMethods.Any())
+                {
+                    ModelState.AddModelError("CommunicationMethods", "Please select at least one communication method.");
+                    return View("Index", model);
+                }
+
+                foreach (var method in model.CommunicationMethods)
+                {
+                    await _communicationService.SendAnnouncementAsync(model.Message, model.Ward, method);
+                }
+
+                model.SuccessMessage = "Announcement sent successfully!";
+                model.Message = string.Empty; // Clear the message after sending
+                model.CommunicationMethods = new List<string>(); // Clear selected methods
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError(string.Empty, $"Failed to send announcement: {ex.Message}");
             }
 
-            TempData["Success"] = "Announcement sent successfully!";
-            return RedirectToAction("SendAnnouncement");
+            return View("Index", model);
         }
     }
 }

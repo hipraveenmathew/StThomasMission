@@ -1,17 +1,29 @@
-﻿namespace StThomasMission.Web.Areas.Catechism.Models
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+
+namespace StThomasMission.Web.Areas.Catechism.Models
 {
     public class ClassAttendanceViewModel
     {
-        public string Grade { get; set; } = string.Empty;
+        [Required]
+        public string Grade { get; set; }
+
+        [Required]
+        [DataType(DataType.Date)]
         public DateTime Date { get; set; }
-        public string Description { get; set; } = "Catechism Class";
+
+        [Required]
+        public string Description { get; set; }
+
+        [Required]
         public List<StudentAttendanceViewModel> Students { get; set; } = new List<StudentAttendanceViewModel>();
     }
 
     public class StudentAttendanceViewModel
     {
         public int StudentId { get; set; }
-        public string Name { get; set; } = string.Empty;
+        public string Name { get; set; }
         public bool IsPresent { get; set; }
     }
 }

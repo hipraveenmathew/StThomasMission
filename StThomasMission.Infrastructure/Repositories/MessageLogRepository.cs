@@ -6,6 +6,7 @@ using StThomasMission.Infrastructure.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace StThomasMission.Infrastructure.Repositories
@@ -45,6 +46,12 @@ namespace StThomasMission.Infrastructure.Repositories
                 .AsNoTracking()
                 .Where(ml => ml.Method == channel)
                 .ToListAsync();
+        }
+        public IQueryable<MessageLog> GetQueryable(Expression<Func<MessageLog, bool>> predicate)
+        {
+            return _context.Set<MessageLog>()
+                .Where(predicate)
+                .AsQueryable();
         }
     }
 }

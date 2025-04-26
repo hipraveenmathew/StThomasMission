@@ -1,52 +1,53 @@
 ﻿@model StThomasMission.Web.Areas.Catechism.Models.AbsenteeNotificationViewModel
-
 @{
     ViewData["Title"] = "Send Absentee Notifications";
 }
 
-<h2 class="mb-4">Send Absentee Notifications</h2>
+<div class="card">
+    <div class="card-header">
+        <h3 class="mb-0">Send Absentee Notifications</h3>
+    </div>
+    <div class="card-body">
+        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @Model.SuccessMessage
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
 
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success">@TempData["Success"]</div>
-}
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger">@TempData["Error"]</div>
-}
-
-<div class="row">
-    <div class="col-md-6">
         <form asp-action="SendAbsenteeNotifications" method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-            <div class="form-group mb-3">
+            <div class="mb-3">
                 <label asp-for="Grade" class="form-label">Grade</label>
-                <input asp-for="Grade" class="form-control" placeholder="e.g., 1 for Year 1" />
+                <input asp-for="Grade" class="form-control" placeholder="e.g., Year 1" />
                 <span asp-validation-for="Grade" class="text-danger"></span>
             </div>
 
-            <div class="form-group mb-3">
-                <label class="form-label">Communication Methods</label><br />
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="checkbox" name="CommunicationMethods" value="SMS" checked />
-                    <label class="form-check-label">SMS</label>
+            <div class="mb-3">
+                <label class="form-label">Communication Methods</label>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="sms" name="CommunicationMethods" value="SMS" @(Model.CommunicationMethods.Contains("SMS") ? "checked" : "") />
+                    <label class="form-check-label" for="sms">SMS</label>
                 </div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="checkbox" name="CommunicationMethods" value="Email" />
-                    <label class="form-check-label">Email</label>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="email" name="CommunicationMethods" value="Email" @(Model.CommunicationMethods.Contains("Email") ? "checked" : "") />
+                    <label class="form-check-label" for="email">Email</label>
                 </div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="checkbox" name="CommunicationMethods" value="WhatsApp" />
-                    <label class="form-check-label">WhatsApp</label>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="whatsapp" name="CommunicationMethods" value="WhatsApp" @(Model.CommunicationMethods.Contains("WhatsApp") ? "checked" : "") />
+                    <label class="form-check-label" for="whatsapp">WhatsApp</label>
                 </div>
+                <span asp-validation-for="CommunicationMethods" class="text-danger"></span>
             </div>
 
-            <button type="submit" class="btn btn-primary">Send Notifications</button>
+            <button type="submit" class="btn btn-modern">Send Notifications</button>
         </form>
     </div>
 </div>
 
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
 }

@@ -20,13 +20,14 @@ namespace StThomasMission.Infrastructure.Data
         public DbSet<Group> Groups { get; set; }
         public DbSet<GroupActivity> GroupActivities { get; set; }
         public DbSet<StudentGroupActivity> StudentGroupActivities { get; set; }
+        public DbSet<StudentAcademicRecord> StudentAcademicRecords { get; set; }
         public DbSet<MessageLog> MessageLogs { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<Ward> Wards { get; set; }
         public DbSet<MassTiming> MassTimings { get; set; }
         public DbSet<Announcement> Announcements { get; set; }
         public DbSet<MigrationLog> MigrationLogs { get; set; }
-        public DbSet<AssessmentSummary> AssessmentSummaries { get; set; } // Added
+        public DbSet<AssessmentSummary> AssessmentSummaries { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -181,10 +182,19 @@ namespace StThomasMission.Infrastructure.Data
                 .HasForeignKey(a => a.StudentId)
                 .OnDelete(DeleteBehavior.Cascade);
             builder.Entity<Student>()
-                .HasMany(s => s.GroupActivities)
+                .HasMany(s => s.StudentGroupActivities) // Fixed: Changed from GroupActivities to StudentGroupActivities
                 .WithOne(sga => sga.Student)
                 .HasForeignKey(sga => sga.StudentId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<StudentAcademicRecord>()
+                .HasIndex(r => new { r.StudentId, r.AcademicYear })
+                .IsUnique();
+
+            builder.Entity<Student>()
+                .HasMany(s => s.AcademicRecords)
+                .WithOne(r => r.Student)
+                .HasForeignKey(r => r.StudentId);
 
             // Group Configurations
             builder.Entity<Group>()

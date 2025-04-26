@@ -15,6 +15,7 @@ namespace StThomasMission.Core.Interfaces
         IGroupRepository Groups { get; }
         IGroupActivityRepository GroupActivities { get; }
         IStudentGroupActivityRepository StudentGroupActivities { get; }
+        IStudentAcademicRecordRepository StudentAcademicRecords { get; }
         IMessageLogRepository MessageLogs { get; }
         IAuditLogRepository AuditLogs { get; }
         IWardRepository Wards { get; }

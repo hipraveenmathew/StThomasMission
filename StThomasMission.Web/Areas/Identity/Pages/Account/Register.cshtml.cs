@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using StThomasMission.Core.Entities;
+using StThomasMission.Core.Interfaces;
 
 namespace StThomasMission.Web.Areas.Identity.Pages.Account
 {
@@ -26,13 +27,15 @@ namespace StThomasMission.Web.Areas.Identity.Pages.Account
         private readonly IUserEmailStore<ApplicationUser> _emailStore;
         private readonly ILogger<RegisterModel> _logger;
         private readonly IEmailSender _emailSender;
+        private readonly IUnitOfWork _unitOfWork; // Added
 
         public RegisterModel(
             UserManager<ApplicationUser> userManager,
             IUserStore<ApplicationUser> userStore,
             SignInManager<ApplicationUser> signInManager,
             ILogger<RegisterModel> logger,
-            IEmailSender emailSender)
+            IEmailSender emailSender,
+            IUnitOfWork unitOfWork) // Added
         {
             _userManager = userManager;
             _userStore = userStore;
@@ -40,6 +43,7 @@ namespace StThomasMission.Web.Areas.Identity.Pages.Account
             _signInManager = signInManager;
             _logger = logger;
             _emailSender = emailSender;
+            _unitOfWork = unitOfWork; // Added
         }
 
         [BindProperty]
@@ -72,7 +76,7 @@ namespace StThomasMission.Web.Areas.Identity.Pages.Account
             public string FullName { get; set; }
 
             [Display(Name = "Ward")]
-            public string Ward { get; set; }
+            public string Ward { get; set; } // Ward ID as a string
         }
 
         public async Task OnGetAsync(string returnUrl = null)
@@ -90,7 +94,20 @@ namespace StThomasMission.Web.Areas.Identity.Pages.Account
                 var user = CreateUser();
 
                 user.FullName = Input.FullName;
-                user.Ward = Input.Ward;
+
+                // Fetch the Ward entity using the Ward ID from Input.Ward
+                if (!string.IsNullOrEmpty(Input.Ward) && int.TryParse(Input.Ward, out int wardId))
+                {
+                    var ward = await _unitOfWork.Wards.GetByIdAsync(wardId);
+                    if (ward == null)
+                    {
+                        ModelState.AddModelError("Input.Ward", "Invalid ward selected.");
+                        return Page();
+                    }
+                    user.Ward = ward;
+                    user.WardId = wardId; // Set the foreign key
+                }
+                
 
                 await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
                 await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);

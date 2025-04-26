@@ -1,281 +1,414 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StThomasMission.Core.Entities;
-using StThomasMission.Core.Enums;
 using StThomasMission.Core.Interfaces;
-using StThomasMission.Infrastructure.Repositories;
 using StThomasMission.Web.Areas.Catechism.Models;
 using StThomasMission.Web.Models;
+using Microsoft.EntityFrameworkCore;
+using StThomasMission.Core.Enums;
+using StThomasMission.Services;
 
 namespace StThomasMission.Web.Areas.Catechism.Controllers
 {
     [Area("Catechism")]
-    [Authorize(Roles = "Teacher, HeadTeacher")]
+    [Authorize(Roles = "Teacher,HeadTeacher")]
     public class StudentsController : Controller
     {
+        private readonly IStudentService _studentService;
         private readonly ICatechismService _catechismService;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IAssessmentService _assessmentService;
+        private readonly IGroupActivityService _groupActivityService;
 
-        public StudentsController(ICatechismService catechismService, IUnitOfWork unitOfWork)
+        public StudentsController(IStudentService studentService, ICatechismService catechismService, IAssessmentService assessmentService, IGroupActivityService groupActivityService)
         {
+            _studentService = studentService;
             _catechismService = catechismService;
-            _unitOfWork = unitOfWork;
-        }
-
-
-        public StudentsController(ICatechismService catechismService)
-        {
-            _catechismService = catechismService;
+            _assessmentService = assessmentService;
+            _groupActivityService = groupActivityService;
         }
 
         [HttpGet]
         public async Task<IActionResult> Index(string searchString, string sortOrder, int pageNumber = 1, int pageSize = 10)
         {
-            ViewBag.CurrentSort = sortOrder;
-            ViewBag.NameSortParm = string.IsNullOrEmpty(sortOrder) ? "name_desc" : "";
-            ViewBag.GradeSortParm = sortOrder == "grade" ? "grade_desc" : "grade";
+            ViewData["CurrentSort"] = sortOrder;
+            ViewData["NameSortParm"] = string.IsNullOrEmpty(sortOrder) ? "name_desc" : "";
+            ViewData["GradeSortParm"] = sortOrder == "grade" ? "grade_desc" : "grade";
 
-            var students = await _unitOfWork.Students.GetAllAsync();
-
-            if (!string.IsNullOrEmpty(searchString))
+            try
             {
-                students = students.Where(s =>
-                    (s.FamilyMember.FirstName + " " + s.FamilyMember.LastName).Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
-                    s.Grade.Contains(searchString, StringComparison.OrdinalIgnoreCase)).ToList();
+                var studentsQuery = _studentService.GetStudentsQueryable(s => true);
+
+                if (!string.IsNullOrEmpty(searchString))
+                {
+                    var searchLower = searchString.ToLower();
+                    studentsQuery = studentsQuery.Where(s =>
+                        (s.FamilyMember.FirstName + " " + s.FamilyMember.LastName).ToLower().Contains(searchLower) ||
+                        s.Grade.ToLower().Contains(searchLower));
+                }
+
+                studentsQuery = sortOrder switch
+                {
+                    "name_desc" => studentsQuery.OrderByDescending(s => s.FamilyMember.FirstName),
+                    "grade" => studentsQuery.OrderBy(s => s.Grade),
+                    "grade_desc" => studentsQuery.OrderByDescending(s => s.Grade),
+                    _ => studentsQuery.OrderBy(s => s.FamilyMember.FirstName),
+                };
+
+                int totalItems = await studentsQuery.CountAsync();
+                var pagedStudents = await studentsQuery
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                var model = new PaginatedList<Student>(pagedStudents, totalItems, pageNumber, pageSize);
+                ViewData["SearchString"] = searchString;
+                return View(model);
             }
-
-            students = sortOrder switch
+            catch (Exception ex)
             {
-                "name_desc" => students.OrderByDescending(s => s.FamilyMember.FirstName).ToList(),
-                "grade" => students.OrderBy(s => s.Grade).ToList(),
-                "grade_desc" => students.OrderByDescending(s => s.Grade).ToList(),
-                _ => students.OrderBy(s => s.FamilyMember.FirstName).ToList(),
-            };
-
-            int totalItems = students.Count();
-            var pagedStudents = students.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
-
-            var model = new PaginatedList<Student>(pagedStudents, totalItems, pageNumber, pageSize);
-            ViewBag.SearchString = searchString;
-            return View(model);
+                TempData["Error"] = $"Failed to load students: {ex.Message}";
+                return View(new PaginatedList<Student>(new List<Student>(), 0, pageNumber, pageSize));
+            }
         }
-
 
         [HttpGet]
         public async Task<IActionResult> MarkAttendance(string grade)
         {
-            var students = await _catechismService.GetStudentsByGradeAsync(grade);
-            if (!students.Any()) return NotFound("No students found for this grade.");
-
-            var model = new ClassAttendanceViewModel
+            try
             {
-                Grade = grade,
-                Date = DateTime.Today,
-                Description = "Catechism Class",
-                Students = students.Select(s => new StudentAttendanceViewModel
+                var students = await _studentService.GetStudentsByGradeAsync(grade);
+                if (!students.Any())
                 {
-                    StudentId = s.Id,
-                    Name = $"{s.FamilyMember.FirstName} {s.FamilyMember.LastName}",
-                    IsPresent = false
-                }).ToList()
-            };
-            return View(model);
+                    TempData["Error"] = "No students found for this grade.";
+                    return RedirectToAction("Index");
+                }
+
+                var model = new ClassAttendanceViewModel
+                {
+                    Grade = grade,
+                    Date = DateTime.Today,
+                    Description = "Catechism Class",
+                    Students = students.Select(s => new StudentAttendanceViewModel
+                    {
+                        StudentId = s.Id,
+                        Name = $"{s.FamilyMember.FirstName} {s.FamilyMember.LastName}",
+                        IsPresent = false
+                    }).ToList()
+                };
+                return View(model);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Failed to load students for attendance: {ex.Message}";
+                return RedirectToAction("Index");
+            }
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> MarkAttendance(ClassAttendanceViewModel model)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            try
             {
                 foreach (var student in model.Students)
                 {
-                    await _catechismService.AddAttendanceAsync(
+                    await _studentService.AddAttendanceAsync(
                         student.StudentId,
                         model.Date,
                         model.Description,
                         student.IsPresent);
                 }
-                return RedirectToAction(nameof(Index), new { grade = model.Grade });
+                TempData["Success"] = "Attendance marked successfully!";
+                return RedirectToAction("Index");
             }
-            return View(model);
+            catch (Exception ex)
+            {
+                ModelState.AddModelError(string.Empty, $"Failed to mark attendance: {ex.Message}");
+                return View(model);
+            }
         }
 
+        [HttpGet]
         public async Task<IActionResult> AddAssessment(int id)
         {
-            var student = await _catechismService.GetStudentByIdAsync(id);
-            if (student == null)
+            try
             {
-                return NotFound();
+                var student = await _studentService.GetStudentByIdAsync(id);
+                if (student == null)
+                {
+                    return NotFound("Student not found.");
+                }
+
+                ViewData["StudentName"] = $"{student.FamilyMember.FirstName} {student.FamilyMember.LastName}";
+                return View(new AssessmentViewModel { StudentId = id });
             }
-            ViewBag.StudentName = $"{student.FamilyMember.FirstName} {student.FamilyMember.LastName}";
-            return View(new AssessmentViewModel { StudentId = id });
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Failed to load student: {ex.Message}";
+                return RedirectToAction("Index");
+            }
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddAssessment(AssessmentViewModel model)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                await _catechismService.AddAssessmentAsync(model.StudentId, model.Name, model.Marks, model.TotalMarks, DateTime.Today, model.IsMajor);
-
-                return RedirectToAction(nameof(Index), new { grade = ViewBag.Grade });
+                var student = await _studentService.GetStudentByIdAsync(model.StudentId);
+                ViewData["StudentName"] = student != null ? $"{student.FamilyMember.FirstName} {student.FamilyMember.LastName}" : "Unknown";
+                return View(model);
             }
-            var student = await _catechismService.GetStudentByIdAsync(model.StudentId);
-            ViewBag.StudentName = $"{student?.FamilyMember.FirstName} {student?.FamilyMember.LastName}";
-            return View(model);
+
+            try
+            {
+                await _assessmentService.AddAssessmentAsync(
+                    model.StudentId,
+                    model.Name,
+                    model.Marks,
+                    model.TotalMarks,
+                    DateTime.Today,
+                    model.IsMajor ? AssessmentType.SemesterExam : AssessmentType.ClassAssessment); // Updated to use AssessmentType
+                TempData["Success"] = "Assessment added successfully!";
+                return RedirectToAction("Index");
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError(string.Empty, $"Failed to add assessment: {ex.Message}");
+                var student = await _studentService.GetStudentByIdAsync(model.StudentId);
+                ViewData["StudentName"] = student != null ? $"{student.FamilyMember.FirstName} {student.FamilyMember.LastName}" : "Unknown";
+                return View(model);
+            }
         }
 
+        [HttpGet]
         public async Task<IActionResult> MarkPassFail(int id)
         {
-            var student = await _catechismService.GetStudentByIdAsync(id);
-            if (student == null)
+            try
             {
-                return NotFound();
+                var student = await _studentService.GetStudentByIdAsync(id);
+                if (student == null)
+                {
+                    return NotFound("Student not found.");
+                }
+
+                ViewData["StudentName"] = $"{student.FamilyMember.FirstName} {student.FamilyMember.LastName}";
+                return View(new PassFailViewModel { StudentId = id, AcademicYear = student.AcademicYear });
             }
-            ViewBag.StudentName = $"{student.FamilyMember.FirstName} {student.FamilyMember.LastName}";
-            return View(new PassFailViewModel { StudentId = id });
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Failed to load student: {ex.Message}";
+                return RedirectToAction("Index");
+            }
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> MarkPassFail(PassFailViewModel model)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                await _catechismService.MarkPassFailAsync(model.StudentId, model.Passed);
-                return RedirectToAction(nameof(Index), new { grade = ViewBag.Grade });
+                var student = await _studentService.GetStudentByIdAsync(model.StudentId);
+                ViewData["StudentName"] = student != null ? $"{student.FamilyMember.FirstName} {student.FamilyMember.LastName}" : "Unknown";
+                return View(model);
             }
-            var student = await _catechismService.GetStudentByIdAsync(model.StudentId);
-            ViewBag.StudentName = $"{student?.FamilyMember.FirstName} {student?.FamilyMember.LastName}";
-            return View(model);
+
+            try
+            {
+                await _studentService.MarkPassFailAsync(model.StudentId, model.AcademicYear, model.PassThreshold, model.Remarks);
+                TempData["Success"] = "Pass/Fail status recorded successfully!";
+                return RedirectToAction("Index");
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError(string.Empty, $"Failed to record pass/fail status: {ex.Message}");
+                var student = await _studentService.GetStudentByIdAsync(model.StudentId);
+                ViewData["StudentName"] = student != null ? $"{student.FamilyMember.FirstName} {student.FamilyMember.LastName}" : "Unknown";
+                return View(model);
+            }
         }
 
+        [HttpGet]
         public async Task<IActionResult> Details(int id)
         {
-            var student = await _catechismService.GetStudentByIdAsync(id);
-            if (student == null)
+            try
             {
-                return NotFound();
+                var student = await _studentService.GetStudentByIdAsync(id);
+                if (student == null)
+                {
+                    return NotFound("Student not found.");
+                }
+
+                var attendances = await _studentService.GetAttendanceByStudentAsync(id);
+                var assessments = await _studentService.GetAssessmentsByStudentAsync(id);
+
+                var model = new StudentDetailsViewModel
+                {
+                    Id = student.Id,
+                    FirstName = student.FamilyMember?.FirstName ?? "N/A",
+                    LastName = student.FamilyMember?.LastName ?? "N/A",
+                    Grade = student.Grade,
+                    GroupId = student.GroupId,
+                    StudentOrganisation = student.StudentOrganisation,
+                    Status = student.Status.ToString(),
+                    Attendances = attendances?.ToList() ?? new List<Attendance>(),
+                    Assessments = assessments?.ToList() ?? new List<Assessment>()
+                };
+
+                return View(model);
             }
-
-            var attendances = await _catechismService.GetAttendanceByStudentAsync(id);
-            var assessments = await _catechismService.GetAssessmentsByStudentAsync(id);
-
-            var model = new StudentDetailsViewModel
+            catch (Exception ex)
             {
-                Id = student.Id,
-                FirstName = student.FamilyMember?.FirstName ?? "N/A",
-                LastName = student.FamilyMember?.LastName ?? "N/A",
-                Grade = student.Grade,
-                Group = student.Group,
-                StudentOrganisation = student.StudentOrganisation,
-                Status = student.Status.ToString(), // Ensure this if Status is an enum
-                Attendances = attendances?.ToList() ?? new List<Attendance>(),
-                Assessments = assessments?.ToList() ?? new List<Assessment>()
-            };
-
-
-            return View(model);
+                TempData["Error"] = $"Failed to load student details: {ex.Message}";
+                return RedirectToAction("Index");
+            }
         }
-        // Add to the existing StudentsController
-        public IActionResult AddGroupActivity(string group)
+
+        [HttpGet]
+        public IActionResult AddGroupActivity(string grade)
         {
-            ViewBag.Group = group;
-            return View(new GroupActivityViewModel { Group = group });
+            ViewData["Grade"] = grade;
+            return View(new GroupActivityViewModel { Grade = grade });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddGroupActivity(GroupActivityViewModel model)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                await _catechismService.AddGroupActivityAsync(model.Group, model.Name, DateTime.Today, "Auto-added activity", model.Points);
-
-                return RedirectToAction(nameof(Index), new { grade = ViewBag.Grade });
+                ViewData["Grade"] = model.Grade;
+                return View(model);
             }
-            ViewBag.Group = model.Group;
-            return View(model);
+
+            try
+            {
+                await _groupActivityService.AddGroupActivityAsync(
+                    model.Name,
+                    "Auto-added activity",
+                    DateTime.Today,
+                    model.GroupId,
+                    model.Points);
+                TempData["Success"] = "Group activity added successfully!";
+                return RedirectToAction("Index");
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError(string.Empty, $"Failed to add group activity: {ex.Message}");
+                ViewData["Grade"] = model.Grade;
+                return View(model);
+            }
         }
+
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
-            var student = await _unitOfWork.Students.GetByIdAsync(id);
-            if (student == null)
+            try
             {
-                return NotFound();
+                var student = await _studentService.GetStudentByIdAsync(id);
+                if (student == null)
+                {
+                    return NotFound("Student not found.");
+                }
+
+                var model = new EditStudentViewModel
+                {
+                    Id = student.Id,
+                    FamilyMemberId = student.FamilyMemberId,
+                    FirstName = student.FamilyMember?.FirstName ?? "N/A",
+                    LastName = student.FamilyMember?.LastName ?? "N/A",
+                    Grade = student.Grade,
+                    AcademicYear = student.AcademicYear,
+                    GroupId = student.GroupId,
+                    StudentOrganisation = student.StudentOrganisation,
+                    Status = student.Status.ToString()
+                };
+                return View(model);
             }
-            return View(student);
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Failed to load student: {ex.Message}";
+                return RedirectToAction("Index");
+            }
         }
 
         [HttpPost]
-        public async Task<IActionResult> Edit(int id, string firstName, string lastName, int familyMemberId, string grade, int academicYear, string group, string status)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(EditStudentViewModel model)
         {
-            var student = await _unitOfWork.Students.GetByIdAsync(id);
-            if (student == null)
+            if (!ModelState.IsValid)
             {
-                return NotFound();
+                return View(model);
             }
 
-            // Update student fields
-            student.FamilyMemberId = familyMemberId;
-            student.Grade = grade;
-            student.AcademicYear = academicYear;
-            student.Group = group;
-
-            // Ensure status is properly converted to enum if needed
-            if (Enum.TryParse(status, out StudentStatus parsedStatus))
+            try
             {
-                student.Status = parsedStatus;
+                await _studentService.UpdateStudentAsync(
+                    model.Id,
+                    model.Grade,
+                    model.GroupId,
+                    model.StudentOrganisation,
+                    Enum.Parse<Core.Enums.StudentStatus>(model.Status),
+                    null); // Assuming no migration in this context
+                TempData["Success"] = "Student updated successfully!";
+                return RedirectToAction("Index");
             }
-
-            // Update FamilyMember name (optional)
-            if (student.FamilyMember != null)
+            catch (Exception ex)
             {
-                student.FamilyMember.FirstName = firstName;
-                student.FamilyMember.LastName = lastName;
+                ModelState.AddModelError(string.Empty, $"Failed to update student: {ex.Message}");
+                return View(model);
             }
-
-            await _unitOfWork.Students.UpdateAsync(student);
-            await _unitOfWork.CompleteAsync();
-            TempData["Success"] = "Student updated successfully!";
-            return RedirectToAction("Index");
         }
 
         [HttpGet]
         public async Task<IActionResult> Delete(int id)
         {
-            var student = await _catechismService.GetStudentByIdAsync(id);
-            if (student == null)
+            try
             {
-                return NotFound();
+                var student = await _studentService.GetStudentByIdAsync(id);
+                if (student == null)
+                {
+                    return NotFound("Student not found.");
+                }
+
+                var model = new StudentDetailsViewModel
+                {
+                    Id = student.Id,
+                    FirstName = student.FamilyMember?.FirstName ?? "N/A",
+                    LastName = student.FamilyMember?.LastName ?? "N/A",
+                    Grade = student.Grade,
+                    GroupId = student.GroupId,
+                    StudentOrganisation = student.StudentOrganisation,
+                    Status = student.Status.ToString()
+                };
+                return View(model);
             }
-
-            var model = new StudentDetailsViewModel
+            catch (Exception ex)
             {
-                Id = student.Id,
-                FirstName = student.FamilyMember?.FirstName,
-                LastName = student.FamilyMember?.LastName,
-                Grade = student.Grade,
-                Status = student.Status.ToString(),
-                Group = student.Group,
-                StudentOrganisation = student.StudentOrganisation
-            };
-
-            return View(model);
+                TempData["Error"] = $"Failed to load student: {ex.Message}";
+                return RedirectToAction("Index");
+            }
         }
-
 
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            await _catechismService.DeleteStudentAsync(id);
-            TempData["Success"] = "Student deleted successfully!";
-            return RedirectToAction(nameof(Index));
+            try
+            {
+                await _studentService.DeleteStudentAsync(id);
+                TempData["Success"] = "Student deleted successfully!";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Failed to delete student: {ex.Message}";
+            }
+            return RedirectToAction("Index");
         }
-
     }
 }

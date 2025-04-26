@@ -1,41 +1,43 @@
-﻿@{
+﻿@model StThomasMission.Web.Areas.Catechism.Models.RecordParticipationViewModel
+@{
     ViewData["Title"] = "Record Participation";
 }
 
-<h1>Record Student Participation</h1>
-<hr />
+<div class="card">
+    <div class="card-header">
+        <h3 class="mb-0">Record Participation</h3>
+    </div>
+    <div class="card-body">
+        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @Model.SuccessMessage
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
 
-<div class="row">
-    <div class="col-md-6">
         <form asp-action="RecordParticipation" method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-            <div class="form-group mb-3">
-                <label class="control-label">Student ID</label>
-                <input name="studentId" type="number" class="form-control" placeholder="Enter Student ID" required min="1" />
+            <div class="mb-3">
+                <label asp-for="StudentId" class="form-label"></label>
+                <input asp-for="StudentId" type="number" class="form-control" placeholder="Enter student ID" />
+                <span asp-validation-for="StudentId" class="text-danger"></span>
             </div>
 
-            <div class="form-group mb-3">
-                <label class="control-label">Group Activity ID</label>
-                <input name="groupActivityId" type="number" class="form-control" placeholder="Enter Activity ID" required min="1" />
+            <div class="mb-3">
+                <label asp-for="GroupActivityId" class="form-label"></label>
+                <input asp-for="GroupActivityId" type="number" class="form-control" placeholder="Enter group activity ID" />
+                <span asp-validation-for="GroupActivityId" class="text-danger"></span>
             </div>
 
-            <div class="form-group">
-                <button type="submit" class="btn btn-primary">Record Participation</button>
-            </div>
+            <button type="submit" class="btn btn-modern">Record Participation</button>
+            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
         </form>
     </div>
 </div>
 
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success mt-3">@TempData["Success"]</div>
-}
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger mt-3">@TempData["Error"]</div>
-}
-
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
 }

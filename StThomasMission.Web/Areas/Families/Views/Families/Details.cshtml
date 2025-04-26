@@ -1,83 +1,74 @@
-﻿@model StThomasMission.Core.Entities.Family
-
+﻿@model StThomasMission.Web.Areas.Families.Models.FamilyDetailsViewModel
 @{
     ViewData["Title"] = "Family Details";
 }
 
-<h1>Family Details - @Model.FamilyName</h1>
-<hr />
-<div>
-    <p><strong>Family Name:</strong> @Model.FamilyName</p>
-    <p><strong>Ward:</strong> @Model.Ward</p>
-    <p><strong>Status:</strong> @Model.Status</p>
-    @if (Model.IsRegistered)
-    {
-        <p><strong>Church Registration Number:</strong> @Model.ChurchRegistrationNumber</p>
-    }
-    else
-    {
-        <p><strong>Temporary ID:</strong> @Model.TemporaryID</p>
-    }
-    @if (!string.IsNullOrEmpty(Model.MigratedTo))
-    {
-        <p><strong>Migrated To:</strong> @Model.MigratedTo</p>
-    }
-</div>
-
-<div class="mt-4">
-    <h3>Family Members</h3>
-    <p>
-        <a asp-controller="FamilyMembers" asp-action="Add" asp-route-familyId="@Model.Id" class="btn btn-primary">Add Member</a>
-    </p>
-    @if (Model.Members != null && Model.Members.Any())
-    {
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>First Name</th>
-                    <th>Last Name</th>
-                    <th>Contact</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var member in Model.Members)
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="mb-0">Family Details: @Model.FamilyName</h3>
+        <a asp-action="AddMember" asp-route-familyId="@Model.Id" class="btn btn-modern">
+            <i class="fas fa-plus"></i> Add Member
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Family Name:</strong> @Model.FamilyName</p>
+                <p><strong>Ward:</strong> @Model.Ward</p>
+                <p><strong>Registration:</strong> @(Model.IsRegistered ? Model.ChurchRegistrationNumber : Model.TemporaryId)</p>
+                <p><strong>Status:</strong> @Model.Status</p>
+                @if (!string.IsNullOrEmpty(Model.MigratedTo))
                 {
-                    <tr>
-                        <td>@member.FirstName</td>
-                        <td>@member.LastName</td>
-                        <td>@member.Contact</td>
-                        <td>@member.Email</td>
-                        <td>@member.Role</td>
-                        <td>
-                            <a asp-action="Edit" asp-controller="FamilyMembers" asp-route-id="@member.Id" class="btn btn-sm btn-primary">Edit</a>
-                        </td>
-                    </tr>
+                    <p><strong>Migrated To:</strong> @Model.MigratedTo</p>
                 }
-            </tbody>
-        </table>
-    }
-    else
-    {
-        <p>No family members found.</p>
-    }
-</div>
+            </div>
+        </div>
 
-<div class="mt-4">
-    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit Family</a>
-    @if (Model.Status != "Migrated")
-    {
-        <a asp-action="MarkAsMigrated" asp-route-familyId="@Model.Id" class="btn btn-warning">Mark as Migrated</a>
-    }
-    @if (!Model.IsRegistered)
-    {
-        <a asp-action="ConvertToRegistered" asp-route-familyId="@Model.Id" class="btn btn-success">Convert to Registered</a>
-    }
-</div>
+        <h5 class="mt-4">Family Members</h5>
+        @if (Model.Members.Any())
+        {
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>First Name</th>
+                        <th>Last Name</th>
+                        <th>Relation</th>
+                        <th>Date of Birth</th>
+                        <th>Contact</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var member in Model.Members)
+                    {
+                        <tr>
+                            <td>@member.FirstName</td>
+                            <td>@member.LastName</td>
+                            <td>@member.Relation</td>
+                            <td>@member.DateOfBirth.ToString("yyyy-MM-dd")</td>
+                            <td>@member.Contact</td>
+                            <td>@member.Email</td>
+                            <td>@member.Role</td>
+                            <td>
+                                <a asp-controller="FamilyMembers" asp-action="Edit" asp-route-id="@member.Id" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                                <a asp-action="EnrollStudent" asp-route-familyMemberId="@member.Id" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-user-plus"></i> Enroll as Student
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p>No family members found.</p>
+        }
 
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success">@TempData["Success"]</div>
-}
+        <a asp-action="Index" class="btn btn-secondary">Back to Families</a>
+    </div>
+</div>

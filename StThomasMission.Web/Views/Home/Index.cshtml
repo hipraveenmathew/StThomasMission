@@ -1,16 +1,21 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Welcome";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome to St. Thomas Mission</h1>
-    <p>Manage your parish activities with ease.</p>
-    @if (User.Identity.IsAuthenticated)
-    {
-        <p>Please use the navigation bar to access your features.</p>
-    }
-    else
-    {
-        <p>Please <a asp-area="Identity" asp-page="/Account/Login">log in</a> to access the system.</p>
-    }
+<div class="card">
+    <div class="card-header">
+        <h3 class="mb-0">Welcome to St. Thomas Mission</h3>
+    </div>
+    <div class="card-body">
+        <p>Welcome to the St. Thomas Mission management system. This platform helps manage catechism, family activities, and administrative tasks for our parish community.</p>
+        <p>Please use the sidebar to navigate to the appropriate section based on your role:</p>
+        <ul>
+            <li><strong>Teachers/Head Teachers:</strong> Manage students, attendance, and group activities under the Catechism section.</li>
+            <li><strong>Parish Admins/Priests:</strong> Manage families, send announcements, and view message history under the Families section.</li>
+            <li><strong>Admins:</strong> Access user management, audit logs, and backups under the Admin section.</li>
+            <li><strong>Parents:</strong> View your children's progress in the Parent Portal.</li>
+        </ul>
+        <p>If you have any issues, please contact the parish administrator.</p>
+        <a asp-controller="Dashboard" asp-action="Index" class="btn btn-modern">Go to Dashboard</a>
+    </div>
 </div>

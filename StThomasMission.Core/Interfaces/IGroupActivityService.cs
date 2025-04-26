@@ -13,7 +13,7 @@ namespace StThomasMission.Core.Interfaces
         Task DeleteGroupActivityAsync(int groupActivityId);
         Task AddStudentToGroupActivityAsync(int studentId, int groupActivityId, DateTime participationDate, int pointsEarned);
         Task<IEnumerable<GroupActivity>> GetGroupActivitiesAsync(int? groupId = null, DateTime? startDate = null, DateTime? endDate = null);
-        Task<IEnumerable<StudentGroupActivity>> GetStudentGroupActivitiesAsync(int studentId);
+        Task<IEnumerable<StudentGroupActivity>> GetStudentGroupActivitiesAsync(int? groupActivityId = null, int? studentId = null);
         Task<GroupActivity?> GetGroupActivityByIdAsync(int groupActivityId);
     }
 }

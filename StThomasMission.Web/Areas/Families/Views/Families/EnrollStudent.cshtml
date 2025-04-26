@@ -1,41 +1,48 @@
 ﻿@model StThomasMission.Web.Areas.Families.Models.StudentEnrollmentViewModel
-
 @{
     ViewData["Title"] = "Enroll Student";
 }
 
-<h1>Enroll Student</h1>
+<div class="card">
+    <div class="card-header">
+        <h3 class="mb-0">Enroll Student</h3>
+    </div>
+    <div class="card-body">
+        <form asp-action="EnrollStudent" method="post">
+            <input type="hidden" asp-for="FamilyMemberId" />
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-<form asp-action="EnrollStudent">
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <input type="hidden" asp-for="FamilyMemberId" />
-    <div class="form-group">
-        <label asp-for="Grade" class="control-label"></label>
-        <input asp-for="Grade" class="form-control" />
-        <span asp-validation-for="Grade" class="text-danger"></span>
+            <div class="mb-3">
+                <label asp-for="Grade" class="form-label"></label>
+                <input asp-for="Grade" class="form-control" placeholder="e.g., Year 1" />
+                <span asp-validation-for="Grade" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="AcademicYear" class="form-label"></label>
+                <input asp-for="AcademicYear" type="number" class="form-control" />
+                <span asp-validation-for="AcademicYear" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Group" class="form-label">Group</label>
+                <input asp-for="Group" type="number" class="form-control" placeholder="Enter group ID" />
+                <span asp-validation-for="Group" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="StudentOrganisation" class="form-label"></label>
+                <input asp-for="StudentOrganisation" class="form-control" placeholder="e.g., Sunday School" />
+                <span asp-validation-for="StudentOrganisation" class="text-danger"></span>
+            </div>
+
+            <button type="submit" class="btn btn-modern">Enroll</button>
+            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+        </form>
     </div>
-    <div class="form-group">
-        <label asp-for="AcademicYear" class="control-label"></label>
-        <input asp-for="AcademicYear" class="form-control" type="number" />
-        <span asp-validation-for="AcademicYear" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="Group" class="control-label"></label>
-        <input asp-for="Group" class="form-control" />
-        <span asp-validation-for="Group" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="StudentOrganisation" class="control-label"></label>
-        <input asp-for="StudentOrganisation" class="form-control" />
-        <span asp-validation-for="StudentOrganisation" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <input type="submit" value="Enroll" class="btn btn-primary" />
-    </div>
-</form>
+</div>
 
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
 }

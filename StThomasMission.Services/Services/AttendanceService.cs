@@ -101,5 +101,6 @@ namespace StThomasMission.Services
                 throw new ArgumentException("Attendance record not found.", nameof(attendanceId));
             return attendance;
         }
+
     }
 }

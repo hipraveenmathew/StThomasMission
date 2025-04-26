@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using StThomasMission.Core.Entities;
 using StThomasMission.Core.Interfaces;
+using StThomasMission.Web.Areas.Families.Models;
 using StThomasMission.Web.Models;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
 
 namespace StThomasMission.Web.Areas.Families.Controllers
 {
@@ -13,42 +15,42 @@ namespace StThomasMission.Web.Areas.Families.Controllers
     [Authorize(Roles = "ParishAdmin,ParishPriest")]
     public class MessageHistoryController : Controller
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly ICommunicationService _communicationService;
 
-        public MessageHistoryController(IUnitOfWork unitOfWork)
+        public MessageHistoryController(ICommunicationService communicationService)
         {
-            _unitOfWork = unitOfWork;
+            _communicationService = communicationService;
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index(string searchString, string sortOrder, int pageNumber = 1, int pageSize = 10)
+        public async Task<IActionResult> Index(MessageHistoryFilterViewModel filter, string sortOrder, int pageNumber = 1, int pageSize = 10)
         {
-            ViewBag.CurrentSort = sortOrder;
-            ViewBag.DateSortParm = string.IsNullOrEmpty(sortOrder) ? "date_desc" : "";
-            ViewBag.MethodSortParm = sortOrder == "method" ? "method_desc" : "method";
+            ViewData["CurrentSort"] = sortOrder;
+            ViewData["DateSortParm"] = string.IsNullOrEmpty(sortOrder) ? "date_desc" : "";
+            ViewData["MethodSortParm"] = sortOrder == "method" ? "method_desc" : "method";
 
-            var messages = await _unitOfWork.MessageLogs.GetAllAsync();
+            // Build the query with server-side filtering
+            var messagesQuery = _communicationService.GetMessageHistoryQueryable(filter.SearchString);
 
-            if (!string.IsNullOrEmpty(searchString))
+            // Apply sorting
+            messagesQuery = sortOrder switch
             {
-                messages = messages.Where(m => m.Recipient.Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
-                                               m.Message.Contains(searchString, StringComparison.OrdinalIgnoreCase)).ToList();
-            }
-
-            messages = sortOrder switch
-            {
-                "date_desc" => messages.OrderByDescending(m => m.SentAt).ToList(),
-                "method" => messages.OrderBy(m => m.Method).ToList(),
-                "method_desc" => messages.OrderByDescending(m => m.Method).ToList(),
-                _ => messages.OrderBy(m => m.SentAt).ToList(),
+                "date_desc" => messagesQuery.OrderByDescending(m => m.SentAt),
+                "method" => messagesQuery.OrderBy(m => m.Method),
+                "method_desc" => messagesQuery.OrderByDescending(m => m.Method),
+                _ => messagesQuery.OrderBy(m => m.SentAt),
             };
 
-            int totalItems = messages.Count();
-            var pagedMessages = messages.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
+            // Pagination
+            int totalItems = await messagesQuery.CountAsync();
+            var pagedMessages = await messagesQuery.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
 
             var model = new PaginatedList<MessageLog>(pagedMessages, totalItems, pageNumber, pageSize);
-            ViewBag.SearchString = searchString;
-            return View(model);
+            return View(new MessageHistoryIndexViewModel
+            {
+                Filter = filter,
+                Messages = model
+            });
         }
     }
 }

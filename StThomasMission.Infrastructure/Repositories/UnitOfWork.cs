@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Storage;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using StThomasMission.Core.Entities;
 using StThomasMission.Core.Interfaces;
 using StThomasMission.Infrastructure.Data;
@@ -20,6 +21,7 @@ namespace StThomasMission.Infrastructure
             Attendances = new AttendanceRepository(_dbContext);
             Assessments = new AssessmentRepository(_dbContext);
             Groups = new GroupRepository(_dbContext);
+            StudentAcademicRecords = new StudentAcademicRecordRepository(_dbContext); 
             GroupActivities = new GroupActivityRepository(_dbContext);
             StudentGroupActivities = new StudentGroupActivityRepository(_dbContext);
             MessageLogs = new MessageLogRepository(_dbContext);
@@ -39,6 +41,7 @@ namespace StThomasMission.Infrastructure
         public IGroupRepository Groups { get; }
         public IGroupActivityRepository GroupActivities { get; }
         public IStudentGroupActivityRepository StudentGroupActivities { get; }
+        public IStudentAcademicRecordRepository StudentAcademicRecords { get; private set; }
         public IMessageLogRepository MessageLogs { get; }
         public IAuditLogRepository AuditLogs { get; }
         public IWardRepository Wards { get; }

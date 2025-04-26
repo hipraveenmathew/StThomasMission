@@ -2,7 +2,6 @@
 using StThomasMission.Core.Enums;
 using StThomasMission.Core.Interfaces;
 using System;
-using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -21,7 +20,7 @@ namespace StThomasMission.Services
             _auditService = auditService;
         }
 
-        public async Task AddAssessmentAsync(int studentId, string name, int marks, int totalMarks, DateTime date, AssessmentType type)
+        public async Task AddAssessmentAsync(int studentId, string name, double marks, double totalMarks, DateTime date, AssessmentType type)
         {
             if (string.IsNullOrEmpty(name))
                 throw new ArgumentException("Assessment name is required.", nameof(name));
@@ -42,7 +41,8 @@ namespace StThomasMission.Services
                 TotalMarks = totalMarks,
                 Date = date,
                 Type = type,
-                CreatedBy = "System"
+                CreatedBy = "System",
+                CreatedDate = DateTime.UtcNow
             };
 
             await _unitOfWork.Assessments.AddAsync(assessment);
@@ -51,7 +51,7 @@ namespace StThomasMission.Services
             await _auditService.LogActionAsync("System", "Create", nameof(Assessment), assessment.Id.ToString(), $"Added assessment: {name} for student {studentId}");
         }
 
-        public async Task UpdateAssessmentAsync(int assessmentId, string name, int marks, int totalMarks, DateTime date, AssessmentType type)
+        public async Task UpdateAssessmentAsync(int assessmentId, string name, double marks, double totalMarks, DateTime date, AssessmentType type)
         {
             var assessment = await GetAssessmentByIdAsync(assessmentId);
 
@@ -70,6 +70,7 @@ namespace StThomasMission.Services
             assessment.Date = date;
             assessment.Type = type;
             assessment.UpdatedBy = "System";
+            assessment.UpdatedDate = DateTime.UtcNow;
 
             await _unitOfWork.Assessments.UpdateAsync(assessment);
             await _unitOfWork.CompleteAsync();
@@ -90,7 +91,7 @@ namespace StThomasMission.Services
         public async Task<IEnumerable<Assessment>> GetAssessmentsByStudentAsync(int studentId, AssessmentType? type = null)
         {
             await _studentService.GetStudentByIdAsync(studentId);
-            return await _unitOfWork.Assessments.GetByStudentIdAsync(studentId, type);
+            return await _unitOfWork.Assessments.GetAssessmentsByStudentIdAsync(studentId, type);
         }
 
         public async Task<IEnumerable<Assessment>> GetAssessmentsByGradeAsync(string grade, DateTime? startDate = null, DateTime? endDate = null)

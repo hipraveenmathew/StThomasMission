@@ -1,40 +1,42 @@
-﻿@{
+﻿@model StThomasMission.Web.Areas.Catechism.Models.PromoteStudentsViewModel
+@{
     ViewData["Title"] = "Promote Students";
 }
 
-<h1>Promote Students</h1>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="PromoteStudents">
+<div class="card">
+    <div class="card-header">
+        <h3 class="mb-0">Promote Students</h3>
+    </div>
+    <div class="card-body">
+        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @Model.SuccessMessage
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <form asp-action="PromoteStudents" method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-            <div class="form-group mb-3">
-                <label class="control-label">Grade</label>
-                <input name="grade" class="form-control" placeholder="e.g., Year 1" required />
+            <div class="mb-3">
+                <label asp-for="Grade" class="form-label"></label>
+                <input asp-for="Grade" class="form-control" placeholder="e.g., Year 1" />
+                <span asp-validation-for="Grade" class="text-danger"></span>
             </div>
 
-            <div class="form-group mb-3">
-                <label class="control-label">Academic Year</label>
-                <input name="academicYear" type="number" class="form-control" placeholder="e.g., 2025" required />
+            <div class="mb-3">
+                <label asp-for="AcademicYear" class="form-label"></label>
+                <input asp-for="AcademicYear" type="number" class="form-control" />
+                <span asp-validation-for="AcademicYear" class="text-danger"></span>
             </div>
 
-            <div class="form-group">
-                <button type="submit" class="btn btn-primary">Promote Students</button>
-            </div>
+            <button type="submit" class="btn btn-modern">Promote Students</button>
         </form>
     </div>
 </div>
 
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success">@TempData["Success"]</div>
-}
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger">@TempData["Error"]</div>
-}
-
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
 }

@@ -1,53 +1,69 @@
-﻿@model StThomasMission.Core.Entities.FamilyMember
-
+﻿@model StThomasMission.Web.Areas.Families.Models.FamilyMemberViewModel
 @{
     ViewData["Title"] = "Edit Family Member";
-    var familyName = ViewBag.FamilyName as string;
 }
 
-<h1>Edit Family Member for @familyName</h1>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Edit">
+<div class="card">
+    <div class="card-header">
+        <h3 class="mb-0">Edit Family Member: @Model.FirstName @Model.LastName</h3>
+    </div>
+    <div class="card-body">
+        <form asp-action="Edit" method="post">
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="FamilyId" />
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" name="id" value="@Model.Id" />
-            <div class="form-group mb-3">
-                <label class="control-label">First Name</label>
-                <input name="firstName" class="form-control" value="@Model.FirstName" />
+
+            <div class="mb-3">
+                <label asp-for="FirstName" class="form-label"></label>
+                <input asp-for="FirstName" class="form-control" />
+                <span asp-validation-for="FirstName" class="text-danger"></span>
             </div>
-            <div class="form-group mb-3">
-                <label class="control-label">Last Name</label>
-                <input name="lastName" class="form-control" value="@Model.LastName" />
+
+            <div class="mb-3">
+                <label asp-for="LastName" class="form-label"></label>
+                <input asp-for="LastName" class="form-control" />
+                <span asp-validation-for="LastName" class="text-danger"></span>
             </div>
-            <div class="form-group mb-3">
-                <label class="control-label">Contact</label>
-                <input name="contact" class="form-control" value="@Model.Contact" />
-            </div>
-            <div class="form-group mb-3">
-                <label class="control-label">Email</label>
-                <input name="email" class="form-control" value="@Model.Email" />
-            </div>
-            <div class="form-group mb-3">
-                <label class="control-label">Role</label>
-                <select name="role" class="form-control">
-                    <option value="Parent" @(Model.Role == "Parent" ? "selected" : "")>Parent</option>
-                    <option value="Child" @(Model.Role == "Child" ? "selected" : "")>Child</option>
-                    <option value="Other" @(Model.Role == "Other" ? "selected" : "")>Other</option>
+
+            <div class="mb-3">
+                <label asp-for="Relation" class="form-label"></label>
+                <select asp-for="Relation" class="form-select" asp-items="Html.GetEnumSelectList<StThomasMission.Core.Enums.FamilyMemberRole>()">
+                    <option value="">Select Relation</option>
                 </select>
+                <span asp-validation-for="Relation" class="text-danger"></span>
             </div>
-            Regiment.            <div class="form-group">
-                <button type="submit" class="btn btn-primary">Update Member</button>
+
+            <div class="mb-3">
+                <label asp-for="DateOfBirth" class="form-label"></label>
+                <input asp-for="DateOfBirth" type="date" class="form-control" />
+                <span asp-validation-for="DateOfBirth" class="text-danger"></span>
             </div>
+
+            <div class="mb-3">
+                <label asp-for="Contact" class="form-label"></label>
+                <input asp-for="Contact" class="form-control" placeholder="e.g., +1234567890" />
+                <span asp-validation-for="Contact" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label"></label>
+                <input asp-for="Email" type="email" class="form-control" placeholder="e.g., example@example.com" />
+                <span asp-validation-for="Email" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Role" class="form-label"></label>
+                <input asp-for="Role" class="form-control" placeholder="e.g., Parent, Child" />
+                <span asp-validation-for="Role" class="text-danger"></span>
+            </div>
+
+            <button type="submit" class="btn btn-modern">Save</button>
+            <a asp-controller="Families" asp-action="Details" asp-route-id="@Model.FamilyId" class="btn btn-secondary">Cancel</a>
         </form>
     </div>
 </div>
 
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success">@TempData["Success"]</div>
-}
-
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
 }

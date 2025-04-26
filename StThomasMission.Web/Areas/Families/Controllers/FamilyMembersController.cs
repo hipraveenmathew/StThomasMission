@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using StThomasMission.Core.Entities;
 using StThomasMission.Core.Interfaces;
+using StThomasMission.Web.Areas.Families.Models;
 using System.Threading.Tasks;
 
 namespace StThomasMission.Web.Areas.Families.Controllers
@@ -10,83 +11,121 @@ namespace StThomasMission.Web.Areas.Families.Controllers
     [Authorize(Roles = "ParishAdmin,ParishPriest")]
     public class FamilyMembersController : Controller
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IFamilyService _familyService;
+        private readonly IFamilyMemberService _familyMemberService;
 
-        public FamilyMembersController(IUnitOfWork unitOfWork)
+        public FamilyMembersController(IFamilyService familyService, IFamilyMemberService familyMemberService)
         {
-            _unitOfWork = unitOfWork;
+            _familyService = familyService;
+            _familyMemberService = familyMemberService;
         }
 
         [HttpGet]
         public async Task<IActionResult> Add(int familyId)
         {
-            var family = await _unitOfWork.Families.GetByIdAsync(familyId);
+            var family = await _familyService.GetFamilyByIdAsync(familyId);
             if (family == null)
             {
-                return NotFound();
+                return NotFound("Family not found.");
             }
-            var model = new FamilyMember { FamilyId = familyId };
-            ViewBag.FamilyName = family.FamilyName;
+
+            var model = new FamilyMemberViewModel { FamilyId = familyId };
+            ViewData["FamilyName"] = family.FamilyName;
             return View(model);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Add(int familyId, string firstName, string lastName, string contact, string email, string role)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Add(FamilyMemberViewModel model)
         {
-            var family = await _unitOfWork.Families.GetByIdAsync(familyId);
-            if (family == null)
+            if (!ModelState.IsValid)
             {
-                return NotFound();
+                var family = await _familyService.GetFamilyByIdAsync(model.FamilyId);
+                ViewData["FamilyName"] = family?.FamilyName;
+                return View(model);
             }
 
-            var familyMember = new FamilyMember
+            try
             {
-                FamilyId = familyId,
-                FirstName = firstName,
-                LastName = lastName,
-                Contact = contact,
-                Email = email,
-                Role = role
-            };
-
-            await _unitOfWork.FamilyMembers.AddAsync(familyMember);
-            await _unitOfWork.CompleteAsync();
-            TempData["Success"] = "Family member added successfully!";
-            return RedirectToAction("Details", "Families", new { id = familyId });
+                await _familyMemberService.AddFamilyMemberAsync(
+                    model.FamilyId,
+                    model.FirstName,
+                    model.LastName,
+                    model.Relation,
+                    model.DateOfBirth,
+                    model.Contact,
+                    model.Email,
+                    model.Role);
+                return RedirectToAction("Details", "Families", new { id = model.FamilyId });
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError(string.Empty, $"Failed to add family member: {ex.Message}");
+                var family = await _familyService.GetFamilyByIdAsync(model.FamilyId);
+                ViewData["FamilyName"] = family?.FamilyName;
+                return View(model);
+            }
         }
 
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
-            var familyMember = await _unitOfWork.FamilyMembers.GetByIdAsync(id);
+            var familyMember = await _familyMemberService.GetFamilyMemberByIdAsync(id);
             if (familyMember == null)
             {
-                return NotFound();
+                return NotFound("Family member not found.");
             }
-            var family = await _unitOfWork.Families.GetByIdAsync(familyMember.FamilyId);
-            ViewBag.FamilyName = family.FamilyName;
-            return View(familyMember);
+
+            var family = await _familyService.GetFamilyByIdAsync(familyMember.FamilyId);
+            ViewData["FamilyName"] = family?.FamilyName;
+
+            var model = new FamilyMemberViewModel
+            {
+                Id = familyMember.Id,
+                FamilyId = familyMember.FamilyId,
+                FirstName = familyMember.FirstName,
+                LastName = familyMember.LastName,
+                Relation = familyMember.Relation,
+                DateOfBirth = familyMember.DateOfBirth,
+                Contact = familyMember.Contact,
+                Email = familyMember.Email,
+                Role = familyMember.Role
+            };
+
+            return View(model);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Edit(int id, string firstName, string lastName, string contact, string email, string role)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(FamilyMemberViewModel model)
         {
-            var familyMember = await _unitOfWork.FamilyMembers.GetByIdAsync(id);
-            if (familyMember == null)
+            if (!ModelState.IsValid)
             {
-                return NotFound();
+                var family = await _familyService.GetFamilyByIdAsync(model.FamilyId);
+                ViewData["FamilyName"] = family?.FamilyName;
+                return View(model);
             }
 
-            familyMember.FirstName = firstName;
-            familyMember.LastName = lastName;
-            familyMember.Contact = contact;
-            familyMember.Email = email;
-            familyMember.Role = role;
-
-            await _unitOfWork.FamilyMembers.UpdateAsync(familyMember);
-            await _unitOfWork.CompleteAsync();
-            TempData["Success"] = "Family member updated successfully!";
-            return RedirectToAction("Details", "Families", new { id = familyMember.FamilyId });
+            try
+            {
+                await _familyMemberService.UpdateFamilyMemberAsync(
+                    model.Id,
+                    model.FirstName,
+                    model.LastName,
+                    model.Relation,
+                    model.DateOfBirth,
+                    model.Contact,
+                    model.Email,
+                    model.Role);
+                return RedirectToAction("Details", "Families", new { id = model.FamilyId });
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError(string.Empty, $"Failed to update family member: {ex.Message}");
+                var family = await _familyService.GetFamilyByIdAsync(model.FamilyId);
+                ViewData["FamilyName"] = family?.FamilyName;
+                return View(model);
+            }
         }
     }
 }

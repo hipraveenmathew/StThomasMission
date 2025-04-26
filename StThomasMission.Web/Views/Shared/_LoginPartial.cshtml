@@ -1,27 +1,17 @@
 ﻿@using Microsoft.AspNetCore.Identity
-@using StThomasMission.Core.Entities
+@using StThomasMission.Core.Entities;
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
 
-<ul class="navbar-nav">
 @if (SignInManager.IsSignedIn(User))
 {
-    <li class="nav-item">
-        <a  class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage">Hello @User.Identity?.Name!</a>
-    </li>
-    <li class="nav-item">
-        <form  class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
-            <button  type="submit" class="nav-link btn btn-link text-dark">Logout</button>
-        </form>
-    </li>
+    <a asp-area="Identity" asp-page="/Account/Manage/Index" class="nav-link text-dark" title="Manage">Hello @UserManager.GetUserName(User)!</a>
+    <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })" method="post" style="display:inline;">
+        <button type="submit" class="btn btn-outline-danger">Logout</button>
+    </form>
 }
 else
 {
-    <li class="nav-item">
-        <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Register">Register</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Login">Login</a>
-    </li>
+    <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-outline-primary">Login</a>
+    <a asp-area="Identity" asp-page="/Account/Register" class="btn btn-outline-success">Register</a>
 }
-</ul>

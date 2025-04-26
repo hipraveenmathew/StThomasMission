@@ -6,6 +6,7 @@ using StThomasMission.Core.Entities;
 using StThomasMission.Core.Enums;
 using StThomasMission.Core.Interfaces;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace StThomasMission.Services
 {
@@ -32,7 +33,7 @@ namespace StThomasMission.Services
             var familyMember = await _unitOfWork.FamilyMembers.GetByIdAsync(student.FamilyMemberId);
             var group = await _unitOfWork.Groups.GetByIdAsync(student.GroupId);
             var attendances = await _unitOfWork.Attendances.GetByStudentIdAsync(studentId);
-            var assessments = await _unitOfWork.Assessments.GetByStudentIdAsync(studentId);
+            var assessments = await _unitOfWork.Assessments.GetAssessmentsByStudentIdAsync(studentId); // Fixed method name
             var groupActivities = await _unitOfWork.StudentGroupActivities.GetByStudentIdAsync(studentId);
 
             if (format == ReportFormat.Pdf)
@@ -243,6 +244,7 @@ namespace StThomasMission.Services
 
             return await Task.FromResult(package.GetAsByteArray());
         }
+
         private async Task<byte[]> GenerateClassPdfAsync(string grade, int academicYear, IEnumerable<Student> students)
         {
             return await Task.Run(() =>
@@ -272,7 +274,7 @@ namespace StThomasMission.Services
                                 attendancesTask.Wait();
                                 var attendances = attendancesTask.Result;
 
-                                var assessmentsTask = _unitOfWork.Assessments.GetByStudentIdAsync(student.Id);
+                                var assessmentsTask = _unitOfWork.Assessments.GetAssessmentsByStudentIdAsync(student.Id); // Fixed method name
                                 assessmentsTask.Wait();
                                 var assessments = assessmentsTask.Result;
 
@@ -311,7 +313,7 @@ namespace StThomasMission.Services
             {
                 var familyMember = await _unitOfWork.FamilyMembers.GetByIdAsync(student.FamilyMemberId);
                 var attendances = await _unitOfWork.Attendances.GetByStudentIdAsync(student.Id);
-                var assessments = await _unitOfWork.Assessments.GetByStudentIdAsync(student.Id);
+                var assessments = await _unitOfWork.Assessments.GetAssessmentsByStudentIdAsync(student.Id); // Fixed method name
 
                 var attendanceRate = attendances.Any() ? (double)attendances.Count(a => a.Status == AttendanceStatus.Present) / attendances.Count() * 100 : 0;
                 var avgMarks = assessments.Any() ? assessments.Average(a => (double)a.Marks / a.TotalMarks * 100) : 0;

@@ -1,6 +1,9 @@
 ﻿using StThomasMission.Core.Entities;
 using StThomasMission.Core.Enums;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace StThomasMission.Core.Interfaces
@@ -16,5 +19,11 @@ namespace StThomasMission.Core.Interfaces
         Task DeleteStudentAsync(int studentId);
         Task MarkStudentAsInactiveAsync(int studentId);
         Task PromoteStudentsAsync(string grade, int academicYear);
+        Task AddAttendanceAsync(int studentId, DateTime date, string description, bool isPresent);
+        Task<IEnumerable<Attendance>> GetAttendanceByStudentAsync(int studentId);
+        Task<IEnumerable<Attendance>> GetAttendanceByDateAsync(DateTime date);
+        Task<IEnumerable<Assessment>> GetAssessmentsByStudentAsync(int studentId);
+        IQueryable<Student> GetStudentsQueryable(Expression<Func<Student, bool>> predicate);
+        IQueryable<Attendance> GetAttendanceQueryable(Expression<Func<Attendance, bool>> predicate);
     }
 }

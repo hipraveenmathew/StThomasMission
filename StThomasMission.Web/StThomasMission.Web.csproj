@@ -19,6 +19,9 @@
 	    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 	  </PackageReference>
 	  <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.7" />
+	  <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+	  <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+	  <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
 	</ItemGroup>
 
 	
@@ -26,5 +29,13 @@
 		<ProjectReference Include="..\StThomasMission.Core\StThomasMission.Core.csproj" />
 		<ProjectReference Include="..\StThomasMission.Infrastructure\StThomasMission.Infrastructure.csproj" />
 		<ProjectReference Include="..\StThomasMission.Services\StThomasMission.Services.csproj" />
+	</ItemGroup>
+
+	
+	<ItemGroup>
+	  <Folder Include="Areas\Reports\Views\CatechismReports\" />
+	  <Folder Include="Areas\Reports\Views\ClassReports\" />
+	  <Folder Include="Areas\Reports\Views\FamilyReports\" />
+	  <Folder Include="Areas\Reports\Views\StudentReports\" />
 	</ItemGroup>
 </Project>

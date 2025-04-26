@@ -1,54 +1,59 @@
 ﻿@model StThomasMission.Web.Areas.Catechism.Models.SendGroupUpdateViewModel
-
 @{
     ViewData["Title"] = "Send Group Update";
 }
 
-<h1 class="mb-4">Send Group Update</h1>
-
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success">@TempData["Success"]</div>
-}
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger">@TempData["Error"]</div>
-}
-
-<form asp-action="SendGroupUpdate" method="post">
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-    <div class="mb-3">
-        <label asp-for="GroupName" class="form-label">Group Name</label>
-        <input asp-for="GroupName" class="form-control" placeholder="e.g., St. Peter Group" />
-        <span asp-validation-for="GroupName" class="text-danger"></span>
+<div class="card">
+    <div class="card-header">
+        <h3 class="mb-0">Send Group Update</h3>
     </div>
+    <div class="card-body">
+        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @Model.SuccessMessage
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
 
-    <div class="mb-3">
-        <label asp-for="UpdateMessage" class="form-label">Update Message</label>
-        <textarea asp-for="UpdateMessage" class="form-control" rows="4"></textarea>
-        <span asp-validation-for="UpdateMessage" class="text-danger"></span>
+        <form asp-action="SendGroupUpdate" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="mb-3">
+                <label asp-for="GroupId" class="form-label"></label>
+                <input asp-for="GroupId" type="number" class="form-control" placeholder="Enter group ID" />
+                <span asp-validation-for="GroupId" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="UpdateMessage" class="form-label"></label>
+                <textarea asp-for="UpdateMessage" class="form-control" rows="5" placeholder="Enter update message"></textarea>
+                <span asp-validation-for="UpdateMessage" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Communication Methods</label>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="sms" name="CommunicationMethods" value="SMS" @(Model.CommunicationMethods.Contains("SMS") ? "checked" : "") />
+                    <label class="form-check-label" for="sms">SMS</label>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="email" name="CommunicationMethods" value="Email" @(Model.CommunicationMethods.Contains("Email") ? "checked" : "") />
+                    <label class="form-check-label" for="email">Email</label>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="whatsapp" name="CommunicationMethods" value="WhatsApp" @(Model.CommunicationMethods.Contains("WhatsApp") ? "checked" : "") />
+                    <label class="form-check-label" for="whatsapp">WhatsApp</label>
+                </div>
+                <span asp-validation-for="CommunicationMethods" class="text-danger"></span>
+            </div>
+
+            <button type="submit" class="btn btn-modern">Send Update</button>
+        </form>
     </div>
-
-    <div class="mb-3">
-        <label class="form-label">Communication Methods</label>
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" value="SMS" name="CommunicationMethods" id="sms" checked />
-            <label class="form-check-label" for="sms">SMS</label>
-        </div>
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" value="Email" name="CommunicationMethods" id="email" />
-            <label class="form-check-label" for="email">Email</label>
-        </div>
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" value="WhatsApp" name="CommunicationMethods" id="whatsapp" />
-            <label class="form-check-label" for="whatsapp">WhatsApp</label>
-        </div>
-    </div>
-
-    <button type="submit" class="btn btn-primary">Send Update</button>
-</form>
+</div>
 
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
 }

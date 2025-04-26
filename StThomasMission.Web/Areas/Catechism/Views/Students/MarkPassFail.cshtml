@@ -1,26 +1,42 @@
 ﻿@model StThomasMission.Web.Areas.Catechism.Models.PassFailViewModel
-
 @{
     ViewData["Title"] = "Mark Pass/Fail";
 }
 
-<h1>Mark Pass/Fail for @ViewBag.StudentName</h1>
+<div class="card">
+    <div class="card-header">
+        <h3 class="mb-0">Mark Pass/Fail for @ViewData["StudentName"]</h3>
+    </div>
+    <div class="card-body">
+        <form asp-action="MarkPassFail" method="post">
+            <input type="hidden" asp-for="StudentId" />
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-<form asp-action="MarkPassFail">
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <input type="hidden" asp-for="StudentId" />
-    <div class="form-group">
-        <label asp-for="Passed" class="control-label"></label>
-        <input asp-for="Passed" type="checkbox" />
-        <span asp-validation-for="Passed" class="text-danger"></span>
+            <div class="mb-3">
+                <label asp-for="AcademicYear" class="form-label"></label>
+                <input asp-for="AcademicYear" type="number" class="form-control" />
+                <span asp-validation-for="AcademicYear" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="PassThreshold" class="form-label"></label>
+                <input asp-for="PassThreshold" type="number" step="0.01" class="form-control" />
+                <span asp-validation-for="PassThreshold" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Remarks" class="form-label"></label>
+                <textarea asp-for="Remarks" class="form-control" rows="3" placeholder="Enter remarks (optional)"></textarea>
+                <span asp-validation-for="Remarks" class="text-danger"></span>
+            </div>
+
+            <button type="submit" class="btn btn-modern">Record Pass/Fail</button>
+            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+        </form>
     </div>
-    <div class="form-group">
-        <input type="submit" value="Save" class="btn btn-primary" />
-    </div>
-</form>
+</div>
 
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
 }

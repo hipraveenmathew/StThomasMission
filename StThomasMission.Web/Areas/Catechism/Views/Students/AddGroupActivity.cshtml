@@ -3,17 +3,40 @@
     ViewData["Title"] = "Add Group Activity";
 }
 
-<h2>Add Group Activity for @ViewBag.Group</h2>
+<div class="card">
+    <div class="card-header">
+        <h3 class="mb-0">Add Group Activity for Grade: @ViewData["Grade"]</h3>
+    </div>
+    <div class="card-body">
+        <form asp-action="AddGroupActivity" method="post">
+            <input type="hidden" asp-for="Grade" />
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-<form asp-action="AddGroupActivity" method="post">
-    <input type="hidden" name="Group" value="@Model.Group" />
-    <div class="form-group">
-        <label for="Name">Activity Name</label>
-        <input type="text" name="Name" class="form-control" required />
+            <div class="mb-3">
+                <label asp-for="GroupId" class="form-label"></label>
+                <input asp-for="GroupId" type="number" class="form-control" placeholder="Enter group ID" />
+                <span asp-validation-for="GroupId" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label"></label>
+                <input asp-for="Name" class="form-control" placeholder="Enter activity name" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Points" class="form-label"></label>
+                <input asp-for="Points" type="number" class="form-control" placeholder="Enter points" />
+                <span asp-validation-for="Points" class="text-danger"></span>
+            </div>
+
+            <button type="submit" class="btn btn-modern">Add Activity</button>
+            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+        </form>
     </div>
-    <div class="form-group">
-        <label for="Points">Points</label>
-        <input type="number" name="Points" class="form-control" required />
-    </div>
-    <button type="submit" class="btn btn-primary">Add Activity</button>
-</form>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+}

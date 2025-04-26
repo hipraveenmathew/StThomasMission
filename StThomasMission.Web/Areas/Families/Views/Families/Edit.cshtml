@@ -1,56 +1,88 @@
-﻿@model StThomasMission.Core.Entities.Family
-
+﻿@model StThomasMission.Web.Areas.Families.Models.FamilyViewModel
 @{
     ViewData["Title"] = "Edit Family";
 }
 
-<h1>Edit Family</h1>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Edit">
+<div class="card">
+    <div class="card-header">
+        <h3 class="mb-0">Edit Family: @Model.FamilyName</h3>
+    </div>
+    <div class="card-body">
+        <form asp-action="Edit" method="post">
+            <input type="hidden" asp-for="Id" />
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" name="id" value="@Model.Id" />
-            <div class="form-group mb-3">
-                <label class="control-label">Family Name</label>
-                <input name="familyName" class="form-control" value="@Model.FamilyName" />
+
+            <div class="mb-3">
+                <label asp-for="FamilyName" class="form-label"></label>
+                <input asp-for="FamilyName" class="form-control" />
+                <span asp-validation-for="FamilyName" class="text-danger"></span>
             </div>
-            <div class="form-group mb-3">
-                <label class="control-label">Ward</label>
-                <input name="ward" class="form-control" value="@Model.Ward" />
+
+            <div class="mb-3">
+                <label asp-for="Ward" class="form-label"></label>
+                <input asp-for="Ward" type="number" class="form-control" />
+                <span asp-validation-for="Ward" class="text-danger"></span>
             </div>
-            <div class="form-group mb-3">
-                <label class="control-label">Is Registered</label>
-                <input name="isRegistered" type="checkbox" class="form-check-input" @(Model.IsRegistered ? "checked" : "") />
+
+            <div class="mb-3 form-check">
+                <input asp-for="IsRegistered" type="checkbox" class="form-check-input" id="isRegistered" />
+                <label class="form-check-label" for="isRegistered">Is Registered?</label>
             </div>
-            <div class="form-group mb-3">
-                <label class="control-label">Church Registration Number</label>
-                <input name="churchRegistrationNumber" class="form-control" value="@Model.ChurchRegistrationNumber" />
+
+            <div class="mb-3" id="churchRegSection" style="@(Model.IsRegistered ? "" : "display:none;")">
+                <label asp-for="ChurchRegistrationNumber" class="form-label"></label>
+                <input asp-for="ChurchRegistrationNumber" class="form-control" placeholder="e.g., 108021234" />
+                <span asp-validation-for="ChurchRegistrationNumber" class="text-danger"></span>
             </div>
-            <div class="form-group mb-3">
-                <label class="control-label">Temporary ID</label>
-                <input name="temporaryId" class="form-control" value="@Model.TemporaryID" />
+
+            <div class="mb-3" id="tempIdSection" style="@(Model.IsRegistered ? "display:none;" : "")">
+                <label asp-for="TemporaryId" class="form-label"></label>
+                <input asp-for="TemporaryId" class="form-control" placeholder="e.g., TMP-1234" />
+                <span asp-validation-for="TemporaryId" class="text-danger"></span>
             </div>
-            <div class="form-group mb-3">
-                <label class="control-label">Status</label>
-                <select name="status" class="form-control">
-                    <option value="Active" @(Model.Status == "Active" ? "selected" : "")>Active</option>
-                    <option value="Inactive" @(Model.Status == "Inactive" ? "selected" : "")>Inactive</option>
-                    <option value="Migrated" @(Model.Status == "Migrated" ? "selected" : "")>Migrated</option>
+
+            <div class="mb-3">
+                <label asp-for="Status" class="form-label"></label>
+                <select asp-for="Status" class="form-select" asp-items="Html.GetEnumSelectList<StThomasMission.Core.Enums.FamilyStatus>()">
+                    <option value="">Select Status</option>
                 </select>
+                <span asp-validation-for="Status" class="text-danger"></span>
             </div>
-            <div class="form-group">
-                <button type="submit" class="btn btn-primary">Update</button>
+
+            <div class="mb-3" id="migratedToSection" style="@(Model.Status == "Migrated" ? "" : "display:none;")">
+                <label asp-for="MigratedTo" class="form-label"></label>
+                <input asp-for="MigratedTo" class="form-control" placeholder="e.g., New Parish" />
+                <span asp-validation-for="MigratedTo" class="text-danger"></span>
             </div>
+
+            <button type="submit" class="btn btn-modern">Save</button>
+            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
         </form>
     </div>
 </div>
 
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success">@TempData["Success"]</div>
-}
-
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $("#isRegistered").change(function () {
+                if (this.checked) {
+                    $("#churchRegSection").show();
+                    $("#tempIdSection").hide();
+                } else {
+                    $("#churchRegSection").hide();
+                    $("#tempIdSection").show();
+                }
+            });
+
+            $("#Status").change(function () {
+                if ($(this).val() === "Migrated") {
+                    $("#migratedToSection").show();
+                } else {
+                    $("#migratedToSection").hide();
+                }
+            });
+        });
+    </script>
 }

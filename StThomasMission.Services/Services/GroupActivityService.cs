@@ -136,10 +136,16 @@ namespace StThomasMission.Services
                 (endDate == null || ga.Date <= endDate));
         }
 
-        public async Task<IEnumerable<StudentGroupActivity>> GetStudentGroupActivitiesAsync(int studentId)
+        public async Task<IEnumerable<StudentGroupActivity>> GetStudentGroupActivitiesAsync(int? groupActivityId = null, int? studentId = null)
         {
-            await _studentService.GetStudentByIdAsync(studentId);
-            return await _unitOfWork.StudentGroupActivities.GetByStudentIdAsync(studentId);
+            var query = await _unitOfWork.StudentGroupActivities.GetAllAsync();
+
+            if (groupActivityId.HasValue)
+                query = query.Where(sga => sga.GroupActivityId == groupActivityId.Value).ToList();
+            if (studentId.HasValue)
+                query = query.Where(sga => sga.StudentId == studentId.Value).ToList();
+
+            return query.OrderBy(sga => sga.Date).ToList();
         }
 
         public async Task<GroupActivity?> GetGroupActivityByIdAsync(int groupActivityId)

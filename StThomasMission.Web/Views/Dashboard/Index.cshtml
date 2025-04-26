@@ -3,87 +3,197 @@
     ViewData["Title"] = "Dashboard";
 }
 
-<h2 class="mt-4">Dashboard</h2>
-
-<div class="row mt-3">
-    <!-- Announcements -->
-    <div class="col-md-4">
-        <div class="card shadow-sm">
-            <div class="card-header bg-primary text-white">
+<div class="row">
+    <!-- Recent Announcements -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
                 <h5 class="mb-0">Recent Announcements</h5>
             </div>
             <div class="card-body">
-                @if (Model.RecentAnnouncements?.Any() == true)
+                @if (Model.RecentAnnouncements.Count == 0)
                 {
-                    <ul class="list-group list-group-flush">
-                        @foreach (var msg in Model.RecentAnnouncements)
-                        {
-                            <li class="list-group-item">
-                                <small class="text-muted">@msg.SentAt.ToString("dd MMM yyyy")</small><br />
-                                @msg.Message
-                            </li>
-                        }
-                    </ul>
+                    <p>No recent announcements.</p>
                 }
                 else
                 {
-                    <p>No recent announcements.</p>
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Sent At</th>
+                                <th>Message</th>
+                                <th>Method</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var message in Model.RecentAnnouncements)
+                            {
+                                <tr>
+                                    <td>@message.SentAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td>@message.Message</td>
+                                    <td>@message.Method</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+
+                    <nav aria-label="Announcements navigation">
+                        <ul class="pagination">
+                            @if (Model.RecentAnnouncements.HasPreviousPage)
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" href="@Url.Action("Index", new { messagePageNumber = Model.RecentAnnouncements.PageIndex - 1, eventPageNumber = ViewData["EventPageNumber"], studentPageNumber = ViewData["StudentPageNumber"] })">Previous</a>
+                                </li>
+                            }
+                            @for (int i = 1; i <= Model.RecentAnnouncements.TotalPages; i++)
+                            {
+                                <li class="page-item @(i == Model.RecentAnnouncements.PageIndex ? "active" : "")">
+                                    <a class="page-link" href="@Url.Action("Index", new { messagePageNumber = i, eventPageNumber = ViewData["EventPageNumber"], studentPageNumber = ViewData["StudentPageNumber"] })">@i</a>
+                                </li>
+                            }
+                            @if (Model.RecentAnnouncements.HasNextPage)
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" href="@Url.Action("Index", new { messagePageNumber = Model.RecentAnnouncements.PageIndex + 1, eventPageNumber = ViewData["EventPageNumber"], studentPageNumber = ViewData["StudentPageNumber"] })">Next</a>
+                                </li>
+                            }
+                        </ul>
+                    </nav>
                 }
             </div>
         </div>
     </div>
 
     <!-- Upcoming Events -->
-    <div class="col-md-4">
-        <div class="card shadow-sm">
-            <div class="card-header bg-success text-white">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
                 <h5 class="mb-0">Upcoming Events</h5>
             </div>
             <div class="card-body">
-                @if (Model.UpcomingEvents?.Any() == true)
+                @if (Model.UpcomingEvents.Count == 0)
                 {
-                    <ul class="list-group list-group-flush">
-                        @foreach (var ev in Model.UpcomingEvents)
-                        {
-                            <li class="list-group-item">
-                                <strong>@ev.Group</strong><br />
-                                @ev.Date.ToString("dd MMM yyyy") - @ev.Description
-                            </li>
-                        }
-                    </ul>
+                    <p>No upcoming events.</p>
                 }
                 else
                 {
-                    <p>No upcoming events in the next 30 days.</p>
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Name</th>
+                                <th>Points</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var evt in Model.UpcomingEvents)
+                            {
+                                <tr>
+                                    <td>@evt.Date.ToString("yyyy-MM-dd")</td>
+                                    <td>@evt.Name</td>
+                                    <td>@evt.Points</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+
+                    <nav aria-label="Events navigation">
+                        <ul class="pagination">
+                            @if (Model.UpcomingEvents.HasPreviousPage)
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" href="@Url.Action("Index", new { messagePageNumber = ViewData["MessagePageNumber"], eventPageNumber = Model.UpcomingEvents.PageIndex - 1, studentPageNumber = ViewData["StudentPageNumber"] })">Previous</a>
+                                </li>
+                            }
+                            @for (int i = 1; i <= Model.UpcomingEvents.TotalPages; i++)
+                            {
+                                <li class="page-item @(i == Model.UpcomingEvents.PageIndex ? "active" : "")">
+                                    <a class="page-link" href="@Url.Action("Index", new { messagePageNumber = ViewData["MessagePageNumber"], eventPageNumber = i, studentPageNumber = ViewData["StudentPageNumber"] })">@i</a>
+                                </li>
+                            }
+                            @if (Model.UpcomingEvents.HasNextPage)
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" href="@Url.Action("Index", new { messagePageNumber = ViewData["MessagePageNumber"], eventPageNumber = Model.UpcomingEvents.PageIndex + 1, studentPageNumber = ViewData["StudentPageNumber"] })">Next</a>
+                                </li>
+                            }
+                        </ul>
+                    </nav>
                 }
             </div>
         </div>
     </div>
 
     <!-- Student Progress -->
-    <div class="col-md-4">
-        <div class="card shadow-sm">
-            <div class="card-header bg-info text-white">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
                 <h5 class="mb-0">Student Progress</h5>
             </div>
             <div class="card-body">
-                @if (Model.StudentProgress?.Any() == true)
+                @if (Model.StudentProgress.Count == 0)
                 {
-                    <ul class="list-group list-group-flush">
-                        @foreach (var student in Model.StudentProgress)
-                        {
-                            <li class="list-group-item">
-                                @student.FamilyMember?.FirstName @student.FamilyMember?.LastName <br />
-                                <small>Grade: @student.Grade | Year: @student.AcademicYear | Status: @student.Status</small>
-                            </li>
-                        }
-                    </ul>
+                    <p>No students found.</p>
                 }
                 else
                 {
-                    <p>No student progress available.</p>
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Grade</th>
+                                <th>Academic Year</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var student in Model.StudentProgress)
+                            {
+                                <tr>
+                                    <td>@(student.FamilyMember?.FirstName ?? "N/A") @(student.FamilyMember?.LastName ?? "N/A")</td>
+                                    <td>@student.Grade</td>
+                                    <td>@student.AcademicYear</td>
+                                    <td>@student.Status</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+
+                    <nav aria-label="Students navigation">
+                        <ul class="pagination">
+                            @if (Model.StudentProgress.HasPreviousPage)
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" href="@Url.Action("Index", new { messagePageNumber = ViewData["MessagePageNumber"], eventPageNumber = ViewData["EventPageNumber"], studentPageNumber = Model.StudentProgress.PageIndex - 1 })">Previous</a>
+                                </li>
+                            }
+                            @for (int i = 1; i <= Model.StudentProgress.TotalPages; i++)
+                            {
+                                <li class="page-item @(i == Model.StudentProgress.PageIndex ? "active" : "")">
+                                    <a class="page-link" href="@Url.Action("Index", new { messagePageNumber = ViewData["MessagePageNumber"], eventPageNumber = ViewData["EventPageNumber"], studentPageNumber = i })">@i</a>
+                                </li>
+                            }
+                            @if (Model.StudentProgress.HasNextPage)
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" href="@Url.Action("Index", new { messagePageNumber = ViewData["MessagePageNumber"], eventPageNumber = ViewData["EventPageNumber"], studentPageNumber = Model.StudentProgress.PageIndex + 1 })">Next</a>
+                                </li>
+                            }
+                        </ul>
+                    </nav>
                 }
             </div>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        // Store pagination states in ViewData for cross-referencing in pagination links
+        $(document).ready(function () {
+        @ViewData["MessagePageNumber"] = Model.RecentAnnouncements.PageIndex;
+        @ViewData["EventPageNumber"] = Model.UpcomingEvents.PageIndex;
+        @ViewData["StudentPageNumber"] = Model.StudentProgress.PageIndex;
+        });
+    </script>
+}

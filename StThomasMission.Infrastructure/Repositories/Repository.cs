@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using StThomasMission.Core.Interfaces;
+using StThomasMission.Infrastructure.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,10 +11,10 @@ namespace StThomasMission.Infrastructure.Repositories
 {
     public class Repository<T> : IRepository<T> where T : class
     {
-        protected readonly DbContext _context;
+        protected readonly StThomasMissionDbContext _context;
         private readonly DbSet<T> _entities;
 
-        public Repository(DbContext context)
+        public Repository(StThomasMissionDbContext context)
         {
             _context = context;
             _entities = context.Set<T>();

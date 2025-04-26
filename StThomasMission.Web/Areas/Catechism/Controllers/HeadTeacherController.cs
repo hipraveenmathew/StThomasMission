@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StThomasMission.Core.Interfaces;
+using StThomasMission.Web.Areas.Catechism.Models;
+using System;
 using System.Threading.Tasks;
 
 namespace StThomasMission.Web.Areas.Catechism.Controllers
@@ -19,28 +21,30 @@ namespace StThomasMission.Web.Areas.Catechism.Controllers
         [HttpGet]
         public IActionResult PromoteStudents()
         {
-            return View();
+            return View(new PromoteStudentsViewModel { AcademicYear = DateTime.UtcNow.Year });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> PromoteStudents(string grade, int academicYear)
+        public async Task<IActionResult> PromoteStudents(PromoteStudentsViewModel model)
         {
-            if (string.IsNullOrWhiteSpace(grade) || academicYear <= 0)
+            if (!ModelState.IsValid)
             {
-                TempData["Error"] = "Please enter a valid grade and academic year.";
-                return View();
+                return View(model);
             }
 
-          await _catechismService.PromoteStudentsAsync(grade, academicYear);
+            try
+            {
+                await _catechismService.PromoteStudentsAsync(model.Grade, model.AcademicYear);
+                model.SuccessMessage = $"Students in {model.Grade} for academic year {model.AcademicYear} have been promoted successfully.";
+                model.Grade = string.Empty;
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError(string.Empty, $"Promotion failed: {ex.Message}");
+            }
 
-          
-                TempData["Success"] = $"Students in {grade} for academic year {academicYear} have been promoted successfully.";
-           
-                TempData["Error"] = "Promotion failed. Please verify student data.";
-            
-
-            return RedirectToAction(nameof(PromoteStudents));
+            return View(model);
         }
     }
 }

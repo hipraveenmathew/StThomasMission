@@ -27,7 +27,7 @@ namespace StThomasMission.Web.Areas.Parents.Controllers
             var familyMember = await _unitOfWork.FamilyMembers.GetByUserIdAsync(userId);
             if (familyMember == null) return NotFound("Family member not found.");
 
-            var family = await _familyService.GetByIdAsync(familyMember.FamilyId);
+            var family = await _familyService.GetFamilyByIdAsync(familyMember.FamilyId); // Fixed method name
             if (family == null) return NotFound("Family not found.");
 
             var students = await _unitOfWork.Students.GetByFamilyIdAsync(family.Id);
@@ -40,6 +40,5 @@ namespace StThomasMission.Web.Areas.Parents.Controllers
 
             return View(model);
         }
-
     }
 }

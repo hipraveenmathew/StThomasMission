@@ -1,35 +1,31 @@
-﻿@model StThomasMission.Core.Entities.Family
-
+﻿@model StThomasMission.Web.Areas.Families.Models.ConvertToRegisteredViewModel
 @{
     ViewData["Title"] = "Convert to Registered";
 }
 
-<h1>Convert Family to Registered</h1>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="ConvertToRegistered">
+<div class="card">
+    <div class="card-header">
+        <h3 class="mb-0">Convert Family to Registered: @Model.FamilyName</h3>
+    </div>
+    <div class="card-body">
+        <form asp-action="ConvertToRegistered" method="post">
+            <input type="hidden" asp-for="FamilyId" />
+            <input type="hidden" asp-for="FamilyName" />
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" name="familyId" value="@Model.Id" />
-            <div class="form-group mb-3">
-                <label class="control-label">Family Name</label>
-                <input class="form-control" value="@Model.FamilyName" readonly />
+
+            <div class="mb-3">
+                <label asp-for="ChurchRegistrationNumber" class="form-label"></label>
+                <input asp-for="ChurchRegistrationNumber" class="form-control" placeholder="e.g., 108021234" />
+                <span asp-validation-for="ChurchRegistrationNumber" class="text-danger"></span>
             </div>
-            <div class="form-group mb-3">
-                <label class="control-label">Temporary ID</label>
-                <input class="form-control" value="@Model.TemporaryID" readonly />
-            </div>
-            <div class="form-group mb-3">
-                <label class="control-label">Church Registration Number</label>
-                <input name="churchRegistrationNumber" class="form-control" placeholder="e.g., 108020001" />
-            </div>
-            <div class="form-group">
-                <button type="submit" class="btn btn-primary">Convert</button>
-            </div>
+
+            <button type="submit" class="btn btn-modern">Convert</button>
+            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
         </form>
     </div>
 </div>
 
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
 }
