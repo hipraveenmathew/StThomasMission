@@ -7,5 +7,6 @@
         public const string HeadTeacher = "HeadTeacher";
         public const string Teacher = "Teacher";
         public const string Admin = "Admin";
+        public const string Parent = "Parent";
     }
 }

@@ -9,28 +9,29 @@ using System.Threading.Tasks;
 
 namespace StThomasMission.Services
 {
-    /// <summary>
-    /// Service for managing student attendance.
-    /// </summary>
     public class AttendanceService : IAttendanceService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly ICatechismService _catechismService;
+        private readonly IStudentService _studentService;
+        private readonly IGroupService _groupService;
+        private readonly IAuditService _auditService;
 
-        public AttendanceService(IUnitOfWork unitOfWork, ICatechismService catechismService)
+        public AttendanceService(IUnitOfWork unitOfWork, IStudentService studentService, IGroupService groupService, IAuditService auditService)
         {
             _unitOfWork = unitOfWork;
-            _catechismService = catechismService;
+            _studentService = studentService;
+            _groupService = groupService;
+            _auditService = auditService;
         }
 
-        public async Task MarkAttendanceAsync(int studentId, DateTime date, AttendanceStatus status, string description)
+        public async Task AddAttendanceAsync(int studentId, DateTime date, string description, AttendanceStatus status)
         {
             if (date > DateTime.UtcNow)
                 throw new ArgumentException("Attendance date cannot be in the future.", nameof(date));
             if (string.IsNullOrEmpty(description))
                 throw new ArgumentException("Description is required.", nameof(description));
 
-            await _catechismService.GetStudentByIdAsync(studentId); // Validates student exists
+            await _studentService.GetStudentByIdAsync(studentId);
 
             var existingAttendance = (await _unitOfWork.Attendances.GetByStudentIdAsync(studentId))
                 .FirstOrDefault(a => a.Date.Date == date.Date);
@@ -41,12 +42,14 @@ namespace StThomasMission.Services
             {
                 StudentId = studentId,
                 Date = date.Date,
-                Status = status,
-                Description = description
+                Description = description,
+                Status = status
             };
 
             await _unitOfWork.Attendances.AddAsync(attendance);
             await _unitOfWork.CompleteAsync();
+
+            await _auditService.LogActionAsync("System", "Create", nameof(Attendance), attendance.Id.ToString(), $"Added attendance for student {studentId} on {date:yyyy-MM-dd}");
         }
 
         public async Task UpdateAttendanceAsync(int attendanceId, AttendanceStatus status, string description)
@@ -61,27 +64,24 @@ namespace StThomasMission.Services
 
             await _unitOfWork.Attendances.UpdateAsync(attendance);
             await _unitOfWork.CompleteAsync();
+
+            await _auditService.LogActionAsync("System", "Update", nameof(Attendance), attendanceId.ToString(), $"Updated attendance for student {attendance.StudentId}");
         }
 
         public async Task DeleteAttendanceAsync(int attendanceId)
         {
             var attendance = await GetAttendanceByIdAsync(attendanceId);
-            await _unitOfWork.Attendances.DeleteAsync(attendance);
+
+            await _unitOfWork.Attendances.DeleteAsync(attendanceId);
             await _unitOfWork.CompleteAsync();
+
+            await _auditService.LogActionAsync("System", "Delete", nameof(Attendance), attendanceId.ToString(), $"Deleted attendance for student {attendance.StudentId}");
         }
 
-        public async Task<Attendance> GetAttendanceByIdAsync(int attendanceId)
+        public async Task<IEnumerable<Attendance>> GetAttendanceByStudentAsync(int studentId, DateTime? startDate = null, DateTime? endDate = null)
         {
-            var attendance = await _unitOfWork.Attendances.GetByIdAsync(attendanceId);
-            if (attendance == null)
-                throw new ArgumentException("Attendance record not found.", nameof(attendanceId));
-            return attendance;
-        }
-
-        public async Task<IEnumerable<Attendance>> GetAttendanceByStudentIdAsync(int studentId)
-        {
-            await _catechismService.GetStudentByIdAsync(studentId); // Validates student exists
-            return await _unitOfWork.Attendances.GetByStudentIdAsync(studentId);
+            await _studentService.GetStudentByIdAsync(studentId);
+            return await _unitOfWork.Attendances.GetByStudentIdAsync(studentId, startDate, endDate);
         }
 
         public async Task<IEnumerable<Attendance>> GetAttendanceByGradeAsync(string grade, DateTime date)
@@ -91,40 +91,15 @@ namespace StThomasMission.Services
             if (date > DateTime.UtcNow)
                 throw new ArgumentException("Attendance date cannot be in the future.", nameof(date));
 
-            var students = await _catechismService.GetStudentsByGradeAsync(grade);
-            var studentIds = students.Select(s => s.Id);
-            var attendances = await _unitOfWork.Attendances.GetAllAsync();
-            return attendances.Where(a => studentIds.Contains(a.StudentId) && a.Date.Date == date.Date);
+            return await _unitOfWork.Attendances.GetByGradeAsync(grade, date);
         }
 
-        public async Task MarkGroupAttendanceAsync(string group, DateTime date, string description)
+        private async Task<Attendance> GetAttendanceByIdAsync(int attendanceId)
         {
-            if (string.IsNullOrEmpty(group))
-                throw new ArgumentException("Group is required.", nameof(group));
-            if (date > DateTime.UtcNow)
-                throw new ArgumentException("Attendance date cannot be in the future.", nameof(date));
-            if (string.IsNullOrEmpty(description))
-                throw new ArgumentException("Description is required.", nameof(description));
-
-            var students = await _catechismService.GetStudentsByGroupAsync(group);
-            foreach (var student in students)
-            {
-                var existingAttendance = (await _unitOfWork.Attendances.GetByStudentIdAsync(student.Id))
-                    .FirstOrDefault(a => a.Date.Date == date.Date);
-                if (existingAttendance == null)
-                {
-                    var attendance = new Attendance
-                    {
-                        StudentId = student.Id,
-                        Date = date.Date,
-                        Status = AttendanceStatus.Present,
-                        Description = description
-                    };
-                    await _unitOfWork.Attendances.AddAsync(attendance);
-                }
-            }
-
-            await _unitOfWork.CompleteAsync();
+            var attendance = await _unitOfWork.Attendances.GetByIdAsync(attendanceId);
+            if (attendance == null)
+                throw new ArgumentException("Attendance record not found.", nameof(attendanceId));
+            return attendance;
         }
     }
 }

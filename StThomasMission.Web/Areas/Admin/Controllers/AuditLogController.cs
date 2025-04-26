@@ -1,12 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using StThomasMission.Core.Entities;
 using StThomasMission.Core.Interfaces;
 using StThomasMission.Web.Areas.Admin.Models;
 using StThomasMission.Web.Models;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -16,42 +16,51 @@ namespace StThomasMission.Web.Areas.Admin.Controllers
     [Authorize(Roles = "Admin")]
     public class AuditLogController : Controller
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IAuditService _auditService;
         private readonly UserManager<ApplicationUser> _userManager;
 
-        public AuditLogController(IUnitOfWork unitOfWork, UserManager<ApplicationUser> userManager)
+        public AuditLogController(IAuditService auditService, UserManager<ApplicationUser> userManager)
         {
-            _unitOfWork = unitOfWork;
+            _auditService = auditService;
             _userManager = userManager;
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index(string searchString, string sortOrder, int pageNumber = 1, int pageSize = 10)
+        public async Task<IActionResult> Index(AuditLogFilterViewModel filter, string sortOrder, int pageNumber = 1, int pageSize = 10)
         {
-            ViewBag.CurrentSort = sortOrder;
-            ViewBag.DateSortParm = string.IsNullOrEmpty(sortOrder) ? "date_desc" : "";
-            ViewBag.ActionSortParm = sortOrder == "action" ? "action_desc" : "action";
+            ViewData["CurrentSort"] = sortOrder;
+            ViewData["DateSortParm"] = string.IsNullOrEmpty(sortOrder) ? "date_desc" : "";
+            ViewData["ActionSortParm"] = sortOrder == "action" ? "action_desc" : "action";
 
-            var logs = (await _unitOfWork.AuditLogs.GetAllAsync()).AsQueryable();
+            // Build the query with server-side filtering
+            var logsQuery = _auditService.GetAuditLogsQueryable(
+                entityName: filter.EntityName,
+                startDate: filter.StartDate,
+                endDate: filter.EndDate
+            );
 
-            if (!string.IsNullOrEmpty(searchString))
+            // Apply search filter
+            if (!string.IsNullOrEmpty(filter.SearchString))
             {
-                logs = logs.Where(l =>
-                    l.Action.Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
-                    l.EntityName.Contains(searchString, StringComparison.OrdinalIgnoreCase) ||
-                    l.Details.Contains(searchString, StringComparison.OrdinalIgnoreCase));
+                var searchLower = filter.SearchString.ToLower();
+                logsQuery = logsQuery.Where(l =>
+                    l.Action.ToLower().Contains(searchLower) ||
+                    l.EntityName.ToLower().Contains(searchLower) ||
+                    l.Details.ToLower().Contains(searchLower));
             }
 
-            logs = sortOrder switch
+            // Apply sorting
+            logsQuery = sortOrder switch
             {
-                "date_desc" => logs.OrderByDescending(l => l.Timestamp),
-                "action" => logs.OrderBy(l => l.Action),
-                "action_desc" => logs.OrderByDescending(l => l.Action),
-                _ => logs.OrderBy(l => l.Timestamp),
+                "date_desc" => logsQuery.OrderByDescending(l => l.Timestamp),
+                "action" => logsQuery.OrderBy(l => l.Action),
+                "action_desc" => logsQuery.OrderByDescending(l => l.Action),
+                _ => logsQuery.OrderBy(l => l.Timestamp),
             };
 
-            var totalItems = logs.Count();
-            var pagedLogs = logs.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
+            // Pagination
+            var totalItems = await logsQuery.CountAsync();
+            var pagedLogs = await logsQuery.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
 
             // Map to ViewModel with Username
             var viewModelList = new List<AuditLogViewModel>();
@@ -69,9 +78,11 @@ namespace StThomasMission.Web.Areas.Admin.Controllers
             }
 
             var model = new PaginatedList<AuditLogViewModel>(viewModelList, totalItems, pageNumber, pageSize);
-            ViewBag.SearchString = searchString;
-
-            return View(model);
+            return View(new AuditLogIndexViewModel
+            {
+                Filter = filter,
+                Logs = model
+            });
         }
     }
 }

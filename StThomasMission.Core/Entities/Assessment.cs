@@ -8,8 +8,8 @@ namespace StThomasMission.Core.Entities
         public int Id { get; set; }
 
         [Required]
-        public int StudentId { get; set; }
-        public Student Student { get; set; } = null!;
+        public int StudentId { get; set; } // Foreign key to Student
+        public Student Student { get; set; } = null!; // Navigation property
 
         [Required(ErrorMessage = "Assessment name is required.")]
         [StringLength(150, ErrorMessage = "Assessment name cannot exceed 150 characters.")]
@@ -24,12 +24,19 @@ namespace StThomasMission.Core.Entities
         [Required]
         public DateTime Date { get; set; } = DateTime.UtcNow;
 
-        [Required(ErrorMessage = "Assessment type is required.")]
-        public AssessmentType Type { get; set; }
+        [Required]
+        public AssessmentType Type { get; set; } = AssessmentType.ClassAssessment;
 
         [StringLength(250, ErrorMessage = "Remarks cannot exceed 250 characters.")]
         public string? Remarks { get; set; }
 
+        [Required]
+        public string CreatedBy { get; set; } = string.Empty;
+
+        public string? UpdatedBy { get; set; }
+
         public double Percentage => TotalMarks > 0 ? Math.Round((double)Marks / TotalMarks * 100, 2) : 0;
+
+        // Suggested index: (StudentId, Date)
     }
 }

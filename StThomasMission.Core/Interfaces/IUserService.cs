@@ -4,9 +4,6 @@ using System.Threading.Tasks;
 
 namespace StThomasMission.Core.Interfaces
 {
-    /// <summary>
-    /// Service interface for managing user operations.
-    /// </summary>
     public interface IUserService
     {
         Task CreateUserAsync(string email, string fullName, int wardId, string password, string role);

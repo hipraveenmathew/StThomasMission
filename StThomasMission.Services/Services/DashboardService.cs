@@ -1,7 +1,6 @@
 ﻿using StThomasMission.Core.Entities;
 using StThomasMission.Core.Enums;
 using StThomasMission.Core.Interfaces;
-using System;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -10,19 +9,19 @@ namespace StThomasMission.Services
     public class DashboardService : IDashboardService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IFamilyService _familyService;
 
-        public DashboardService(IUnitOfWork unitOfWork, IFamilyService familyService)
+        public DashboardService(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
-            _familyService = familyService;
         }
 
         public async Task<DashboardSummaryDto> GetDashboardSummaryAsync()
         {
             var students = await _unitOfWork.Students.GetAllAsync();
-            var families = await _familyService.GetFamiliesByStatusAsync(FamilyStatus.Active);
-            var groupActivities = await _unitOfWork.GroupActivities.GetAllAsync();
+            var families = await _unitOfWork.Families.GetAllAsync();
+            var wards = await _unitOfWork.Wards.GetAllAsync();
+            var groups = await _unitOfWork.Groups.GetAllAsync();
+            var activities = await _unitOfWork.GroupActivities.GetAllAsync();
 
             return new DashboardSummaryDto
             {
@@ -30,13 +29,14 @@ namespace StThomasMission.Services
                 ActiveStudents = students.Count(s => s.Status == StudentStatus.Active),
                 GraduatedStudents = students.Count(s => s.Status == StudentStatus.Graduated),
                 MigratedStudents = students.Count(s => s.Status == StudentStatus.Migrated),
-
+                InactiveStudents = students.Count(s => s.Status == StudentStatus.Inactive),
+                DeletedStudents = students.Count(s => s.Status == StudentStatus.Deleted),
                 TotalFamilies = families.Count(),
                 RegisteredFamilies = families.Count(f => f.IsRegistered),
                 UnregisteredFamilies = families.Count(f => !f.IsRegistered),
-
-                TotalGroups = students.Where(s => !string.IsNullOrEmpty(s.Group)).Select(s => s.Group).Distinct().Count(),
-                TotalActivities = groupActivities.Count()
+                TotalWards = wards.Count(),
+                TotalGroups = groups.Count(),
+                TotalActivities = activities.Count()
             };
         }
     }

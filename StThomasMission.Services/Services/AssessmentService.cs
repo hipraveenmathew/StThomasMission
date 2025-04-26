@@ -3,27 +3,25 @@ using StThomasMission.Core.Enums;
 using StThomasMission.Core.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace StThomasMission.Services
 {
-    /// <summary>
-    /// Service for managing student assessments.
-    /// </summary>
     public class AssessmentService : IAssessmentService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly ICatechismService _catechismService;
+        private readonly IStudentService _studentService;
+        private readonly IAuditService _auditService;
 
-        public AssessmentService(IUnitOfWork unitOfWork, ICatechismService catechismService)
+        public AssessmentService(IUnitOfWork unitOfWork, IStudentService studentService, IAuditService auditService)
         {
             _unitOfWork = unitOfWork;
-            _catechismService = catechismService;
+            _studentService = studentService;
+            _auditService = auditService;
         }
 
-        public async Task AddAssessmentAsync(int studentId, string name, DateTime date, int marks, int totalMarks, AssessmentType type)
+        public async Task AddAssessmentAsync(int studentId, string name, int marks, int totalMarks, DateTime date, AssessmentType type)
         {
             if (string.IsNullOrEmpty(name))
                 throw new ArgumentException("Assessment name is required.", nameof(name));
@@ -34,23 +32,26 @@ namespace StThomasMission.Services
             if (totalMarks <= 0)
                 throw new ArgumentException("Total marks must be positive.", nameof(totalMarks));
 
-            await _catechismService.GetStudentByIdAsync(studentId); // Validates student exists
+            await _studentService.GetStudentByIdAsync(studentId);
 
             var assessment = new Assessment
             {
                 StudentId = studentId,
                 Name = name,
-                Date = date,
                 Marks = marks,
                 TotalMarks = totalMarks,
-                Type = type
+                Date = date,
+                Type = type,
+                CreatedBy = "System"
             };
 
             await _unitOfWork.Assessments.AddAsync(assessment);
             await _unitOfWork.CompleteAsync();
+
+            await _auditService.LogActionAsync("System", "Create", nameof(Assessment), assessment.Id.ToString(), $"Added assessment: {name} for student {studentId}");
         }
 
-        public async Task UpdateAssessmentAsync(int assessmentId, string name, DateTime date, int marks, int totalMarks, AssessmentType type)
+        public async Task UpdateAssessmentAsync(int assessmentId, string name, int marks, int totalMarks, DateTime date, AssessmentType type)
         {
             var assessment = await GetAssessmentByIdAsync(assessmentId);
 
@@ -64,47 +65,48 @@ namespace StThomasMission.Services
                 throw new ArgumentException("Total marks must be positive.", nameof(totalMarks));
 
             assessment.Name = name;
-            assessment.Date = date;
             assessment.Marks = marks;
             assessment.TotalMarks = totalMarks;
+            assessment.Date = date;
             assessment.Type = type;
+            assessment.UpdatedBy = "System";
 
             await _unitOfWork.Assessments.UpdateAsync(assessment);
             await _unitOfWork.CompleteAsync();
+
+            await _auditService.LogActionAsync("System", "Update", nameof(Assessment), assessmentId.ToString(), $"Updated assessment: {name}");
         }
 
         public async Task DeleteAssessmentAsync(int assessmentId)
         {
             var assessment = await GetAssessmentByIdAsync(assessmentId);
-            await _unitOfWork.Assessments.DeleteAsync(assessment);
+
+            await _unitOfWork.Assessments.DeleteAsync(assessmentId);
             await _unitOfWork.CompleteAsync();
+
+            await _auditService.LogActionAsync("System", "Delete", nameof(Assessment), assessmentId.ToString(), $"Deleted assessment: {assessment.Name}");
         }
 
-        public async Task<Assessment> GetAssessmentByIdAsync(int assessmentId)
+        public async Task<IEnumerable<Assessment>> GetAssessmentsByStudentAsync(int studentId, AssessmentType? type = null)
+        {
+            await _studentService.GetStudentByIdAsync(studentId);
+            return await _unitOfWork.Assessments.GetByStudentIdAsync(studentId, type);
+        }
+
+        public async Task<IEnumerable<Assessment>> GetAssessmentsByGradeAsync(string grade, DateTime? startDate = null, DateTime? endDate = null)
+        {
+            if (!Regex.IsMatch(grade, @"^Year \d{1,2}$"))
+                throw new ArgumentException("Grade must be in format 'Year X'.", nameof(grade));
+
+            return await _unitOfWork.Assessments.GetByGradeAsync(grade, startDate, endDate);
+        }
+
+        private async Task<Assessment> GetAssessmentByIdAsync(int assessmentId)
         {
             var assessment = await _unitOfWork.Assessments.GetByIdAsync(assessmentId);
             if (assessment == null)
                 throw new ArgumentException("Assessment not found.", nameof(assessmentId));
             return assessment;
-        }
-
-        public async Task<IEnumerable<Assessment>> GetAssessmentsByStudentIdAsync(int studentId)
-        {
-            await _catechismService.GetStudentByIdAsync(studentId); // Validates student exists
-            return await _unitOfWork.Assessments.GetByStudentIdAsync(studentId);
-        }
-
-        public async Task<IEnumerable<Assessment>> GetAssessmentsByGradeAsync(string grade, int academicYear)
-        {
-            if (!Regex.IsMatch(grade, @"^Year \d{1,2}$"))
-                throw new ArgumentException("Grade must be in format 'Year X'.", nameof(grade));
-            if (academicYear < 2000 || academicYear > DateTime.UtcNow.Year)
-                throw new ArgumentException("Invalid academic year.", nameof(academicYear));
-
-            var students = await _catechismService.GetStudentsByGradeAsync(grade);
-            var studentIds = students.Where(s => s.AcademicYear == academicYear).Select(s => s.Id);
-            var assessments = await _unitOfWork.Assessments.GetAllAsync();
-            return assessments.Where(a => studentIds.Contains(a.StudentId));
         }
     }
 }

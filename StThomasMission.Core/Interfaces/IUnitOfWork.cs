@@ -5,9 +5,6 @@ using System.Threading.Tasks;
 
 namespace StThomasMission.Core.Interfaces
 {
-    /// <summary>
-    /// Defines a Unit of Work for coordinating repository operations and transaction management.
-    /// </summary>
     public interface IUnitOfWork : IDisposable
     {
         IStudentRepository Students { get; }
@@ -15,13 +12,16 @@ namespace StThomasMission.Core.Interfaces
         IFamilyMemberRepository FamilyMembers { get; }
         IAttendanceRepository Attendances { get; }
         IAssessmentRepository Assessments { get; }
+        IGroupRepository Groups { get; }
         IGroupActivityRepository GroupActivities { get; }
         IStudentGroupActivityRepository StudentGroupActivities { get; }
-        IRepository<MessageLog> MessageLogs { get; }
-        IRepository<AuditLog> AuditLogs { get; }
+        IMessageLogRepository MessageLogs { get; }
+        IAuditLogRepository AuditLogs { get; }
         IWardRepository Wards { get; }
-        IRepository<User> Users { get; }
-
+        IMassTimingRepository MassTimings { get; }
+        IAnnouncementRepository Announcements { get; }
+        IMigrationLogRepository MigrationLogs { get; }
+        IRepository<AssessmentSummary> AssessmentSummaries { get; } // Added
         Task<IDbContextTransaction> BeginTransactionAsync();
         Task CommitTransactionAsync();
         Task RollbackTransactionAsync();

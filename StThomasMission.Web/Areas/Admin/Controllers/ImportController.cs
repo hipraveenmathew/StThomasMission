@@ -1,11 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using StThomasMission.Core.Enums;
 using StThomasMission.Core.Interfaces;
+using StThomasMission.Web.Areas.Admin.Models;
+using System;
 using System.IO;
 using System.Threading.Tasks;
 
 namespace StThomasMission.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    [Authorize(Roles = "Admin")]
     public class ImportController : Controller
     {
         private readonly IImportService _importService;
@@ -16,34 +21,34 @@ namespace StThomasMission.Web.Areas.Admin.Controllers
         }
 
         [HttpGet]
-        public IActionResult Upload()
+        public IActionResult Index()
         {
-            return View();
+            return View(new ImportViewModel());
         }
 
         [HttpPost]
-        public async Task<IActionResult> Upload(IFormFile file)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Upload(ImportViewModel model)
         {
-            if (file == null || file.Length == 0)
+            if (!ModelState.IsValid || model.File == null || model.File.Length == 0)
             {
-                ModelState.AddModelError("", "Please upload a valid file.");
-                return View();
+                ModelState.AddModelError("File", "Please upload a valid Excel file.");
+                return View("Index", model);
             }
-
-            using var stream = new MemoryStream();
-            await file.CopyToAsync(stream);
 
             try
             {
-                await _importService.ImportFamiliesAndStudentsAsync(stream, "Excel");
-                TempData["Success"] = "Data imported successfully!";
+                using var stream = new MemoryStream();
+                await model.File.CopyToAsync(stream);
+                await _importService.ImportFamiliesAndStudentsAsync(stream, ImportType.Excel); // Fixed the second argument to use the correct enum
+                model.SuccessMessage = "Data imported successfully!";
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                TempData["Error"] = $"Import failed: {ex.Message}";
+                ModelState.AddModelError("File", $"Import failed: {ex.Message}");
             }
 
-            return RedirectToAction("Upload");
+            return View("Index", model);
         }
     }
 }

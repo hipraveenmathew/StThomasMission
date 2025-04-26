@@ -18,17 +18,23 @@ namespace StThomasMission.Core.Entities
         [Required]
         public DateTime Date { get; set; } = DateTime.UtcNow;
 
-        [Required(ErrorMessage = "Group is required.")]
-        [StringLength(100, ErrorMessage = "Group name cannot exceed 100 characters.")]
-        public string Group { get; set; } = string.Empty;
+        [Required]
+        public int GroupId { get; set; } // Foreign key to Group
+        public Group Group { get; set; } = null!; // Navigation property
 
-        [Required(ErrorMessage = "Status is required.")]
+        [Required]
         public ActivityStatus Status { get; set; } = ActivityStatus.Active;
 
         [Range(0, int.MaxValue, ErrorMessage = "Points cannot be negative.")]
         public int Points { get; set; }
 
-        public ICollection<StudentGroupActivity> Participants { get; set; } = new List<StudentGroupActivity>();
-    }
+        [Required]
+        public string CreatedBy { get; set; } = string.Empty;
 
+        public string? UpdatedBy { get; set; }
+
+        public ICollection<StudentGroupActivity> Participants { get; set; } = new List<StudentGroupActivity>();
+
+        // Suggested index: GroupId, Date
+    }
 }

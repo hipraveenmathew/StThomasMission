@@ -1,10 +1,10 @@
 ﻿using OfficeOpenXml;
 using StThomasMission.Core.Entities;
+using StThomasMission.Core.Enums;
 using StThomasMission.Core.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -16,29 +16,34 @@ namespace StThomasMission.Services
         private readonly IFamilyService _familyService;
         private readonly IFamilyMemberService _familyMemberService;
         private readonly IStudentService _studentService;
+        private readonly IWardService _wardService;
 
-        public ImportService(IUnitOfWork unitOfWork, IFamilyService familyService, IFamilyMemberService familyMemberService, IStudentService studentService)
+        public ImportService(IUnitOfWork unitOfWork, IFamilyService familyService, IFamilyMemberService familyMemberService, IStudentService studentService, IWardService wardService)
         {
             _unitOfWork = unitOfWork;
             _familyService = familyService;
             _familyMemberService = familyMemberService;
             _studentService = studentService;
+            _wardService = wardService;
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
         }
 
-        public async Task ImportFamiliesAndStudentsAsync(Stream fileStream, ImportType fileType)
+        public async Task ImportFamiliesAndStudentsAsync(Stream fileStream , ImportType fileType)
         {
-            if (fileStream == null) throw new ArgumentNullException(nameof(fileStream));
-            if (fileType != ImportType.Excel) throw new ArgumentException("Only Excel files are supported.", nameof(fileType));
+            if (fileStream == null)
+                throw new ArgumentNullException(nameof(fileStream));
+            if (fileType != ImportType.Excel)
+                throw new ArgumentException("Only Excel files are supported.", nameof(fileType));
 
             var errors = new List<string>();
             using var package = new ExcelPackage(fileStream);
-            var worksheet = package.Workbook.Worksheets[0];
+            var worksheet = package.Workbook.Worksheets.FirstOrDefault();
             if (worksheet == null || worksheet.Dimension == null)
                 throw new InvalidOperationException("Excel file is empty or invalid.");
 
             var rowCount = worksheet.Dimension.Rows;
-            if (rowCount < 2) throw new InvalidOperationException("Excel file contains no data rows.");
+            if (rowCount < 2)
+                throw new InvalidOperationException("Excel file contains no data rows.");
 
             using var transaction = await _unitOfWork.BeginTransactionAsync();
 
@@ -89,23 +94,23 @@ namespace StThomasMission.Services
                         Family family = null;
                         if (isRegistered)
                         {
-                            family = (await _unitOfWork.Families.GetAllAsync())
-                                .FirstOrDefault(f => f.ChurchRegistrationNumber == churchRegistrationNumber);
+                            var families = await _unitOfWork.Families.GetByChurchRegistrationNumberAsync(churchRegistrationNumber);
+                            family = families;
                         }
                         else
                         {
-                            family = (await _unitOfWork.Families.GetAllAsync())
-                                .FirstOrDefault(f => f.TemporaryID == temporaryId);
+                            var families = await _unitOfWork.Families.GetAsync(f => f.TemporaryID == temporaryId && f.Status != FamilyStatus.Deleted);
+                            family = families.FirstOrDefault();
                         }
 
                         if (family == null)
                         {
                             family = await _familyService.RegisterFamilyAsync(
-                                familyName,
-                                wardId,
-                                isRegistered,
-                                churchRegistrationNumber,
-                                temporaryId
+                            familyName,
+                            wardId,
+                            isRegistered,
+                            churchRegistrationNumber,
+                            temporaryId
                             );
                         }
 
@@ -130,39 +135,41 @@ namespace StThomasMission.Services
                         }
 
                         string? contact = worksheet.Cells[row, 9].Text?.Trim();
-                        if (!string.IsNullOrEmpty(contact) && !Regex.IsMatch(contact, @"^\+?\d{10,15}$"))
+                        if (!string.IsNullOrEmpty(contact) && !Regex.IsMatch(contact, @"^+?\d{10,15}$"))
                         {
                             errors.Add($"Row {row}: Invalid phone number.");
                             continue;
                         }
 
                         string? email = worksheet.Cells[row, 10].Text?.Trim();
-                        if (!string.IsNullOrEmpty(email) && !Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+                        if (!string.IsNullOrEmpty(email) && !Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+.[^@\s]+$"))
                         {
                             errors.Add($"Row {row}: Invalid email address.");
                             continue;
                         }
 
                         string? role = worksheet.Cells[row, 11].Text?.Trim();
-                        if (!string.IsNullOrEmpty(role) && role != "Parent")
+                        FamilyMemberRole relation = role switch
                         {
-                            errors.Add($"Row {row}: Role must be 'Parent' or empty.");
-                            continue;
-                        }
+                            "Parent" => FamilyMemberRole.Parent,
+                            "Child" => FamilyMemberRole.Child,
+                            "Guardian" => FamilyMemberRole.Guardian,
+                            _ => FamilyMemberRole.Other
+                        };
 
                         await _familyMemberService.AddFamilyMemberAsync(
-                            family.Id,
-                            firstName,
-                            lastName,
-                            null,
-                            dob,
-                            contact,
-                            email,
-                            role
+                        family.Id,
+                        firstName,
+                        lastName,
+                        relation,
+                        dob,
+                        contact,
+                        email,
+                        role
                         );
 
                         var familyMember = (await _familyMemberService.GetFamilyMembersByFamilyIdAsync(family.Id))
-                            .FirstOrDefault(m => m.FirstName == firstName && m.LastName == lastName);
+                        .FirstOrDefault(m => m.FirstName == firstName && m.LastName == lastName);
                         if (familyMember == null)
                         {
                             errors.Add($"Row {row}: Failed to add family member.");
@@ -184,27 +191,18 @@ namespace StThomasMission.Services
                                 continue;
                             }
 
-                            string? group = worksheet.Cells[row, 14].Text?.Trim();
-                            if (!string.IsNullOrEmpty(group))
+                            if (!int.TryParse(worksheet.Cells[row, 14].Text, out int groupId))
                             {
-                                var existingGroups = (await _unitOfWork.Students.GetAllAsync())
-                                    .Where(s => !string.IsNullOrEmpty(s.Group))
-                                    .Select(s => s.Group)
-                                    .Distinct()
-                                    .ToList();
-                                if (!existingGroups.Contains(group))
-                                {
-                                    errors.Add($"Row {row}: Group '{group}' does not exist in the system.");
-                                    continue;
-                                }
+                                errors.Add($"Row {row}: Invalid group ID.");
+                                continue;
                             }
 
                             await _studentService.EnrollStudentAsync(
-                                familyMember.Id,
-                                grade,
-                                academicYear,
-                                group,
-                                null
+                            familyMember.Id,
+                            grade,
+                            academicYear,
+                            groupId,
+                            null
                             );
                         }
                     }
@@ -222,26 +220,29 @@ namespace StThomasMission.Services
 
                 await transaction.CommitAsync();
             }
-            catch (Exception ex)
+            catch
             {
                 await transaction.RollbackAsync();
-                throw new InvalidOperationException($"Import failed: {ex.Message}");
+                throw;
             }
         }
 
         public async Task ImportWardsAsync(Stream fileStream, ImportType fileType)
         {
-            if (fileStream == null) throw new ArgumentNullException(nameof(fileStream));
-            if (fileType != ImportType.Excel) throw new ArgumentException("Only Excel files are supported.", nameof(fileType));
+            if (fileStream == null)
+                throw new ArgumentNullException(nameof(fileStream));
+            if (fileType != ImportType.Excel)
+                throw new ArgumentException("Only Excel files are supported.", nameof(fileType));
 
             var errors = new List<string>();
             using var package = new ExcelPackage(fileStream);
-            var worksheet = package.Workbook.Worksheets[0];
+            var worksheet = package.Workbook.Worksheets.FirstOrDefault();
             if (worksheet == null || worksheet.Dimension == null)
                 throw new InvalidOperationException("Excel file is empty or invalid.");
 
             var rowCount = worksheet.Dimension.Rows;
-            if (rowCount < 2) throw new InvalidOperationException("Excel file contains no data rows.");
+            if (rowCount < 2)
+                throw new InvalidOperationException("Excel file contains no data rows.");
 
             using var transaction = await _unitOfWork.BeginTransactionAsync();
 
@@ -265,13 +266,7 @@ namespace StThomasMission.Services
                             continue;
                         }
 
-                        var ward = new Ward
-                        {
-                            Name = name,
-                           
-                        };
-
-                        await _unitOfWork.Wards.AddAsync(ward);
+                        await _wardService.CreateWardAsync(name);
                     }
                     catch (Exception ex)
                     {
@@ -285,13 +280,12 @@ namespace StThomasMission.Services
                     throw new InvalidOperationException($"Import failed with {errors.Count} errors:\n{string.Join("\n", errors)}");
                 }
 
-                await _unitOfWork.CompleteAsync();
                 await transaction.CommitAsync();
             }
-            catch (Exception ex)
+            catch
             {
                 await transaction.RollbackAsync();
-                throw new InvalidOperationException($"Import failed: {ex.Message}");
+                throw;
             }
         }
     }

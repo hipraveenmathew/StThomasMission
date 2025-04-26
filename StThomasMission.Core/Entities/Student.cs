@@ -12,39 +12,38 @@ namespace StThomasMission.Core.Entities
         public FamilyMember FamilyMember { get; set; } = null!;
 
         [Required]
-        [Range(1, 12, ErrorMessage = "Academic year must be between 1 and 12.")]
+        public int GroupId { get; set; }
+        public Group Group { get; set; } = null!;
+
+        [Required]
+        [Range(2000, 9999, ErrorMessage = "Academic year must be a valid year.")]
         public int AcademicYear { get; set; }
 
-        [Required(ErrorMessage = "Grade is required.")]
-        [RegularExpression(@"^Year \d{1,2}$", ErrorMessage = "Grade must be in the format 'Year X'.")]
+        [Required]
         [StringLength(20, ErrorMessage = "Grade cannot exceed 20 characters.")]
         public string Grade { get; set; } = string.Empty;
 
-        [StringLength(100, ErrorMessage = "Group name cannot exceed 100 characters.")]
-        public string? Group { get; set; }
-
-        [StringLength(150, ErrorMessage = "Organisation name cannot exceed 150 characters.")]
+        [StringLength(150, ErrorMessage = "Student organisation cannot exceed 150 characters.")]
         public string? StudentOrganisation { get; set; }
 
-        [Required(ErrorMessage = "Status is required.")]
-        public StudentStatus Status { get; set; } = StudentStatus.Active; // Supports Inactive/Deleted
+        [Required]
+        public StudentStatus Status { get; set; }
 
-        [StringLength(150, ErrorMessage = "Migration target name cannot exceed 150 characters.")]
+        [StringLength(150, ErrorMessage = "Migrated to cannot exceed 150 characters.")]
         public string? MigratedTo { get; set; }
 
-        public DateTime? UpdatedDate { get; set; } // Tracks status changes
+        [Required]
+        public string CreatedBy { get; set; } = string.Empty;
 
-        public ICollection<Attendance> Attendances { get; set; } = new List<Attendance>();
-        public ICollection<Assessment> Assessments { get; set; } = new List<Assessment>();
-        public ICollection<StudentGroupActivity> GroupActivities { get; set; } = new List<StudentGroupActivity>();
+        [Required]
+        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
-        public double GPA => Assessments.Any(a => a.TotalMarks > 0)
-            ? Math.Round(Assessments.Average(a => (double)a.Marks / a.TotalMarks) * 100, 2)
-            : 0;
+        public string? UpdatedBy { get; set; }
 
-        public bool IsGraduated => Status == StudentStatus.Graduated;
-        public bool IsMigrated => Status == StudentStatus.Migrated;
-        public bool IsInactive => Status == StudentStatus.Inactive;
-        public bool IsDeleted => Status == StudentStatus.Deleted;
+        public DateTime? UpdatedDate { get; set; }
+
+        public List<Attendance> Attendances { get; set; } = new();
+        public List<Assessment> Assessments { get; set; } = new();
+        public List<StudentGroupActivity> GroupActivities { get; set; } = new();
     }
 }

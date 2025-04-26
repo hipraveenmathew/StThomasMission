@@ -11,9 +11,8 @@ namespace StThomasMission.Core.Enums
         [Display(Name = "Migrated")]
         Migrated,
         [Display(Name = "Inactive")]
-        Inactive, // Added for temporarily inactive students
+        Inactive,
         [Display(Name = "Deleted")]
-        Deleted  // Added for soft-deleted students
+        Deleted
     }
-
 }

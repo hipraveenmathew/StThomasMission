@@ -1,52 +1,41 @@
-﻿using StThomasMission.Core.Entities;
+﻿
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using StThomasMission.Core.Entities;
 using StThomasMission.Core.Enums;
 using StThomasMission.Core.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using StThomasMission.Services;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+
 
 namespace StThomasMission.Services
 {
-    /// <summary>
-    /// Service for managing student enrollment and updates.
-    /// </summary>
     public class StudentService : IStudentService
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IFamilyMemberService _familyMemberService;
-        private readonly ICatechismService _catechismService;
+        private readonly IGroupService _groupService;
+        private readonly IAuditService _auditService;
 
-        public StudentService(IUnitOfWork unitOfWork, IFamilyMemberService familyMemberService, ICatechismService catechismService)
+        public StudentService(IUnitOfWork unitOfWork, IFamilyMemberService familyMemberService, IGroupService groupService, IAuditService auditService)
         {
             _unitOfWork = unitOfWork;
             _familyMemberService = familyMemberService;
-            _catechismService = catechismService;
+            _groupService = groupService;
+            _auditService = auditService;
         }
 
-        public async Task EnrollStudentAsync(int familyMemberId, string grade, int academicYear, string? group, string? studentOrganisation)
+        public async Task EnrollStudentAsync(int familyMemberId, string grade, int academicYear, int groupId, string studentOrganisation)
         {
-            await _familyMemberService.GetFamilyMemberByIdAsync(familyMemberId); // Validates family member exists
+            await _familyMemberService.GetFamilyMemberByIdAsync(familyMemberId);
+            await _groupService.GetGroupByIdAsync(groupId);
 
             if (!Regex.IsMatch(grade, @"^Year \d{1,2}$"))
                 throw new ArgumentException("Grade must be in format 'Year X'.", nameof(grade));
             if (academicYear < 2000 || academicYear > DateTime.UtcNow.Year)
                 throw new ArgumentException("Invalid academic year.", nameof(academicYear));
-            if (!string.IsNullOrEmpty(group))
-            {
-                var existingGroups = (await _unitOfWork.Students.GetAllAsync())
-                    .Where(s => !string.IsNullOrEmpty(s.Group))
-                    .Select(s => s.Group)
-                    .Distinct()
-                    .ToList();
-                if (!existingGroups.Contains(group))
-                    throw new ArgumentException("Group does not exist in the system.", nameof(group));
-            }
 
-            var existingStudent = (await _unitOfWork.Students.GetAllAsync())
-                .FirstOrDefault(s => s.FamilyMemberId == familyMemberId && s.AcademicYear == academicYear);
-            if (existingStudent != null)
+            var existingStudent = await _unitOfWork.Students.GetAsync(s => s.FamilyMemberId == familyMemberId && s.AcademicYear == academicYear);
+            if (existingStudent.Any())
                 throw new InvalidOperationException("Student is already enrolled for this academic year.");
 
             var student = new Student
@@ -54,103 +43,123 @@ namespace StThomasMission.Services
                 FamilyMemberId = familyMemberId,
                 Grade = grade,
                 AcademicYear = academicYear,
-                Group = group,
+                GroupId = groupId,
                 StudentOrganisation = studentOrganisation,
-                Status = StudentStatus.Active
+                Status = StudentStatus.Active,
+                CreatedBy = "System"
             };
 
             await _unitOfWork.Students.AddAsync(student);
             await _unitOfWork.CompleteAsync();
+
+            await _auditService.LogActionAsync("System", "Create", nameof(Student), student.Id.ToString(), $"Enrolled student for grade {grade}");
         }
 
-        public async Task UpdateStudentAsync(int studentId, string grade, string? group, string? studentOrganisation, StudentStatus status, string? migratedTo)
+        public async Task UpdateStudentAsync(int studentId, string grade, int groupId, string studentOrganisation, StudentStatus status, string migratedTo)
         {
-            var student = await GetStudentByIdAsync(studentId); // Validates student exists
+            var student = await GetStudentByIdAsync(studentId);
+
+            await _groupService.GetGroupByIdAsync(groupId);
 
             if (!Regex.IsMatch(grade, @"^Year \d{1,2}$"))
                 throw new ArgumentException("Grade must be in format 'Year X'.", nameof(grade));
-            if (!string.IsNullOrEmpty(group))
-            {
-                var existingGroups = (await _unitOfWork.Students.GetAllAsync())
-                    .Where(s => !string.IsNullOrEmpty(s.Group))
-                    .Select(s => s.Group)
-                    .Distinct()
-                    .ToList();
-                if (!existingGroups.Contains(group))
-                    throw new ArgumentException("Group does not exist in the system.", nameof(group));
-            }
             if (status == StudentStatus.Migrated && string.IsNullOrEmpty(migratedTo))
                 throw new ArgumentException("MigratedTo is required for migrated status.", nameof(migratedTo));
+            if (status == StudentStatus.Deleted)
+                throw new ArgumentException("Use DeleteStudentAsync to mark a student as deleted.", nameof(status));
 
             student.Grade = grade;
-            student.Group = group;
+            student.GroupId = groupId;
             student.StudentOrganisation = studentOrganisation;
             student.Status = status;
-            student.MigratedTo = migratedTo;
+            student.MigratedTo = status == StudentStatus.Migrated ? migratedTo : null;
+            student.UpdatedDate = DateTime.UtcNow;
+            student.UpdatedBy = "System";
 
             await _unitOfWork.Students.UpdateAsync(student);
             await _unitOfWork.CompleteAsync();
+
+            await _auditService.LogActionAsync("System", "Update", nameof(Student), studentId.ToString(), $"Updated student: Grade {grade}, Status {status}");
         }
 
-        public async Task MarkStudentAsDeletedAsync(int studentId)
+        public async Task MarkPassFailAsync(int studentId, int academicYear, double passThreshold = 50.0, string remarks = null)
         {
-            var student = await GetStudentByIdAsync(studentId); // Validates student exists
+            var student = await GetStudentByIdAsync(studentId);
+            if (student.AcademicYear != academicYear)
+                throw new InvalidOperationException($"Student is not enrolled in academic year {academicYear}.");
 
-            // Assuming a soft delete by setting Status to a specific value or marking as deleted
-            student.Status = StudentStatus.Deleted; // Adjust if your Student entity has a different property (e.g., IsDeleted)
+            // Aggregate assessments for the academic year
+            var assessments = await _unitOfWork.Assessments.GetByStudentIdAsync(studentId);
+            assessments = assessments.Where(a => a.Date.Year == academicYear);
+
+            double totalMarks = assessments.Sum(a => a.TotalMarks);
+            double obtainedMarks = assessments.Sum(a => a.Marks);
+            double percentage = totalMarks > 0 ? (obtainedMarks / totalMarks) * 100 : 0;
+            bool passed = percentage >= passThreshold;
+
+            // Create or update AssessmentSummary
+            var summary = await _unitOfWork.AssessmentSummaries.GetAsync(s => s.StudentId == studentId && s.AcademicYear == academicYear);
+            var existingSummary = summary.FirstOrDefault();
+
+            if (existingSummary != null)
+            {
+                existingSummary.TotalMarks = totalMarks;
+                existingSummary.ObtainedMarks = obtainedMarks;
+                existingSummary.Passed = passed;
+                existingSummary.Grade = student.Grade;
+                existingSummary.Remarks = remarks;
+                existingSummary.UpdatedAt = DateTime.UtcNow;
+                existingSummary.UpdatedBy = "System";
+
+                await _unitOfWork.AssessmentSummaries.UpdateAsync(existingSummary);
+            }
+            else
+            {
+                var newSummary = new AssessmentSummary
+                {
+                    StudentId = studentId,
+                    AcademicYear = academicYear,
+                    Grade = student.Grade,
+                    TotalMarks = totalMarks,
+                    ObtainedMarks = obtainedMarks,
+                    Passed = passed,
+                    Remarks = remarks,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "System"
+                };
+
+                await _unitOfWork.AssessmentSummaries.AddAsync(newSummary);
+            }
+
+            await _unitOfWork.CompleteAsync();
+
+            await _auditService.LogActionAsync("System", "Update", nameof(AssessmentSummary), studentId.ToString(), $"Recorded pass/fail for student {studentId} in {academicYear}, Passed: {passed}, Percentage: {percentage:F2}%");
+        }
+
+        public async Task DeleteStudentAsync(int studentId)
+        {
+            var student = await GetStudentByIdAsync(studentId);
+            student.Status = StudentStatus.Deleted;
+            student.UpdatedDate = DateTime.UtcNow;
+            student.UpdatedBy = "System";
 
             await _unitOfWork.Students.UpdateAsync(student);
             await _unitOfWork.CompleteAsync();
-        }
 
-        public async Task<Student> GetStudentByIdAsync(int studentId)
-        {
-            var student = await _unitOfWork.Students.GetByIdAsync(studentId);
-            if (student == null)
-                throw new ArgumentException("Student not found.", nameof(studentId));
-            return student;
-        }
-
-        public async Task<IEnumerable<Student>> GetStudentsByGradeAsync(string grade)
-        {
-            if (!Regex.IsMatch(grade, @"^Year \d{1,2}$"))
-                throw new ArgumentException("Grade must be in format 'Year X'.", nameof(grade));
-
-            var students = await _unitOfWork.Students.FindAsync(s => s.Grade == grade);
-            return students;
-        }
-
-        public async Task<IEnumerable<Student>> GetStudentsByGroupAsync(string group)
-        {
-            if (string.IsNullOrEmpty(group))
-                throw new ArgumentException("Group is required.", nameof(group));
-
-            var students = await _unitOfWork.Students.FindAsync(s => s.Group == group);
-            if (!students.Any())
-                throw new ArgumentException("No students found for the specified group.", nameof(group));
-
-            return students;
-        }
-
-        public async Task MarkPassFailAsync(int studentId, bool hasPassed)
-        {
-            var student = await GetStudentByIdAsync(studentId); // Validates student exists
-
-            // Assuming StudentStatus has Pass/Fail states; adjust if your system uses a different property
-            student.Status = hasPassed ? StudentStatus.Passed : StudentStatus.Failed;
-
-            await _unitOfWork.Students.UpdateAsync(student);
-            await _unitOfWork.CompleteAsync();
+            await _auditService.LogActionAsync("System", "Delete", nameof(Student), studentId.ToString(), $"Soft-deleted student");
         }
 
         public async Task MarkStudentAsInactiveAsync(int studentId)
         {
-            var student = await GetStudentByIdAsync(studentId); // Validates student exists
-
+            var student = await GetStudentByIdAsync(studentId);
             student.Status = StudentStatus.Inactive;
+            student.UpdatedDate = DateTime.UtcNow;
+            student.UpdatedBy = "System";
 
             await _unitOfWork.Students.UpdateAsync(student);
             await _unitOfWork.CompleteAsync();
+
+            await _auditService.LogActionAsync("System", "Update", nameof(Student), studentId.ToString(), $"Marked student as Inactive");
         }
 
         public async Task PromoteStudentsAsync(string grade, int academicYear)
@@ -160,35 +169,56 @@ namespace StThomasMission.Services
             if (academicYear < 2000 || academicYear > DateTime.UtcNow.Year)
                 throw new ArgumentException("Invalid academic year.", nameof(academicYear));
 
-            var students = (await _unitOfWork.Students.FindAsync(s => s.Grade == grade && s.AcademicYear == academicYear))
-                .Where(s => s.Status == StudentStatus.Active || s.Status == StudentStatus.Passed);
+            var summaries = await _unitOfWork.AssessmentSummaries.GetAsync(s => s.Student.AcademicYear == academicYear && s.Student.Grade == grade && s.Passed);
+            var studentIds = summaries.Select(s => s.StudentId).ToList();
+            var students = await _unitOfWork.Students.GetAsync(s => studentIds.Contains(s.Id) && s.Status == StudentStatus.Active);
 
             foreach (var student in students)
             {
-                // Extract the year number from the grade (e.g., "Year 1" -> 1)
                 if (!int.TryParse(Regex.Match(student.Grade, @"\d+").Value, out int currentYear))
                     continue;
 
-                // Promote to the next grade (e.g., "Year 1" -> "Year 2")
-                string nextGrade = $"Year {currentYear + 1}";
-
-                // Check if the next grade is valid (e.g., not exceeding max grade)
-                if (!Regex.IsMatch(nextGrade, @"^Year \d{1,2}$"))
+                if (currentYear >= 12)
                 {
-                    // If promotion exceeds max grade, mark as Graduated
                     student.Status = StudentStatus.Graduated;
                 }
                 else
                 {
-                    student.Grade = nextGrade;
-                    student.AcademicYear = academicYear + 1; // Move to next academic year
+                    student.Grade = $"Year {currentYear + 1}";
+                    student.AcademicYear = academicYear + 1;
                     student.Status = StudentStatus.Active;
                 }
+
+                student.UpdatedDate = DateTime.UtcNow;
+                student.UpdatedBy = "System";
 
                 await _unitOfWork.Students.UpdateAsync(student);
             }
 
             await _unitOfWork.CompleteAsync();
+
+            await _auditService.LogActionAsync("System", "Update", nameof(Student), "Multiple", $"Promoted students in grade {grade} for {academicYear}");
+        }
+
+        public async Task<Student> GetStudentByIdAsync(int studentId)
+        {
+            var student = await _unitOfWork.Students.GetByIdAsync(studentId);
+            if (student == null || student.Status == StudentStatus.Deleted)
+                throw new ArgumentException("Student not found.", nameof(studentId));
+            return student;
+        }
+
+        public async Task<IEnumerable<Student>> GetStudentsByGradeAsync(string grade)
+        {
+            if (!Regex.IsMatch(grade, @"^Year \d{1,2}$"))
+                throw new ArgumentException("Grade must be in format 'Year X'.", nameof(grade));
+            return await _unitOfWork.Students.GetByGradeAsync(grade);
+        }
+
+        public async Task<IEnumerable<Student>> GetStudentsByGroupIdAsync(int groupId)
+        {
+            await _groupService.GetGroupByIdAsync(groupId);
+            return await _unitOfWork.Students.GetByGroupIdAsync(groupId);
         }
     }
 }

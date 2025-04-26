@@ -19,7 +19,8 @@ namespace StThomasMission.Core.Entities
         public string EntityName { get; set; } = string.Empty;
 
         [Required]
-        public int EntityId { get; set; }
+        [StringLength(100)]
+        public string EntityId { get; set; } = string.Empty; // Supports non-int IDs
 
         [Required(ErrorMessage = "Details are required.")]
         [StringLength(1000)]
@@ -29,10 +30,11 @@ namespace StThomasMission.Core.Entities
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 
         [StringLength(45, ErrorMessage = "IP address cannot exceed 45 characters.")]
-        public string? IpAddress { get; set; } // Supports IPv6 too
+        public string? IpAddress { get; set; }
 
         [StringLength(250)]
-        public string? PerformedBy { get; set; } // Optional: name or username of actor
-    }
+        public string? PerformedBy { get; set; }
 
+        // Suggested index: Timestamp
+    }
 }

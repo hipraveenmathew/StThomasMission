@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace StThomasMission.Core.Entities
 {
@@ -20,7 +15,19 @@ namespace StThomasMission.Core.Entities
 
         public DateTime? UpdatedDate { get; set; }
 
+        public bool IsDeleted { get; set; }
+
+        [Required]
+        public string CreatedBy { get; set; } = string.Empty;
+
+        public string? UpdatedBy { get; set; }
+
+        [Timestamp]
+        public byte[] RowVersion { get; set; } = null!; // Optimistic concurrency
+
         public ICollection<Family> Families { get; set; } = new List<Family>();
         public ICollection<ApplicationUser> Users { get; set; } = new List<ApplicationUser>();
+
+        // Suggested index: Name, IsDeleted
     }
 }

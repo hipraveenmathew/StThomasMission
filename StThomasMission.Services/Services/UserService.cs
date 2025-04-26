@@ -1,128 +1,124 @@
-﻿using StThomasMission.Core.Entities;
+﻿using Microsoft.AspNetCore.Identity;
+using StThomasMission.Core.Entities;
 using StThomasMission.Core.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using BCrypt.Net;
-using Org.BouncyCastle.Crypto.Generators;
 
 namespace StThomasMission.Services
 {
-    /// <summary>
-    /// Service for managing user accounts and roles.
-    /// </summary>
     public class UserService : IUserService
     {
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IAuditService _auditService;
 
-        public UserService(IUnitOfWork unitOfWork)
+        public UserService(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, IUnitOfWork unitOfWork, IAuditService auditService)
         {
+            _userManager = userManager;
+            _roleManager = roleManager;
             _unitOfWork = unitOfWork;
+            _auditService = auditService;
         }
 
-        public async Task RegisterUserAsync(string username, string email, string password, string role)
+        public async Task CreateUserAsync(string email, string fullName, int wardId, string password, string role)
         {
-            if (string.IsNullOrEmpty(username))
-                throw new ArgumentException("Username is required.", nameof(username));
-            if (string.IsNullOrEmpty(email) || !Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
-                throw new ArgumentException("Valid email is required.", nameof(email));
-            if (string.IsNullOrEmpty(password) || password.Length < 8)
-                throw new ArgumentException("Password must be at least 8 characters long.", nameof(password));
-            if (string.IsNullOrEmpty(role) || (role != "Admin" && role != "Teacher" && role != "Parent"))
-                throw new ArgumentException("Role must be 'Admin', 'Teacher', or 'Parent'.", nameof(role));
+            if (string.IsNullOrEmpty(email))
+                throw new ArgumentException("Email is required.", nameof(email));
+            if (string.IsNullOrEmpty(fullName))
+                throw new ArgumentException("Full name is required.", nameof(fullName));
+            if (string.IsNullOrEmpty(password))
+                throw new ArgumentException("Password is required.", nameof(password));
+            if (string.IsNullOrEmpty(role))
+                throw new ArgumentException("Role is required.", nameof(role));
 
-            var existingUser = await _unitOfWork.Users.GetByEmailAsync(email);
+            await _unitOfWork.Wards.GetByIdAsync(wardId);
+
+            var existingUser = await _userManager.FindByEmailAsync(email);
             if (existingUser != null)
-                throw new InvalidOperationException("Email is already registered.");
+                throw new InvalidOperationException($"User with email {email} already exists.");
 
-            var user = new User
+            if (!await _roleManager.RoleExistsAsync(role))
+                throw new ArgumentException($"Role {role} does not exist.", nameof(role));
+
+            var user = new ApplicationUser
             {
-                Username = username,
+                UserName = email,
                 Email = email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
-                Role = role,
+                FullName = fullName,
+                WardId = wardId,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };
 
-            await _unitOfWork.Users.AddAsync(user);
-            await _unitOfWork.CompleteAsync();
+            var result = await _userManager.CreateAsync(user, password);
+            if (!result.Succeeded)
+                throw new InvalidOperationException($"Failed to create user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+
+            await _userManager.AddToRoleAsync(user, role);
+
+            await _auditService.LogActionAsync("System", "Create", nameof(ApplicationUser), user.Id, $"Created user: {email} with role {role}");
         }
 
-        public async Task UpdateUserAsync(int userId, string username, string email, string? password, string role, bool isActive)
+        public async Task UpdateUserAsync(string userId, string fullName, int wardId, string? designation)
         {
             var user = await GetUserByIdAsync(userId);
 
-            if (string.IsNullOrEmpty(username))
-                throw new ArgumentException("Username is required.", nameof(username));
-            if (string.IsNullOrEmpty(email) || !Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
-                throw new ArgumentException("Valid email is required.", nameof(email));
-            if (!string.IsNullOrEmpty(password) && password.Length < 8)
-                throw new ArgumentException("Password must be at least 8 characters long.", nameof(password));
-            if (string.IsNullOrEmpty(role) || (role != "Admin" && role != "Teacher" && role != "Parent"))
-                throw new ArgumentException("Role must be 'Admin', 'Teacher', or 'Parent'.", nameof(role));
+            if (string.IsNullOrEmpty(fullName))
+                throw new ArgumentException("Full name is required.", nameof(fullName));
 
-            var existingUser = await _unitOfWork.Users.GetByEmailAsync(email);
-            if (existingUser != null && existingUser.Id != userId)
-                throw new InvalidOperationException("Email is already registered.");
+            await _unitOfWork.Wards.GetByIdAsync(wardId);
 
-            user.Username = username;
-            user.Email = email;
-            if (!string.IsNullOrEmpty(password))
-                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(password);
-            user.Role = role;
-            user.IsActive = isActive;
+            user.FullName = fullName;
+            user.WardId = wardId;
+            user.Designation = designation;
 
-            await _unitOfWork.Users.UpdateAsync(user);
-            await _unitOfWork.CompleteAsync();
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+                throw new InvalidOperationException($"Failed to update user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+
+            await _auditService.LogActionAsync("System", "Update", nameof(ApplicationUser), userId, $"Updated user: {fullName}");
         }
 
-        public async Task DeleteUserAsync(int userId)
+        public async Task AssignRoleAsync(string userId, string role)
         {
             var user = await GetUserByIdAsync(userId);
-            await _unitOfWork.Users.DeleteAsync(user);
-            await _unitOfWork.CompleteAsync();
+
+            if (string.IsNullOrEmpty(role))
+                throw new ArgumentException("Role is required.", nameof(role));
+
+            if (!await _roleManager.RoleExistsAsync(role))
+                throw new ArgumentException($"Role {role} does not exist.", nameof(role));
+
+            var currentRoles = await _userManager.GetRolesAsync(user);
+            if (currentRoles.Contains(role))
+                return;
+
+            await _userManager.RemoveFromRolesAsync(user, currentRoles);
+            await _userManager.AddToRoleAsync(user, role);
+
+            await _auditService.LogActionAsync("System", "Update", nameof(ApplicationUser), userId, $"Assigned role {role} to user: {user.FullName}");
         }
 
-        public async Task<User> GetUserByIdAsync(int userId)
+        public async Task<IEnumerable<ApplicationUser>> GetUsersByRoleAsync(string role)
         {
-            var user = await _unitOfWork.Users.GetByIdAsync(userId);
-            if (user == null)
+            if (string.IsNullOrEmpty(role))
+                throw new ArgumentException("Role is required.", nameof(role));
+
+            if (!await _roleManager.RoleExistsAsync(role))
+                throw new ArgumentException($"Role {role} does not exist.", nameof(role));
+
+            var usersInRole = await _userManager.GetUsersInRoleAsync(role);
+            return usersInRole.Where(u => u.IsActive);
+        }
+
+        public async Task<ApplicationUser?> GetUserByIdAsync(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null || !user.IsActive)
                 throw new ArgumentException("User not found.", nameof(userId));
             return user;
-        }
-
-        public async Task<User> GetUserByEmailAsync(string email)
-        {
-            if (string.IsNullOrEmpty(email))
-                throw new ArgumentException("Email is required.", nameof(email));
-
-            var user = await _unitOfWork.Users.GetByEmailAsync(email);
-            if (user == null)
-                throw new ArgumentException("User not found.", nameof(email));
-            return user;
-        }
-
-        public async Task<IEnumerable<User>> GetUsersByRoleAsync(string role)
-        {
-            if (string.IsNullOrEmpty(role) || (role != "Admin" && role != "Teacher" && role != "Parent"))
-                throw new ArgumentException("Role must be 'Admin', 'Teacher', or 'Parent'.", nameof(role));
-
-            return await _unitOfWork.Users.GetByRoleAsync(role);
-        }
-
-        public async Task<bool> ValidateUserCredentialsAsync(string email, string password)
-        {
-            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
-                return false;
-
-            var user = await _unitOfWork.Users.GetByEmailAsync(email);
-            if (user == null || !user.IsActive)
-                return false;
-
-            return BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
         }
     }
 }

@@ -7,9 +7,6 @@ using System.Threading.Tasks;
 
 namespace StThomasMission.Services
 {
-    /// <summary>
-    /// Service implementation for handling audit logging operations.
-    /// </summary>
     public class AuditService : IAuditService
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -19,12 +16,18 @@ namespace StThomasMission.Services
             _unitOfWork = unitOfWork;
         }
 
-        public async Task LogActionAsync(string userId, string action, string entityName, int entityId, string details)
+        public async Task LogActionAsync(string userId, string action, string entityName, string entityId, string details)
         {
-            if (string.IsNullOrEmpty(userId)) throw new ArgumentException("User ID is required.", nameof(userId));
-            if (string.IsNullOrEmpty(action)) throw new ArgumentException("Action is required.", nameof(action));
-            if (string.IsNullOrEmpty(entityName)) throw new ArgumentException("Entity name is required.", nameof(entityName));
-            if (string.IsNullOrEmpty(details)) throw new ArgumentException("Details are required.", nameof(details));
+            if (string.IsNullOrEmpty(userId))
+                throw new ArgumentException("User ID is required.", nameof(userId));
+            if (string.IsNullOrEmpty(action))
+                throw new ArgumentException("Action is required.", nameof(action));
+            if (string.IsNullOrEmpty(entityName))
+                throw new ArgumentException("Entity name is required.", nameof(entityName));
+            if (string.IsNullOrEmpty(entityId))
+                throw new ArgumentException("Entity ID is required.", nameof(entityId));
+            if (string.IsNullOrEmpty(details))
+                throw new ArgumentException("Details are required.", nameof(details));
 
             var auditLog = new AuditLog
             {
@@ -33,18 +36,17 @@ namespace StThomasMission.Services
                 EntityName = entityName,
                 EntityId = entityId,
                 Details = details,
-                Timestamp = DateTime.UtcNow
+                Timestamp = DateTime.UtcNow,
+                PerformedBy = userId
             };
 
             await _unitOfWork.AuditLogs.AddAsync(auditLog);
             await _unitOfWork.CompleteAsync();
         }
 
-        public async Task<IEnumerable<AuditLog>> GetAuditLogsAsync(string? entityName = null, DateTime? startDate = null, DateTime? endDate = null)
+        public IQueryable<AuditLog> GetAuditLogsQueryable(string? entityName = null, DateTime? startDate = null, DateTime? endDate = null)
         {
-            var auditLogs = await _unitOfWork.AuditLogs.GetAllAsync();
-
-            return auditLogs.Where(log =>
+            return _unitOfWork.AuditLogs.GetQueryable(log =>
                 (entityName == null || log.EntityName == entityName) &&
                 (startDate == null || log.Timestamp >= startDate) &&
                 (endDate == null || log.Timestamp <= endDate));

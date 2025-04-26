@@ -11,7 +11,7 @@ namespace StThomasMission.Core.Entities
         [StringLength(150, ErrorMessage = "Family name cannot exceed 150 characters.")]
         public string FamilyName { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Ward is required.")]
+        [Required]
         public int WardId { get; set; } // Foreign key to Ward
         public Ward Ward { get; set; } = null!; // Navigation property
 
@@ -23,7 +23,7 @@ namespace StThomasMission.Core.Entities
         [RegularExpression(@"^TMP-\d{4}$", ErrorMessage = "Temporary ID must be in the format 'TMP-XXXX'.")]
         public string? TemporaryID { get; set; }
 
-        [Required(ErrorMessage = "Status is required.")]
+        [Required]
         public FamilyStatus Status { get; set; } = FamilyStatus.Active;
 
         [StringLength(150, ErrorMessage = "Migration target cannot exceed 150 characters.")]
@@ -32,8 +32,19 @@ namespace StThomasMission.Core.Entities
         [Required]
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
-        public DateTime? UpdatedDate { get; set; } // Tracks status changes
+        public DateTime? UpdatedDate { get; set; }
 
-        public ICollection<FamilyMember> Members { get; set; } = new List<FamilyMember>();
+        [Required]
+        public string CreatedBy { get; set; } = string.Empty;
+
+        public string? UpdatedBy { get; set; }
+
+        [Timestamp]
+        public byte[] RowVersion { get; set; } = null!; // Optimistic concurrency
+
+        public ICollection<FamilyMember> FamilyMembers { get; set; } = new List<FamilyMember>();
+        public ICollection<MigrationLog> MigrationLogs { get; set; } = new List<MigrationLog>();
+
+        // Suggested index: WardId, Status
     }
 }

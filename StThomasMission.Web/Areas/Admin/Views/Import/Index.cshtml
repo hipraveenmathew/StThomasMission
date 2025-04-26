@@ -1,0 +1,33 @@
+﻿@model StThomasMission.Web.Areas.Admin.Models.ImportViewModel
+@{
+    ViewData["Title"] = "Import Data";
+}
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="mb-0">Import Data</h3>
+    </div>
+    <div class="card-body">
+        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @Model.SuccessMessage
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <form asp-action="Upload" method="post" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label asp-for="File" class="form-label">Upload Excel File</label>
+                <input asp-for="File" type="file" class="form-control" accept=".xlsx,.xls" />
+                <span asp-validation-for="File" class="text-danger"></span>
+            </div>
+            <button type="submit" class="btn btn-modern">Import</button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+}

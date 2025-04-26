@@ -8,8 +8,8 @@ namespace StThomasMission.Core.Entities
         public int Id { get; set; }
 
         [Required]
-        public int StudentId { get; set; }
-        public Student Student { get; set; } = null!;
+        public int StudentId { get; set; } // Foreign key to Student
+        public Student Student { get; set; } = null!; // Navigation property
 
         [Required]
         public DateTime Date { get; set; } = DateTime.UtcNow;
@@ -25,6 +25,8 @@ namespace StThomasMission.Core.Entities
         public string? Remarks { get; set; }
 
         [StringLength(50)]
-        public string? RecordedBy { get; set; } // Optionally log the teacher username
+        public string? RecordedBy { get; set; }
+
+        // Suggested index: (StudentId, Date)
     }
 }

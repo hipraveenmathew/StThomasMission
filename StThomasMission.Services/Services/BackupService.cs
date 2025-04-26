@@ -7,9 +7,6 @@ using System.Threading.Tasks;
 
 namespace StThomasMission.Services
 {
-    /// <summary>
-    /// Service for creating and retrieving application backups.
-    /// </summary>
     public class BackupService : IBackupService
     {
         private readonly string _backupDirectory;
@@ -18,25 +15,27 @@ namespace StThomasMission.Services
         public BackupService(IConfiguration configuration)
         {
             _backupDirectory = configuration["BackupSettings:BackupDirectory"] ?? "Backups";
-            _databaseBackupPath = configuration["BackupSettings:DatabaseBackupPath"] ?? "";
+            _databaseBackupPath = configuration["BackupSettings:DatabaseBackupPath"] ?? Path.Combine(_backupDirectory, "Database");
 
             Directory.CreateDirectory(_backupDirectory);
+            Directory.CreateDirectory(_databaseBackupPath);
         }
 
         public async Task<string> CreateBackupAsync()
         {
-            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            string timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
             string backupFileName = $"Backup_{timestamp}.zip";
             string backupFilePath = Path.Combine(_backupDirectory, backupFileName);
+            string dbBackupFile = Path.Combine(_databaseBackupPath, $"db_backup_{timestamp}.sql");
 
-            string dbBackupFile = Path.Combine(_backupDirectory, $"db_backup_{timestamp}.sql");
-            await File.WriteAllTextAsync(dbBackupFile, "Simulated database backup content");
+            // Simulate database backup (replace with actual backup command for your DB)
+            await File.WriteAllTextAsync(dbBackupFile, "/* Simulated SQL Server backup content */");
 
             using var zipStream = new FileStream(backupFilePath, FileMode.Create);
             using var archive = new ZipArchive(zipStream, ZipArchiveMode.Create, true);
             var dbEntry = archive.CreateEntry(Path.GetFileName(dbBackupFile));
             using (var entryStream = dbEntry.Open())
-            using (var fileStream = new FileStream(dbBackupFile, FileMode.Open))
+            using (var fileStream = new FileStream(dbBackupFile, FileMode.Open, FileAccess.Read))
             {
                 await fileStream.CopyToAsync(entryStream);
             }

@@ -4,9 +4,6 @@ using System.Threading.Tasks;
 
 namespace StThomasMission.Core.Interfaces
 {
-    /// <summary>
-    /// Service interface for managing Ward operations.
-    /// </summary>
     public interface IWardService
     {
         Task<Ward> CreateWardAsync(string name);

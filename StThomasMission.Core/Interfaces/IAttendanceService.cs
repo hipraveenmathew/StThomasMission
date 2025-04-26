@@ -6,9 +6,6 @@ using System.Threading.Tasks;
 
 namespace StThomasMission.Core.Interfaces
 {
-    /// <summary>
-    /// Service interface for managing Attendance operations.
-    /// </summary>
     public interface IAttendanceService
     {
         Task AddAttendanceAsync(int studentId, DateTime date, string description, AttendanceStatus status);

@@ -5,18 +5,15 @@ using System.Threading.Tasks;
 
 namespace StThomasMission.Core.Interfaces
 {
-    /// <summary>
-    /// Service interface for managing Student operations.
-    /// </summary>
     public interface IStudentService
     {
         Task<Student> GetStudentByIdAsync(int studentId);
         Task<IEnumerable<Student>> GetStudentsByGradeAsync(string grade);
-        Task<IEnumerable<Student>> GetStudentsByGroupAsync(string group);
-        Task EnrollStudentAsync(int familyMemberId, string grade, int academicYear, string group, string? studentOrganisation);
-        Task UpdateStudentAsync(int studentId, string grade, string? group, string? studentOrganisation, StudentStatus status, string? migratedTo);
-        Task MarkPassFailAsync(int studentId, bool passed);
-        Task MarkStudentAsDeletedAsync(int studentId);
+        Task<IEnumerable<Student>> GetStudentsByGroupIdAsync(int groupId);
+        Task EnrollStudentAsync(int familyMemberId, string grade, int academicYear, int groupId, string studentOrganisation);
+        Task UpdateStudentAsync(int studentId, string grade, int groupId, string studentOrganisation, StudentStatus status, string migratedTo);
+        Task MarkPassFailAsync(int studentId, int academicYear, double passThreshold = 50.0, string remarks = null);
+        Task DeleteStudentAsync(int studentId);
         Task MarkStudentAsInactiveAsync(int studentId);
         Task PromoteStudentsAsync(string grade, int academicYear);
     }
