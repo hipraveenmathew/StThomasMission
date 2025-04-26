@@ -9,27 +9,27 @@ using System.Threading.Tasks;
 
 namespace StThomasMission.Infrastructure.Repositories
 {
-    public class WardRepository : Repository<Ward>, IWardRepository
+    public class GroupRepository : Repository<Group>, IGroupRepository
     {
         private readonly StThomasMissionDbContext _context;
 
-        public WardRepository(StThomasMissionDbContext context) : base(context)
+        public GroupRepository(StThomasMissionDbContext context) : base(context)
         {
             _context = context;
         }
 
-        public async Task<Ward?> GetByNameAsync(string name)
+        public async Task<Group?> GetByNameAsync(string name)
         {
-            return await _context.Wards
+            return await _context.Groups
                 .AsNoTracking()
-                .FirstOrDefaultAsync(w => w.Name == name && !w.IsDeleted);
+                .FirstOrDefaultAsync(g => g.Name == name);
         }
 
-        public async Task<IEnumerable<Ward>> GetActiveWardsAsync()
+        public async Task<IEnumerable<Group>> GetAllActiveAsync()
         {
-            return await _context.Wards
+            return await _context.Groups
                 .AsNoTracking()
-                .Where(w => w.Families.Any(f => f.Status != FamilyStatus.Deleted) && !w.IsDeleted)
+                .Where(g => g.Students.Any(s => s.Status != StudentStatus.Deleted))
                 .ToListAsync();
         }
     }

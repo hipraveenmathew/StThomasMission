@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace StThomasMission.Infrastructure.Repositories
 {
-    public class FamilyRepository : Repository<Family>, IRepository<Family>
+    public class FamilyRepository : Repository<Family>, IFamilyRepository
     {
         private readonly StThomasMissionDbContext _context;
 
@@ -32,6 +32,13 @@ namespace StThomasMission.Infrastructure.Repositories
                 .AsNoTracking()
                 .Where(f => f.Status == status)
                 .ToListAsync();
+        }
+
+        public async Task<Family?> GetByChurchRegistrationNumberAsync(string churchRegistrationNumber)
+        {
+            return await _context.Families
+                .AsNoTracking()
+                .FirstOrDefaultAsync(f => f.ChurchRegistrationNumber == churchRegistrationNumber && f.Status != FamilyStatus.Deleted);
         }
     }
 }

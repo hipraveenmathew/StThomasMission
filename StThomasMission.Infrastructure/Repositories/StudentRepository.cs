@@ -41,12 +41,12 @@ namespace StThomasMission.Infrastructure.Repositories
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<Student>> GetByGroupAsync(string group)
+        public async Task<IEnumerable<Student>> GetByGroupIdAsync(int groupId)
         {
             return await _context.Students
                 .AsNoTracking()
                 .Include(s => s.FamilyMember)
-                .Where(s => s.Group == group && s.Status != StudentStatus.Deleted)
+                .Where(s => s.GroupId == groupId && s.Status != StudentStatus.Deleted)
                 .ToListAsync();
         }
 

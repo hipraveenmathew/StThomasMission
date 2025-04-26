@@ -10,8 +10,6 @@ namespace StThomasMission.Infrastructure
     public class UnitOfWork : IUnitOfWork
     {
         private readonly StThomasMissionDbContext _dbContext;
-        private readonly IRepository<User> _users;
-
 
         public UnitOfWork(StThomasMissionDbContext dbContext)
         {
@@ -21,25 +19,33 @@ namespace StThomasMission.Infrastructure
             FamilyMembers = new FamilyMemberRepository(_dbContext);
             Attendances = new AttendanceRepository(_dbContext);
             Assessments = new AssessmentRepository(_dbContext);
+            Groups = new GroupRepository(_dbContext);
             GroupActivities = new GroupActivityRepository(_dbContext);
             StudentGroupActivities = new StudentGroupActivityRepository(_dbContext);
             MessageLogs = new MessageLogRepository(_dbContext);
             AuditLogs = new AuditLogRepository(_dbContext);
             Wards = new WardRepository(_dbContext);
-            _users = new UserRepository(_dbContext);
+            MassTimings = new MassTimingRepository(_dbContext);
+            Announcements = new AnnouncementRepository(_dbContext);
+            MigrationLogs = new MigrationLogRepository(_dbContext);
+            AssessmentSummaries = new Repository<AssessmentSummary>(_dbContext); // Added
         }
 
         public IStudentRepository Students { get; }
-        public IRepository<Family> Families { get; }
+        public IFamilyRepository Families { get; }
         public IFamilyMemberRepository FamilyMembers { get; }
         public IAttendanceRepository Attendances { get; }
-        public IRepository<Assessment> Assessments { get; }
+        public IAssessmentRepository Assessments { get; }
+        public IGroupRepository Groups { get; }
         public IGroupActivityRepository GroupActivities { get; }
         public IStudentGroupActivityRepository StudentGroupActivities { get; }
-        public IRepository<MessageLog> MessageLogs { get; }
-        public IRepository<AuditLog> AuditLogs { get; }
-        public IRepository<Ward> Wards { get; }
-
+        public IMessageLogRepository MessageLogs { get; }
+        public IAuditLogRepository AuditLogs { get; }
+        public IWardRepository Wards { get; }
+        public IMassTimingRepository MassTimings { get; }
+        public IAnnouncementRepository Announcements { get; }
+        public IMigrationLogRepository MigrationLogs { get; }
+        public IRepository<AssessmentSummary> AssessmentSummaries { get; } // Added
 
         public async Task<IDbContextTransaction> BeginTransactionAsync()
         {

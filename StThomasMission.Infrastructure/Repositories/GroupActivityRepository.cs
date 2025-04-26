@@ -19,11 +19,11 @@ namespace StThomasMission.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<IEnumerable<GroupActivity>> GetByGroupAsync(string group, DateTime? startDate = null, DateTime? endDate = null)
+        public async Task<IEnumerable<GroupActivity>> GetByGroupIdAsync(int groupId, DateTime? startDate = null, DateTime? endDate = null)
         {
             var query = _context.GroupActivities
                 .AsNoTracking()
-                .Where(ga => ga.Group == group && ga.Status != ActivityStatus.Inactive);
+                .Where(ga => ga.GroupId == groupId && ga.Status != ActivityStatus.Inactive);
 
             if (startDate.HasValue)
                 query = query.Where(ga => ga.Date >= startDate.Value);

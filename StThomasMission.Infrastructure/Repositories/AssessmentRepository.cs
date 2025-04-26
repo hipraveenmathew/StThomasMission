@@ -6,12 +6,11 @@ using StThomasMission.Infrastructure.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace StThomasMission.Infrastructure.Repositories
 {
-    public class AssessmentRepository : Repository<Assessment>, IRepository<Assessment>
+    public class AssessmentRepository : Repository<Assessment>, IAssessmentRepository
     {
         private readonly StThomasMissionDbContext _context;
 
@@ -27,9 +26,7 @@ namespace StThomasMission.Infrastructure.Repositories
                 .Where(a => a.StudentId == studentId && a.Student.Status != StudentStatus.Deleted);
 
             if (type.HasValue)
-            {
                 query = query.Where(a => a.Type == type.Value);
-            }
 
             return await query.ToListAsync();
         }

@@ -42,14 +42,5 @@ namespace StThomasMission.Infrastructure.Repositories
                 .Where(a => a.Student.Grade == grade && a.Date.Date == date.Date && a.Student.Status != StudentStatus.Deleted)
                 .ToListAsync();
         }
-
-        public async Task<IEnumerable<Attendance>> GetByGradeAndStatusAsync(string grade, DateTime date, StudentStatus status)
-        {
-            return await _context.Attendances
-                .AsNoTracking()
-                .Include(a => a.Student)
-                .Where(a => a.Student.Grade == grade && a.Date.Date == date.Date && a.Student.Status == status)
-                .ToListAsync();
-        }
     }
 }

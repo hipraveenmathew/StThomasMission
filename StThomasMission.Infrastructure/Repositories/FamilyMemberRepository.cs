@@ -32,13 +32,5 @@ namespace StThomasMission.Infrastructure.Repositories
                 .AsNoTracking()
                 .FirstOrDefaultAsync(m => m.UserId == userId && m.Family.Status != FamilyStatus.Deleted);
         }
-
-        public async Task<IEnumerable<FamilyMember>> GetByRoleAsync(string role)
-        {
-            return await _context.FamilyMembers
-                .AsNoTracking()
-                .Where(m => m.Role == role && m.Family.Status != FamilyStatus.Deleted)
-                .ToListAsync();
-        }
     }
 }
