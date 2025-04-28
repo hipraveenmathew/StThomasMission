@@ -1,0 +1,23 @@
+﻿@model StThomasMission.Web.Models.ErrorViewModel
+
+@{
+    ViewData["Title"] = "Error";
+}
+
+<h1 class="text-danger">Error</h1>
+<h2 class="text-danger">An error occurred in the Parent Portal.</h2>
+
+@if (Model.ShowRequestId)
+{
+    <p>
+        <strong>Request ID:</strong> <code>@Model.RequestId</code>
+    </p>
+}
+
+<p>
+    Please try again later or contact support if the issue persists.
+</p>
+<p>
+    <a href="@Url.Page("/Portal/Index", new { area = "Parents" })" class="btn btn-primary">Return to Parent Portal</a>
+    <a href="@Url.Page("/Index", new { area = "" })" class="btn btn-secondary">Go to Home</a>
+</p>

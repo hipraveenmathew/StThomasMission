@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using StThomasMission.Core.Entities;
 using StThomasMission.Core.Interfaces;
 using StThomasMission.Web.Areas.Parents.Models;
 using System.Linq;
@@ -27,15 +28,29 @@ namespace StThomasMission.Web.Areas.Parents.Controllers
             var familyMember = await _unitOfWork.FamilyMembers.GetByUserIdAsync(userId);
             if (familyMember == null) return NotFound("Family member not found.");
 
-            var family = await _familyService.GetFamilyByIdAsync(familyMember.FamilyId); // Fixed method name
+            var family = await _familyService.GetFamilyByIdAsync(familyMember.FamilyId);
             if (family == null) return NotFound("Family not found.");
 
             var students = await _unitOfWork.Students.GetByFamilyIdAsync(family.Id);
 
+            // Fetch attendance and assessments for each student
+            var studentAttendances = new Dictionary<int, List<Attendance>>();
+            var studentAssessments = new Dictionary<int, List<Assessment>>();
+            foreach (var student in students)
+            {
+                var attendances = await _unitOfWork.Attendances.GetByStudentIdAsync(student.Id);
+                studentAttendances[student.Id] = attendances.ToList();
+
+                var assessments = await _unitOfWork.Assessments.GetAssessmentsByStudentIdAsync(student.Id);
+                studentAssessments[student.Id] = assessments.ToList();
+            }
+
             var model = new ParentPortalViewModel
             {
                 Family = family,
-                Students = students.ToList()
+                Students = students.ToList(),
+                StudentAttendances = studentAttendances,
+                StudentAssessments = studentAssessments
             };
 
             return View(model);

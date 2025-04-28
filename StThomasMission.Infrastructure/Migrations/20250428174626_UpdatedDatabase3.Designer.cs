@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StThomasMission.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using StThomasMission.Infrastructure.Data;
 namespace StThomasMission.Infrastructure.Migrations
 {
     [DbContext(typeof(StThomasMissionDbContext))]
-    partial class StThomasMissionDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250428174626_UpdatedDatabase3")]
+    partial class UpdatedDatabase3
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

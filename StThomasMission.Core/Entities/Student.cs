@@ -13,10 +13,10 @@ namespace StThomasMission.Core.Entities
         public int GroupId { get; set; }
         public string StudentOrganisation { get; set; }
         public StudentStatus Status { get; set; }
-        public string MigratedTo { get; set; }
+        public string? MigratedTo { get; set; }
         public string CreatedBy { get; set; }
         public DateTime CreatedDate { get; set; }
-        public string UpdatedBy { get; set; }
+        public string? UpdatedBy { get; set; }
         public DateTime? UpdatedDate { get; set; }
 
         public FamilyMember FamilyMember { get; set; }

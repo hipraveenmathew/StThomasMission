@@ -91,10 +91,10 @@ namespace StThomasMission.Infrastructure.Data
                 .HasMaxLength(150);
             builder.Entity<Family>()
                 .Property(f => f.ChurchRegistrationNumber)
-                .HasMaxLength(8);
+                .HasMaxLength(9);
             builder.Entity<Family>()
                 .Property(f => f.TemporaryID)
-                .HasMaxLength(8);
+                .HasMaxLength(9);
             builder.Entity<Family>()
                 .Property(f => f.CreatedDate)
                 .HasDefaultValueSql("GETUTCDATE()");

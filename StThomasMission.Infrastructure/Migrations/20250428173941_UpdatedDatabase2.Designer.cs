@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StThomasMission.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using StThomasMission.Infrastructure.Data;
 namespace StThomasMission.Infrastructure.Migrations
 {
     [DbContext(typeof(StThomasMissionDbContext))]
-    partial class StThomasMissionDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250428173941_UpdatedDatabase2")]
+    partial class UpdatedDatabase2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -923,6 +926,7 @@ namespace StThomasMission.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("MigratedTo")
+                        .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
@@ -935,6 +939,7 @@ namespace StThomasMission.Infrastructure.Migrations
                         .HasColumnType("nvarchar(150)");
 
                     b.Property<string>("UpdatedBy")
+                        .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 

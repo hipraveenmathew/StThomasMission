@@ -1,21 +1,104 @@
-﻿@{
-    ViewData["Title"] = "Welcome";
+﻿@model StThomasMission.Web.Models.HomeIndexViewModel
+
+@{
+    ViewData["Title"] = "Welcome to St. Thomas Mission";
 }
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="mb-0">Welcome to St. Thomas Mission</h3>
+<div class="container py-5">
+    <!-- Hero Section -->
+    <div class="text-center p-5 mb-5 rounded" style="background: linear-gradient(to right, #f8f9fa, #e9ecef); box-shadow: 0 4px 8px rgba(0,0,0,0.05);">
+        <h1 class="display-4 mb-3">Welcome to St. Thomas Mission</h1>
+        <p class="lead mb-4">A vibrant parish community dedicated to faith, fellowship, and service.</p>
+        <hr class="my-4" style="width: 60px; border-top: 3px solid #007bff; margin: 0 auto;">
+        <p class="mt-4">Join us for worship, community events, and catechism programs. Discover more about our mission below.</p>
     </div>
-    <div class="card-body">
-        <p>Welcome to the St. Thomas Mission management system. This platform helps manage catechism, family activities, and administrative tasks for our parish community.</p>
-        <p>Please use the sidebar to navigate to the appropriate section based on your role:</p>
-        <ul>
-            <li><strong>Teachers/Head Teachers:</strong> Manage students, attendance, and group activities under the Catechism section.</li>
-            <li><strong>Parish Admins/Priests:</strong> Manage families, send announcements, and view message history under the Families section.</li>
-            <li><strong>Admins:</strong> Access user management, audit logs, and backups under the Admin section.</li>
-            <li><strong>Parents:</strong> View your children's progress in the Parent Portal.</li>
-        </ul>
-        <p>If you have any issues, please contact the parish administrator.</p>
-        <a asp-controller="Dashboard" asp-action="Index" class="btn btn-modern">Go to Dashboard</a>
+
+    <!-- About the Church Section -->
+    <div class="card mb-5 shadow-sm border-0">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0">About Our Church</h3>
+        </div>
+        <div class="card-body">
+            <p>St. Thomas Mission is a welcoming Catholic parish committed to spreading the teachings of Jesus Christ. We offer a range of spiritual, educational, and community activities for all ages, including weekly Masses, catechism classes, charity events, and family programs.</p>
+            <p>Our mission is to foster a strong, faith-filled community where everyone can grow in their relationship with God and one another.</p>
+            <p><strong>Location:</strong> 123 Faith Road, St. Thomas City</p>
+            <p><strong>Contact:</strong> <a href="mailto:info@stthomasmission.com">info@stthomasmission.com</a> | +1 (555) 123-4567</p>
+        </div>
+    </div>
+
+    <!-- Mass Timings Section -->
+    <div class="card mb-5 shadow-sm border-0">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0">Mass Timings</h3>
+        </div>
+        <div class="card-body">
+            @if (Model.MassTimings.Any())
+            {
+                <p>Join us for our weekly Masses. Here are the scheduled times:</p>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Day</th>
+                                <th>Time</th>
+                                <th>Location</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var massTiming in Model.MassTimings.OrderBy(mt => mt.Day))
+                            {
+                                <tr>
+                                    <td>@massTiming.Day</td>
+                                    <td>@massTiming.Time.ToString(@"hh\:mm")</td>
+                                    <td>@massTiming.Location</td>
+                                    <td>@massTiming.Type</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <p>No mass timings available for this week. Please check back later or contact the parish office.</p>
+            }
+        </div>
+    </div>
+
+    <!-- Announcements Section -->
+    <div class="card mb-5 shadow-sm border-0">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0">Announcements</h3>
+        </div>
+        <div class="card-body">
+            @if (Model.Announcements.Any())
+            {
+                <p>Stay updated with the latest news and events at St. Thomas Mission:</p>
+                <ul class="list-group list-group-flush">
+                    @foreach (var announcement in Model.Announcements.OrderByDescending(a => a.PostedDate))
+                    {
+                        <li class="list-group-item">
+                            <h5 class="mb-1">
+                                @announcement.Title
+                                <small class="text-muted">(@announcement.PostedDate.ToString("MMMM dd, yyyy"))</small>
+                            </h5>
+                            <p class="mb-1">@announcement.Description</p>
+                        </li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <p>No announcements at this time. Please check back later.</p>
+            }
+        </div>
+    </div>
+
+    <!-- Small Internal Access -->
+    <div class="text-center mt-5 small text-muted">
+        <p>Internal access for staff and members:</p>
+        <a href="@Url.Page("/Account/Login", new { area = "Identity" })" class="btn btn-outline-primary btn-sm me-2">Login</a>
+        <a href="@Url.Page("/Account/Register", new { area = "Identity" })" class="btn btn-outline-secondary btn-sm">Register</a>
     </div>
 </div>

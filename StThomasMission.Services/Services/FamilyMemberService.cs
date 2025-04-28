@@ -11,13 +11,11 @@ namespace StThomasMission.Services
     public class FamilyMemberService : IFamilyMemberService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IFamilyService _familyService;
         private readonly IAuditService _auditService;
 
-        public FamilyMemberService(IUnitOfWork unitOfWork, IFamilyService familyService, IAuditService auditService)
+        public FamilyMemberService(IUnitOfWork unitOfWork, IAuditService auditService)
         {
             _unitOfWork = unitOfWork;
-            _familyService = familyService;
             _auditService = auditService;
         }
 
@@ -34,7 +32,10 @@ namespace StThomasMission.Services
             if (!string.IsNullOrEmpty(email) && !Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
                 throw new ArgumentException("Invalid email address.", nameof(email));
 
-            await _familyService.GetFamilyByIdAsync(familyId);
+            // Use IUnitOfWork directly instead of IFamilyService
+            var family = await _unitOfWork.Families.GetByIdAsync(familyId);
+            if (family == null)
+                throw new ArgumentException("Family not found.", nameof(familyId));
 
             var familyMember = new FamilyMember
             {
@@ -46,13 +47,13 @@ namespace StThomasMission.Services
                 Contact = contact,
                 Email = email,
                 Role = role,
-                CreatedBy = "System"
+                CreatedBy = "System",
             };
 
             await _unitOfWork.FamilyMembers.AddAsync(familyMember);
             await _unitOfWork.CompleteAsync();
 
-            await _auditService.LogActionAsync("System", "Create", nameof(FamilyMember), familyMember.Id.ToString(), $"Added family member: {familyMember.FullName}");
+            await _auditService.LogActionAsync("System", "Create", nameof(FamilyMember), familyMember.Id.ToString(), $"Added family member: {familyMember.FirstName} {familyMember.LastName}");
         }
 
         public async Task UpdateFamilyMemberAsync(int familyMemberId, string firstName, string lastName, FamilyMemberRole relation, DateTime dateOfBirth, string? contact, string? email, string? role)
@@ -78,11 +79,12 @@ namespace StThomasMission.Services
             familyMember.Email = email;
             familyMember.Role = role;
             familyMember.UpdatedBy = "System";
+           
 
             await _unitOfWork.FamilyMembers.UpdateAsync(familyMember);
             await _unitOfWork.CompleteAsync();
 
-            await _auditService.LogActionAsync("System", "Update", nameof(FamilyMember), familyMemberId.ToString(), $"Updated family member: {familyMember.FullName}");
+            await _auditService.LogActionAsync("System", "Update", nameof(FamilyMember), familyMemberId.ToString(), $"Updated family member: {familyMember.FirstName} {familyMember.LastName}");
         }
 
         public async Task DeleteFamilyMemberAsync(int familyMemberId)
@@ -96,10 +98,10 @@ namespace StThomasMission.Services
             await _unitOfWork.FamilyMembers.DeleteAsync(familyMemberId);
             await _unitOfWork.CompleteAsync();
 
-            await _auditService.LogActionAsync("System", "Delete", nameof(FamilyMember), familyMemberId.ToString(), $"Deleted family member: {familyMember.FullName}");
+            await _auditService.LogActionAsync("System", "Delete", nameof(FamilyMember), familyMemberId.ToString(), $"Deleted family member: {familyMember.FirstName} {familyMember.LastName}");
         }
 
-        public async Task<FamilyMember?> GetFamilyMemberByIdAsync(int familyMemberId)
+        public async Task<FamilyMember> GetFamilyMemberByIdAsync(int familyMemberId)
         {
             var familyMember = await _unitOfWork.FamilyMembers.GetByIdAsync(familyMemberId);
             if (familyMember == null)
@@ -109,8 +111,21 @@ namespace StThomasMission.Services
 
         public async Task<IEnumerable<FamilyMember>> GetFamilyMembersByFamilyIdAsync(int familyId)
         {
-            await _familyService.GetFamilyByIdAsync(familyId);
+            // Use IUnitOfWork directly instead of IFamilyService
+            var family = await _unitOfWork.Families.GetByIdAsync(familyId);
+            if (family == null)
+                throw new ArgumentException("Family not found.", nameof(familyId));
+
             return await _unitOfWork.FamilyMembers.GetByFamilyIdAsync(familyId);
+        }
+
+        public async Task<FamilyMember> GetFamilyMemberByUserIdAsync(string userId)
+        {
+            var familyMembers = await _unitOfWork.FamilyMembers.GetAsync(fm => fm.UserId == userId);
+            var familyMember = familyMembers.FirstOrDefault();
+            if (familyMember == null)
+                throw new ArgumentException("Family member not found for the given user.", nameof(userId));
+            return familyMember;
         }
     }
 }

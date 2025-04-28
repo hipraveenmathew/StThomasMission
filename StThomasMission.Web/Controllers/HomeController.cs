@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using StThomasMission.Core.Interfaces;
 using StThomasMission.Web.Models;
 
 namespace StThomasMission.Web.Controllers
@@ -7,15 +8,28 @@ namespace StThomasMission.Web.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
+        private readonly IMassTimingService _massTimingService;
+        private readonly IAnnouncementService _announcementService;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(IMassTimingService massTimingService, IAnnouncementService announcementService,ILogger<HomeController> logger)
         {
             _logger = logger;
+            _massTimingService = massTimingService;
+            _announcementService = announcementService;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            return View();
+            var massTimings = await _massTimingService.GetMassTimingsAsync();
+            var announcements = await _announcementService.GetAnnouncementsAsync();
+
+            var model = new HomeIndexViewModel
+            {
+                MassTimings = massTimings,
+                Announcements = announcements
+            };
+
+            return View(model);
         }
 
         public IActionResult Privacy()

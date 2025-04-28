@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StThomasMission.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using StThomasMission.Infrastructure.Data;
 namespace StThomasMission.Infrastructure.Migrations
 {
     [DbContext(typeof(StThomasMissionDbContext))]
-    partial class StThomasMissionDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250428172529_UpdatedDatabase")]
+    partial class UpdatedDatabase
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -520,8 +523,8 @@ namespace StThomasMission.Infrastructure.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("ChurchRegistrationNumber")
-                        .HasMaxLength(9)
-                        .HasColumnType("nvarchar(9)");
+                        .HasMaxLength(8)
+                        .HasColumnType("nvarchar(8)");
 
                     b.Property<string>("CreatedBy")
                         .IsRequired()
@@ -555,8 +558,8 @@ namespace StThomasMission.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("TemporaryID")
-                        .HasMaxLength(9)
-                        .HasColumnType("nvarchar(9)");
+                        .HasMaxLength(8)
+                        .HasColumnType("nvarchar(8)");
 
                     b.Property<string>("UpdatedBy")
                         .HasMaxLength(150)
@@ -923,6 +926,7 @@ namespace StThomasMission.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("MigratedTo")
+                        .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
@@ -935,6 +939,7 @@ namespace StThomasMission.Infrastructure.Migrations
                         .HasColumnType("nvarchar(150)");
 
                     b.Property<string>("UpdatedBy")
+                        .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 

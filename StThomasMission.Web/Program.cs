@@ -27,8 +27,11 @@ builder.Host.UseSerilog();
 // Add services to the container
 builder.Services.AddControllersWithViews(options =>
 {
-    options.Filters.Add(typeof(GlobalExceptionFilter)); // Use typeof to resolve dependency injection
+    options.Filters.Add(typeof(GlobalExceptionFilter));
 });
+
+// Add Razor Pages support
+builder.Services.AddRazorPages(); // Added to enable Razor Pages services
 
 // Add DbContext with SQL Server
 builder.Services.AddDbContext<StThomasMissionDbContext>(options =>
@@ -54,15 +57,19 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Register Services
+builder.Services.AddScoped<IFamilyMemberService, FamilyMemberService>();
 builder.Services.AddScoped<ICatechismService, CatechismService>();
 builder.Services.AddScoped<IFamilyService, FamilyService>();
-builder.Services.AddScoped<IStudentService, StudentService>(); // Added
+builder.Services.AddScoped<IStudentService, StudentService>();
 builder.Services.AddScoped<ICommunicationService, CommunicationService>();
 builder.Services.AddScoped<IBackupService, BackupService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IImportService, ImportService>();
-builder.Services.AddScoped<IReportingService, ReportingService>(); // Added
-builder.Services.AddScoped<IGroupService, GroupService>(); // Added for group-related operations
+builder.Services.AddScoped<IReportingService, ReportingService>();
+builder.Services.AddScoped<IGroupService, GroupService>();
+builder.Services.AddScoped<IWardService, WardService>();
+builder.Services.AddScoped<IMassTimingService, MassTimingService>(); 
+builder.Services.AddScoped<IAnnouncementService, AnnouncementService>(); 
 
 var app = builder.Build();
 
@@ -92,7 +99,7 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         Log.Error(ex, "An error occurred while seeding the database.");
-        throw; // Optionally rethrow to stop the application if seeding fails
+        throw;
     }
 }
 
@@ -133,7 +140,7 @@ static async Task SeedRolesAsync(IServiceProvider serviceProvider)
     }
 }
 
-// Global Exception Filter (Optional)
+// Global Exception Filter
 public class GlobalExceptionFilter : IExceptionFilter
 {
     private readonly ILogger<GlobalExceptionFilter> _logger;
@@ -159,4 +166,3 @@ public class GlobalExceptionFilter : IExceptionFilter
         context.ExceptionHandled = true;
     }
 }
-

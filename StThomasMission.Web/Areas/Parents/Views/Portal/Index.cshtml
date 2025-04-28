@@ -5,54 +5,81 @@
 }
 
 <h1>Parent Portal</h1>
-<hr />
-<div>
-    <h3>Family Details</h3>
-    <p><strong>Family Name:</strong> @Model.Family.FamilyName</p>
-    <p><strong>Ward:</strong> @Model.Family.Ward</p>
-    <p><strong>Status:</strong> @Model.Family.Status</p>
-    @if (Model.Family.IsRegistered)
-    {
-        <p><strong>Church Registration Number:</strong> @Model.Family.ChurchRegistrationNumber</p>
-    }
-    else
-    {
-        <p><strong>Temporary ID:</strong> @Model.Family.TemporaryID</p>
-    }
-</div>
 
-<div class="mt-4">
-    <h3>Students</h3>
-    @if (Model.Students != null && Model.Students.Any())
-    {
-        <table class="table">
-            <thead>
+<h3>Family: @Model.Family.FamilyName</h3>
+<p>Ward: @Model.Family.Ward.Name</p>
+<p>Status: @Model.Family.Status</p>
+@if (Model.Family.Status == StThomasMission.Core.Enums.FamilyStatus.Migrated)
+{
+    <p>Migrated To: @Model.Family.MigratedTo</p>
+}
+
+<h4>Students</h4>
+@if (Model.Students.Any())
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Grade</th>
+                <th>Academic Year</th>
+                <th>Status</th>
+                <th>Attendance</th>
+                <th>Assessments</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var student in Model.Students)
+            {
                 <tr>
-                    <th>First Name</th>
-                    <th>Last Name</th>
-                    <th>Grade</th>
-                    <th>Academic Year</th>
-                    <th>Group</th>
-                    <th>Status</th>
+                    <td>@(student.FamilyMember?.FirstName ?? "N/A") @(student.FamilyMember?.LastName ?? "N/A")</td>
+                    <td>@student.Grade</td>
+                    <td>@student.AcademicYear</td>
+                    <td>@student.Status</td>
+                    <td>
+                        @if (Model.StudentAttendances.ContainsKey(student.Id) && Model.StudentAttendances[student.Id].Any())
+                        {
+                            <ul>
+                                @foreach (var attendance in Model.StudentAttendances[student.Id].Take(3)) // Limit to 3 for brevity
+                                {
+                                    <li>@attendance.Date.ToString("yyyy-MM-dd"): @attendance.Status</li>
+                                }
+                            </ul>
+                            if (Model.StudentAttendances[student.Id].Count > 3)
+                            {
+                                <small>(Showing first 3, total: @Model.StudentAttendances[student.Id].Count)</small>
+                            }
+                        }
+                        else
+                        {
+                            <span>No attendance records.</span>
+                        }
+                    </td>
+                    <td>
+                        @if (Model.StudentAssessments.ContainsKey(student.Id) && Model.StudentAssessments[student.Id].Any())
+                        {
+                            <ul>
+                                @foreach (var assessment in Model.StudentAssessments[student.Id].Take(3)) // Limit to 3 for brevity
+                                {
+                                    <li>@assessment.Name (@assessment.Date.ToString("yyyy-MM-dd")): @assessment.Marks/@assessment.TotalMarks (@assessment.Type)</li>
+                                }
+                            </ul>
+                            if (Model.StudentAssessments[student.Id].Count > 3)
+                            {
+                                <small>(Showing first 3, total: @Model.StudentAssessments[student.Id].Count)</small>
+                            }
+                        }
+                        else
+                        {
+                            <span>No assessment records.</span>
+                        }
+                    </td>
                 </tr>
-            </thead>
-            <tbody>
-                @foreach (var student in Model.Students)
-                {
-                    <tr>
-                        <td>@student.FamilyMember.FirstName</td>
-                        <td>@student.FamilyMember.LastName</td>
-                        <td>@student.Grade</td>
-                        <td>@student.AcademicYear</td>
-                        <td>@student.Group</td>
-                        <td>@student.Status</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    }
-    else
-    {
-        <p>No students found for this family.</p>
-    }
-</div>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No students found for your family.</p>
+}
