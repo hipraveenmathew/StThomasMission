@@ -38,7 +38,7 @@ namespace StThomasMission.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(MassTiming massTiming)
         {
-            massTiming.CreatedBy = User.Identity.Name ?? "System";
+           // massTiming.CreatedBy = User.Identity.Name ?? "System";
             if (1==1/*ModelState.IsValid*/)
             {
                 massTiming.CreatedBy = User.Identity.Name ?? "System";

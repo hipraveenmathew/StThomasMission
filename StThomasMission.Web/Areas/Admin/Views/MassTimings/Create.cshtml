@@ -2,42 +2,94 @@
 
 @{
     ViewData["Title"] = "Add Mass Timing";
+    Layout = "_Layout";
+
 }
 
-<h2>Add Mass Timing</h2>
-
-<form asp-action="Create" method="post">
-    <div class="form-group">
-        <label asp-for="Day" class="control-label"></label>
-        <input asp-for="Day" class="form-control" />
-        <span asp-validation-for="Day" class="text-danger"></span>
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h2 class="mb-0"><i class="fas fa-plus me-2"></i>Add Mass Timing</h2>
+        </div>
+        <div class="card-body">
+            <form asp-action="Create" method="post" id="createMassTimingForm">
+                <div class="row">
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="Day" class="form-label fw-bold"></label>
+                        <input asp-for="Day" class="form-control" placeholder="e.g., Sunday" required />
+                        <span asp-validation-for="Day" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="Time" class="form-label fw-bold"></label>
+                        <input asp-for="Time" class="form-control" type="time" required />
+                        <span asp-validation-for="Time" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="Location" class="form-label fw-bold"></label>
+                        <input asp-for="Location" class="form-control" placeholder="e.g., Main Church" required />
+                        <span asp-validation-for="Location" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="Type" class="form-label fw-bold"></label>
+                        <select asp-for="Type" class="form-select" asp-items="Html.GetEnumSelectList<StThomasMission.Core.Enums.MassType>()" required>
+                            <option value="">Select Type</option>
+                        </select>
+                        <span asp-validation-for="Type" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="WeekStartDate" class="form-label fw-bold"></label>
+                        <input asp-for="WeekStartDate" class="form-control" type="date" required />
+                        <span asp-validation-for="WeekStartDate" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-end mt-4">
+                    <a asp-action="Index" class="btn btn-secondary me-2"><i class="fas fa-times me-2"></i>Cancel</a>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Create</button>
+                </div>
+            </form>
+        </div>
     </div>
-    <div class="form-group">
-        <label asp-for="Time" class="control-label"></label>
-        <input asp-for="Time" class="form-control" type="time" />
-        <span asp-validation-for="Time" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="Location" class="control-label"></label>
-        <input asp-for="Location" class="form-control" />
-        <span asp-validation-for="Location" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="Type" class="control-label"></label>
-        <select asp-for="Type" class="form-control" asp-items="Html.GetEnumSelectList<StThomasMission.Core.Enums.MassType>()"></select>
-        <span asp-validation-for="Type" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="WeekStartDate" class="control-label"></label>
-        <input asp-for="WeekStartDate" class="form-control" type="date" />
-        <span asp-validation-for="WeekStartDate" class="text-danger"></span>
-    </div>
-    <div class="form-group mt-3">
-        <button type="submit" class="btn btn-primary">Create</button>
-        <a asp-action="Index" class="btn btn-secondary">Cancel</a>
-    </div>
-</form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate-unobtrusive/3.2.12/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Initialize jQuery Validate
+            $("#createMassTimingForm").validate({
+                rules: {
+                    Day: { required: true },
+                    Time: { required: true },
+                    Location: { required: true },
+                    Type: { required: true },
+                    WeekStartDate: { required: true, date: true }
+                },
+                messages: {
+                    Day: "Please enter the day.",
+                    Time: "Please enter the time.",
+                    Location: "Please enter the location.",
+                    Type: "Please select a mass type.",
+                    WeekStartDate: "Please enter a valid date."
+                },
+                errorElement: "div",
+                errorClass: "text-danger",
+                highlight: function (element) {
+                    $(element).addClass("is-invalid");
+                },
+                unhighlight: function (element) {
+                    $(element).removeClass("is-invalid");
+                }
+            });
+
+            // Loading spinner for form submission
+            $("#createMassTimingForm").on("submit", function () {
+                var $submitButton = $(this).find('button[type="submit"]');
+                if ($(this).valid()) {
+                    $submitButton.prop("disabled", true).prepend('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>');
+                }
+            });
+        });
+    </script>
 }

@@ -3,40 +3,172 @@
 @{
     ViewData["Title"] = "Mass Timings";
     Layout = "_Layout";
-    
 }
 
-<h2>Mass Timings</h2>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0"><i class="fas fa-clock me-2"></i>Mass Timings</h2>
+        <a asp-area="Admin" asp-controller="MassTimings" asp-action="Create" class="btn btn-primary"><i class="fas fa-plus me-2"></i>Add New</a>
+    </div>
 
-<p>
-    <a asp-area="Admin" asp-controller="MassTimings" asp-action="Create" class="btn btn-primary">Add New Mass Timing</a>
-</p>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            @if (Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Day</th>
+                                <th>Time</th>
+                                <th>Location</th>
+                                <th>Type</th>
+                                <th>Week Start</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var timing in Model.OrderBy(mt => mt.Day))
+                            {
+                                <tr>
+                                    <td>@timing.Day</td>
+                                    <td>@timing.Time.ToString(@"hh\:mm")</td>
+                                    <td>@Html.DisplayFor(modelItem => timing.Location)</td>
+                                    <td>@Html.DisplayFor(modelItem => timing.Type)</td>
+                                    <td>@timing.WeekStartDate.ToString("yyyy-MM-dd")</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-warning me-2" data-bs-toggle="modal" data-bs-target="#editModal-@timing.Id"><i class="fas fa-edit"></i> Edit</button>
+                                        <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal-@timing.Id"><i class="fas fa-trash"></i> Delete</button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
 
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Day</th>
-            <th>Time</th>
-            <th>Location</th>
-            <th>Type</th>
-            <th>Week Start Date</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var timing in Model.OrderBy(mt => mt.Day))
-        {
-            <tr>
-                <td>@timing.Day</td>
-                <td>@timing.Time.ToString(@"hh\:mm")</td>
-                <td>@Html.DisplayFor(modelItem => timing.Location)</td>
-                <td>@Html.DisplayFor(modelItem => timing.Type)</td>
-                <td>@timing.WeekStartDate.ToString("yyyy-MM-dd")</td>
-                <td>
-                    <a asp-area="Admin" asp-controller="MassTimings" asp-action="Edit" asp-route-id="@timing.Id" class="btn btn-sm btn-warning">Edit</a>
-                    <a asp-area="Admin" asp-controller="MassTimings" asp-action="Delete" asp-route-id="@timing.Id" class="btn btn-sm btn-danger">Delete</a>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+                <!-- Pagination (Placeholder) -->
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center mt-3">
+                        <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link" href="#">Next</a></li>
+                    </ul>
+                </nav>
+            }
+            else
+            {
+                <div class="alert alert-info text-center" role="alert">
+                    No mass timings found. Click "Add New" to create one.
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modals -->
+@foreach (var timing in Model)
+{
+    <div class="modal fade" id="editModal-@timing.Id" tabindex="-1" aria-labelledby="editModalLabel-@timing.Id" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editModalLabel-@timing.Id"><i class="fas fa-edit me-2"></i>Edit Mass Timing</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form asp-area="Admin" asp-controller="MassTimings" asp-action="Edit" method="post" id="editForm-@timing.Id">
+                    <div class="modal-body">
+                        <input type="hidden" name="Id" value="@timing.Id" />
+                        <div class="mb-3">
+                            <label class="form-label">Day</label>
+                            <input type="text" class="form-control" name="Day" value="@timing.Day" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Time</label>
+                            <input type="time" class="form-control" name="Time" value="@timing.Time.ToString(@"hh\:mm")" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Location</label>
+                            <input type="text" class="form-control" name="Location" value="@timing.Location" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Type</label>
+                            <input type="text" class="form-control" name="Type" value="@timing.Type" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Week Start Date</label>
+                            <input type="date" class="form-control" name="WeekStartDate" value="@timing.WeekStartDate.ToString("yyyy-MM-dd")" required />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-warning"><i class="fas fa-save me-2"></i>Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Modals -->
+    <div class="modal fade" id="deleteModal-@timing.Id" tabindex="-1" aria-labelledby="deleteModalLabel-@timing.Id" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteModalLabel-@timing.Id"><i class="fas fa-trash me-2"></i>Delete Mass Timing</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete the mass timing for @timing.Day at @timing.Time.ToString(@"hh\:mm")?
+                </div>
+                <form asp-area="Admin" asp-controller="MassTimings" asp-action="Delete" method="post">
+                    <input type="hidden" name="Id" value="@timing.Id" />
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger"><i class="fas fa-trash me-2"></i>Delete</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate-unobtrusive/3.2.12/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Initialize jQuery Validate for all edit forms
+            $('form[id^="editForm-"]').each(function () {
+                $(this).validate({
+                    rules: {
+                        Day: { required: true },
+                        Time: { required: true },
+                        Location: { required: true },
+                        Type: { required: true },
+                        WeekStartDate: { required: true, date: true }
+                    },
+                    messages: {
+                        Day: "Please enter the day.",
+                        Time: "Please enter the time.",
+                        Location: "Please enter the location.",
+                        Type: "Please enter the type.",
+                        WeekStartDate: "Please enter a valid date."
+                    },
+                    errorElement: "div",
+                    errorClass: "text-danger",
+                    highlight: function (element) {
+                        $(element).addClass("is-invalid");
+                    },
+                    unhighlight: function (element) {
+                        $(element).removeClass("is-invalid");
+                    }
+                });
+            });
+
+            // Loading spinner for form submission
+            $('form').on('submit', function () {
+                $(this).find('button[type="submit"]').prop('disabled', true).prepend('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>');
+            });
+        });
+    </script>
+}
