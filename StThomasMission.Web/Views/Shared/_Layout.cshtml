@@ -2,186 +2,275 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@ViewData["Title"] - St. Thomas Mission</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
     <style>
         body {
             background-color: #f8f9fa;
+            padding-top: 70px; /* Ensure content is not overlapped by the navbar */
+        }
+
+        .navbar {
+            background-color: #343a40;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .navbar-brand {
             font-weight: bold;
+            font-size: 1.5rem;
+            color: #fff !important;
         }
 
-        .sidebar {
-            min-height: 100vh;
+        .navbar-nav .nav-link {
+            color: #adb5bd !important;
+            padding: 0.5rem 1rem;
+        }
+
+            .navbar-nav .nav-link:hover,
+            .navbar-nav .nav-link.active {
+                color: #fff !important;
+                background-color: #495057;
+                border-radius: 4px;
+            }
+
+        .dropdown-menu {
             background-color: #343a40;
-            color: white;
-            padding-top: 20px;
-            position: fixed;
-            width: 200px;
+            border: none;
         }
 
-            .sidebar a {
-                color: #adb5bd;
-                text-decoration: none;
-                padding: 10px 20px;
-                display: block;
+        .dropdown-item {
+            color: #adb5bd !important;
+        }
+
+            .dropdown-item:hover {
+                background-color: #495057;
+                color: #fff !important;
             }
 
-                .sidebar a:hover {
-                    background-color: #495057;
-                    color: white;
-                }
-
-        .content {
-            margin-left: 200px;
-            padding: 20px;
+        .auth-buttons {
+            font-size: 0.9rem;
         }
-
-        .card {
-            border: none;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-        }
-
-        .btn-modern {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            transition: background-color 0.3s;
-        }
-
-            .btn-modern:hover {
-                background-color: #0056b3;
-            }
 
         footer {
-            margin-left: 200px;
-            padding: 10px 0;
-            text-align: center;
             background-color: #f8f9fa;
+            padding: 1rem 0;
             border-top: 1px solid #dee2e6;
+            text-align: center;
+        }
+
+        main {
+            min-height: calc(100vh - 150px); /* Ensure main content takes up remaining height */
+            padding: 1rem;
+        }
+
+        /* Mobile-specific adjustments */
+        @@media (max-width: 991px) {
+            .navbar-nav
+
+        {
+            padding: 0.5rem 0;
+        }
+
+        .navbar-nav .nav-item {
+            border-bottom: 1px solid #495057;
+        }
+
+        .navbar-nav .nav-link {
+            padding: 0.75rem 1rem;
+        }
+
+        .dropdown-menu {
+            background-color: #343a40;
+            border: none;
+            box-shadow: none;
+        }
+
+        .dropdown-item {
+            padding: 0.5rem 1.5rem;
+        }
+
         }
     </style>
 </head>
 <body>
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            <nav class="col-md-2 d-none d-md-block sidebar">
-                <div class="sidebar-sticky">
-                    <h5 class="text-center">St. Thomas Mission</h5>
-                    <a asp-area="" asp-controller="Dashboard" asp-action="Index">Dashboard</a>
-                    <a asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container-fluid">
+            <!-- Brand -->
+            <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">St. Thomas Mission</a>
 
-                    @if (User.IsInRole("Teacher") || User.IsInRole("HeadTeacher") || User.IsInRole("ParishPriest"))
+            <!-- Toggler for mobile -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <!-- Navbar Links -->
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                    </li>
+
+                    <!-- Public Links (Available to All) -->
+                    <li class="nav-item">
+                        <a class="nav-link" asp-area="Admin" asp-controller="MassTimings" asp-action="Index">Mass Timings</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-area="Admin" asp-controller="Announcements" asp-action="Index">Announcements</a>
+                    </li>
+
+                    <!-- Authenticated User Links -->
+                    @if (User.Identity.IsAuthenticated)
                     {
-                        <h5 class="text-center mt-3">Catechism</h5>
-                        <a asp-area="Catechism" asp-controller="Students" asp-action="Index">Students</a>
-                        <a asp-area="Catechism" asp-controller="Attendance" asp-action="MarkAttendance">Attendance</a>
-                        <a asp-area="Catechism" asp-controller="GroupActivities" asp-action="Index">Group Activities</a>
-                        <a asp-area="Catechism" asp-controller="Communication" asp-action="SendAbsenteeNotifications">Notifications</a>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="" asp-controller="Dashboard" asp-action="Index">Dashboard</a>
+                        </li>
+
+                        <!-- Catechism Section (Teachers, HeadTeacher, ParishPriest) -->
+                        @if (User.IsInRole("Teacher") || User.IsInRole("HeadTeacher") || User.IsInRole("ParishPriest"))
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="catechismDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Catechism
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="catechismDropdown">
+                                    <li><a class="dropdown-item" asp-area="Catechism" asp-controller="Students" asp-action="Index">Students</a></li>
+                                    <li><a class="dropdown-item" asp-area="Catechism" asp-controller="Attendance" asp-action="MarkAttendance">Attendance</a></li>
+                                    <li><a class="dropdown-item" asp-area="Catechism" asp-controller="GroupActivities" asp-action="Index">Group Activities</a></li>
+                                    <li><a class="dropdown-item" asp-area="Catechism" asp-controller="Communication" asp-action="SendAbsenteeNotifications">Notifications</a></li>
+                                    @if (User.IsInRole("HeadTeacher"))
+                                    {
+                                        <li><a class="dropdown-item" asp-area="Catechism" asp-controller="HeadTeacher" asp-action="PromoteStudents">Promote Students</a></li>
+                                    }
+                                </ul>
+                            </li>
+                        }
+
+                        <!-- Families Section (ParishAdmin, ParishPriest) -->
+                        @if (User.IsInRole("ParishAdmin") || User.IsInRole("ParishPriest"))
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="familiesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Families
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="familiesDropdown">
+                                    <li><a class="dropdown-item" asp-area="Families" asp-controller="Families" asp-action="Index">Families</a></li>
+                                    <li><a class="dropdown-item" asp-area="Admin" asp-controller="Announcements" asp-action="Create">Add Announcement</a></li>
+                                    <li><a class="dropdown-item" asp-area="Admin" asp-controller="MassTimings" asp-action="Create">Add Mass Timing</a></li>
+                                    <li><a class="dropdown-item" asp-area="Families" asp-controller="MessageHistory" asp-action="Index">Message History</a></li>
+                                </ul>
+                            </li>
+                        }
+
+                        <!-- Reports Section (HeadTeacher, ParishAdmin, ParishPriest) -->
+                        @if (User.IsInRole("HeadTeacher") || User.IsInRole("ParishAdmin") || User.IsInRole("ParishPriest"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="Reports" asp-controller="Reports" asp-action="Index">Reports</a>
+                            </li>
+                        }
+
+                        <!-- Admin Panel (Admin, ParishAdmin, ParishPriest) -->
+                        @if (User.IsInRole("Admin") || User.IsInRole("ParishAdmin") || User.IsInRole("ParishPriest"))
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Admin Panel
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+                                    @if (User.IsInRole("Admin"))
+                                    {
+                                        <li><a class="dropdown-item" asp-area="Admin" asp-controller="Users" asp-action="Index">Users</a></li>
+                                        <li><a class="dropdown-item" asp-area="Admin" asp-controller="Roles" asp-action="Index">Roles</a></li>
+                                        <li><a class="dropdown-item" asp-area="Admin" asp-controller="AuditLog" asp-action="Index">Audit Logs</a></li>
+                                        <li><a class="dropdown-item" asp-area="Admin" asp-controller="Import" asp-action="Index">Import Data</a></li>
+                                        <li><a class="dropdown-item" asp-area="Admin" asp-controller="Backup" asp-action="Index">Backups</a></li>
+                                    }
+                                    <li><a class="dropdown-item" asp-area="Admin" asp-controller="Announcements" asp-action="Index">Manage Announcements</a></li>
+                                    <li><a class="dropdown-item" asp-area="Admin" asp-controller="MassTimings" asp-action="Index">Manage Mass Timings</a></li>
+                                </ul>
+                            </li>
+                        }
+
+                        <!-- Parent Portal (Parent) -->
+                        @if (User.IsInRole("Parent"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="Parents" asp-controller="Portal" asp-action="Index">Parent Portal</a>
+                            </li>
+                        }
                     }
+                </ul>
 
-                    @if (User.IsInRole("HeadTeacher"))
-                    {
-                        <a asp-area="Catechism" asp-controller="HeadTeacher" asp-action="PromoteStudents">Promote Students</a>
-                    }
-
-                    @if (User.IsInRole("ParishAdmin") || User.IsInRole("ParishPriest"))
-                    {
-                        <h5 class="text-center mt-3">Families</h5>
-                        <a asp-area="Families" asp-controller="Families" asp-action="Index">Families</a>
-                        <a asp-area="Families" asp-controller="Announcements" asp-action="Index">Announcements</a>
-                        <a asp-area="Families" asp-controller="MessageHistory" asp-action="Index">Message History</a>
-                    }
-
-                    @if (User.IsInRole("HeadTeacher") || User.IsInRole("ParishAdmin") || User.IsInRole("ParishPriest"))
-                    {
-                        <h5 class="text-center mt-3">Reports</h5>
-                        <a asp-area="Reports" asp-controller="Reports" asp-action="Index">Reports</a>
-                    }
-
-                    @if (User.IsInRole("Admin"))
-                    {
-                        <h5 class="text-center mt-3">Admin Panel</h5>
-                        <a asp-area="Admin" asp-controller="Users" asp-action="Index">Users</a>
-                        <a asp-area="Admin" asp-controller="Roles" asp-action="Index">Roles</a>
-                        <a asp-area="Admin" asp-controller="AuditLog" asp-action="Index">Audit Logs</a>
-                        <a asp-area="Admin" asp-controller="Import" asp-action="Index">Import Data</a>
-                        <a asp-area="Admin" asp-controller="Backup" asp-action="Index">Backups</a>
-                    }
-
-                    @if (User.IsInRole("Parent"))
-                    {
-                        <h5 class="text-center mt-3">Parent Portal</h5>
-                        <a asp-area="Parents" asp-controller="Portal" asp-action="Index">Parent Portal</a>
-                    }
-                </div>
-            </nav>
-
-            <!-- Main content -->
-            <main role="main" class="col-md-9 ml-sm-auto col-lg-10 content">
-                <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
-                    <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">St. Thomas Mission</a>
-                    <div class="ml-auto">
-                        <partial name="_LoginPartial" />
-                    </div>
-                </nav>
-
-                @if (TempData["Success"] != null)
-                {
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        @TempData["Success"]
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                }
-                @if (TempData["Error"] != null)
-                {
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        @TempData["Error"]
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                }
-
-                @RenderBody()
-            </main>
+                <!-- Authentication Links -->
+                <partial name="_LoginPartial" />
+            </div>
         </div>
-    </div>
+    </nav>
 
-    <footer class="border-top footer text-muted">
+    <!-- Main Content Area -->
+    <main>
+        <div class="container-fluid">
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @RenderBody()
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-auto bg-light text-center py-4 border-top">
         <div class="container">
-            &copy; 2025 - St. Thomas Mission - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            <div class="social-icons mb-3">
+                <a href="#" class="mx-2"><i class="fab fa-facebook-f"></i></a>
+                <a href="#" class="mx-2"><i class="fab fa-twitter"></i></a>
+                <a href="#" class="mx-2"><i class="fab fa-instagram"></i></a>
+                <a href="#" class="mx-2"><i class="fab fa-youtube"></i></a>
+            </div>
+            <p class="mb-0">
+                © 2025 - St. Thomas Mission, Manchester |
+                <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a><br />
+                Mission Director: Fr. Jose Kunnumpuram<br />
+                St. Antony's Church, Dunkery Road, Wythenshawe, M22 0WR
+            </p>
         </div>
     </footer>
 
+    <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bk" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
 
     <script>
-        // Configure Toastr for notifications
         toastr.options = {
-            "closeButton": true,
-            "progressBar": true,
-            "positionClass": "toast-top-right",
-            "showDuration": "300",
-            "hideDuration": "1000",
-            "timeOut": "5000",
-            "extendedTimeOut": "1000"
+            closeButton: true,
+            progressBar: true,
+            positionClass: "toast-top-right",
+            timeOut: 5000
         };
 
-        // Display TempData messages using Toastr
         @if (TempData["Success"] != null)
         {
             <text>toastr.success('@TempData["Success"]');</text>

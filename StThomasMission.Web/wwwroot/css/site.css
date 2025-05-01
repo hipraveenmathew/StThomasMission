@@ -1,22 +1,106 @@
-html {
-  font-size: 14px;
-}
-
-@media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
-}
-
+/* General Body Styling */
 body {
-  margin-bottom: 60px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #343a40;
+    background-color: #f8f9fa;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+main {
+    flex: 1;
+}
+html, body {
+    height: 100%;
+}
+/* Headings */
+h1, h2, h3, h4, h5 {
+    font-weight: 600;
+    color: #212529;
+}
+
+p {
+    line-height: 1.6;
+}
+
+/* Navbar */
+.navbar {
+    padding: 1rem 1.5rem;
+}
+
+.navbar-brand {
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: #007bff !important;
+}
+
+/* Buttons */
+.btn {
+    border-radius: 6px;
+    transition: all 0.3s ease-in-out;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+    .btn-primary:hover {
+        background-color: #0056b3;
+        border-color: #004a99;
+    }
+
+.btn-outline-primary:hover {
+    background-color: #007bff;
+    color: #fff;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #6c757d;
+    color: #fff;
+}
+
+/* Cards */
+.card {
+    border: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    border-radius: 8px;
+}
+
+.card-header {
+    font-weight: 500;
+    font-size: 1.1rem;
+}
+
+/* Footer */
+footer {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+/* Alerts */
+.alert {
+    border-radius: 6px;
+}
+
+/* Table Styling */
+.table th, .table td {
+    vertical-align: middle;
+}
+
+.table thead {
+    background-color: #e9ecef;
+}
+
+/* List Group */
+.list-group-item {
+    border: none;
+    padding: 0.75rem 1.25rem;
+    background-color: #fff;
+    border-bottom: 1px solid #dee2e6;
+}
+
+/* Custom Utility */
+.text-shadow-light {
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
 }

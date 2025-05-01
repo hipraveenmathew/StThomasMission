@@ -30,6 +30,12 @@ builder.Services.AddControllersWithViews(options =>
     options.Filters.Add(typeof(GlobalExceptionFilter));
 });
 
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.ListenAnyIP(5002); // Allows binding to your network IP
+});
+
+
 // Add Razor Pages support
 builder.Services.AddRazorPages(); // Added to enable Razor Pages services
 

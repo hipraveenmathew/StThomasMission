@@ -11,7 +11,7 @@ namespace StThomasMission.Web.Controllers
         private readonly IMassTimingService _massTimingService;
         private readonly IAnnouncementService _announcementService;
 
-        public HomeController(IMassTimingService massTimingService, IAnnouncementService announcementService,ILogger<HomeController> logger)
+        public HomeController(IMassTimingService massTimingService, IAnnouncementService announcementService, ILogger<HomeController> logger)
         {
             _logger = logger;
             _massTimingService = massTimingService;
@@ -20,6 +20,29 @@ namespace StThomasMission.Web.Controllers
 
         public async Task<IActionResult> Index()
         {
+            // Check if the user is authenticated
+            if (User.Identity.IsAuthenticated)
+            {
+                // Redirect based on user role
+                if (User.IsInRole("ParishPriest") || User.IsInRole("ParishAdmin"))
+                {
+                    return RedirectToAction("Index", "Families", new { area = "Families" });
+                }
+                else if (User.IsInRole("HeadTeacher") || User.IsInRole("Teacher"))
+                {
+                    return RedirectToAction("Index", "Students", new { area = "Catechism" });
+                }
+                else if (User.IsInRole("Admin"))
+                {
+                    return RedirectToAction("Index", "Admin", new { area = "Admin" });
+                }
+                else if (User.IsInRole("Parent"))
+                {
+                    return RedirectToAction("Index", "Portal", new { area = "Parents" });
+                }
+            }
+
+            // If user is not authenticated or has an unrecognized role, show the public homepage
             var massTimings = await _massTimingService.GetMassTimingsAsync();
             var announcements = await _announcementService.GetAnnouncementsAsync();
 

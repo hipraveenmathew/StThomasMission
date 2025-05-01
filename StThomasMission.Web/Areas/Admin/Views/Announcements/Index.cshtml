@@ -1,0 +1,38 @@
+﻿@model IEnumerable<StThomasMission.Core.Entities.Announcement>
+
+@{
+    ViewData["Title"] = "Announcements";
+}
+
+<h2>Announcements</h2>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Add New Announcement</a>
+</p>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Description</th>
+            <th>Posted Date</th>
+            <th>Is Active</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var announcement in Model.OrderByDescending(a => a.PostedDate))
+        {
+            <tr>
+                <td>@announcement.Title</td>
+                <td>@announcement.Description</td>
+                <td>@announcement.PostedDate.ToString("yyyy-MM-dd")</td>
+                <td>@announcement.IsActive</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@announcement.Id" class="btn btn-sm btn-warning">Edit</a>
+                    <a asp-action="Delete" asp-route-id="@announcement.Id" class="btn btn-sm btn-danger">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

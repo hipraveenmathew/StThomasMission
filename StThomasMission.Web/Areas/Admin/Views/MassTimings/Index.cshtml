@@ -1,0 +1,40 @@
+﻿@model IEnumerable<StThomasMission.Core.Entities.MassTiming>
+
+@{
+    ViewData["Title"] = "Mass Timings";
+}
+
+<h2>Mass Timings</h2>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Add New Mass Timing</a>
+</p>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Day</th>
+            <th>Time</th>
+            <th>Location</th>
+            <th>Type</th>
+            <th>Week Start Date</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var timing in Model.OrderBy(mt => mt.Day))
+        {
+            <tr>
+                <td>@timing.Day</td>
+                <td>@timing.Time.ToString(@"hh\:mm")</td>
+                <td>@timing.Location</td>
+                <td>@timing.Type</td>
+                <td>@timing.WeekStartDate.ToString("yyyy-MM-dd")</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@timing.Id" class="btn btn-sm btn-warning">Edit</a>
+                    <a asp-action="Delete" asp-route-id="@timing.Id" class="btn btn-sm btn-danger">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

@@ -2,102 +2,241 @@
 
 @{
     ViewData["Title"] = "Welcome to St. Thomas Mission";
+    Layout = "~/Views/Shared/_LayoutPublic.cshtml";
 }
 
-<div class="container py-5">
-    <!-- Hero Section -->
-    <div class="text-center p-5 mb-5 rounded" style="background: linear-gradient(to right, #f8f9fa, #e9ecef); box-shadow: 0 4px 8px rgba(0,0,0,0.05);">
-        <h1 class="display-4 mb-3">Welcome to St. Thomas Mission</h1>
-        <p class="lead mb-4">A vibrant parish community dedicated to faith, fellowship, and service.</p>
-        <hr class="my-4" style="width: 60px; border-top: 3px solid #007bff; margin: 0 auto;">
-        <p class="mt-4">Join us for worship, community events, and catechism programs. Discover more about our mission below.</p>
-    </div>
+<style>
+    .hero-section {
+        position: relative;
+        color: white;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-size: cover;
+        background-position: center;
+        height: 50vh;
+        min-height: 300px;
+    }
 
-    <!-- About the Church Section -->
-    <div class="card mb-5 shadow-sm border-0">
-        <div class="card-header bg-primary text-white">
-            <h3 class="mb-0">About Our Church</h3>
-        </div>
-        <div class="card-body">
-            <p>St. Thomas Mission is a welcoming Catholic parish committed to spreading the teachings of Jesus Christ. We offer a range of spiritual, educational, and community activities for all ages, including weekly Masses, catechism classes, charity events, and family programs.</p>
-            <p>Our mission is to foster a strong, faith-filled community where everyone can grow in their relationship with God and one another.</p>
-            <p><strong>Location:</strong> 123 Faith Road, St. Thomas City</p>
-            <p><strong>Contact:</strong> <a href="mailto:info@stthomasmission.com">info@stthomasmission.com</a> | +1 (555) 123-4567</p>
-        </div>
-    </div>
+    .hero-overlay {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0, 0, 0, 0.5);
+    }
 
-    <!-- Mass Timings Section -->
-    <div class="card mb-5 shadow-sm border-0">
-        <div class="card-header bg-primary text-white">
-            <h3 class="mb-0">Mass Timings</h3>
+    .hero-content {
+        position: relative;
+        z-index: 1;
+        padding: 1rem;
+        max-width: 90%;
+    }
+
+        .hero-content h1 {
+            font-size: clamp(1.5rem, 6vw, 2.5rem);
+            margin-bottom: 1rem;
+        }
+
+        .hero-content p {
+            font-size: clamp(0.9rem, 3.5vw, 1.2rem);
+            margin-bottom: 1.5rem;
+        }
+
+    .card {
+        margin-bottom: 1.5rem;
+        border-radius: 0.5rem;
+    }
+
+    .card-header {
+        padding: 0.75rem 1rem;
+    }
+
+    .card-body {
+        padding: 1rem;
+    }
+
+    .table {
+        font-size: clamp(0.85rem, 2.5vw, 0.95rem);
+    }
+
+    .list-group-item {
+        padding: 0.75rem 1rem;
+        font-size: clamp(0.85rem, 2.5vw, 0.95rem);
+    }
+
+    .alert {
+        padding: 1rem;
+        font-size: clamp(0.9rem, 3vw, 1rem);
+    }
+
+    .btn {
+        padding: 0.5rem 1rem;
+        font-size: clamp(0.9rem, 3vw, 1rem);
+        touch-action: manipulation;
+    }
+
+    @@media (min-width: 576px) {
+        .hero-section
+
+    {
+        height: 60vh;
+    }
+
+    .hero-content {
+        max-width: 80%;
+    }
+
+        .hero-content h1 {
+            font-size: clamp(2rem, 5vw, 3rem);
+        }
+
+    .card-body {
+        padding: 1.5rem;
+    }
+
+    }
+
+    @@media (min-width: 768px) {
+        .container
+
+    {
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+
+    .card-header {
+        padding: 1rem 1.5rem;
+    }
+
+    }
+</style>
+
+<!-- Hero Section -->
+<section class="hero-section" style="background-image: url('https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?auto=format&fit=crop&w=1920&q=80');">
+    <div class="hero-overlay"></div>
+    <div class="hero-content animate-fadeIn">
+        <h1>Welcome to St. Thomas Mission</h1>
+        <p class="lead">A vibrant parish community dedicated to faith, fellowship, and service.</p>
+        <a href="#about" class="btn btn-primary">Discover Our Mission</a>
+    </div>
+</section>
+
+<div class="container py-4">
+    <!-- About Section -->
+    <section id="about" class="animate-fadeIn">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">About Our Parish</h3>
+            </div>
+            <div class="card-body">
+                <p>
+                    St. Thomas Mission is a vibrant Catholic community serving Manchester and surrounding areas.
+                    We are rooted in faith, fellowship, service, and love. We celebrate Holy Qurbana, conduct Catechism classes, and foster a welcoming atmosphere for all.
+                </p>
+                <p><strong>Address:</strong> St. Antony's Church, Dunkery Road, Wythenshawe, M22 0WR</p>
+                <p><strong>Mission Director:</strong> Fr. Jose Kunnumpuram</p>
+            </div>
         </div>
-        <div class="card-body">
-            @if (Model.MassTimings.Any())
-            {
-                <p>Join us for our weekly Masses. Here are the scheduled times:</p>
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Day</th>
-                                <th>Time</th>
-                                <th>Location</th>
-                                <th>Type</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var massTiming in Model.MassTimings.OrderBy(mt => mt.Day))
-                            {
+    </section>
+
+    <!-- Mass Timings -->
+    <section class="animate-fadeIn">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">Mass Timings</h3>
+            </div>
+            <div class="card-body">
+                @if (Model.MassTimings.Any())
+                {
+                    <p>Join us for our weekly Masses. Here are the scheduled times:</p>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="table-light">
                                 <tr>
-                                    <td>@massTiming.Day</td>
-                                    <td>@massTiming.Time.ToString(@"hh\:mm")</td>
-                                    <td>@massTiming.Location</td>
-                                    <td>@massTiming.Type</td>
+                                    <th>Day</th>
+                                    <th>Time</th>
+                                    <th>Location</th>
+                                    <th>Type</th>
                                 </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
-            else
-            {
-                <p>No mass timings available for this week. Please check back later or contact the parish office.</p>
-            }
+                            </thead>
+                            <tbody>
+                                @foreach (var massTiming in Model.MassTimings.OrderBy(mt => mt.Day))
+                                {
+                                    <tr>
+                                        <td>@massTiming.Day</td>
+                                        <td>@massTiming.Time.ToString(@"hh\:mm")</td>
+                                        <td>@massTiming.Location</td>
+                                        <td>@massTiming.Type</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">This Sunday (27/04/25): <strong>St. Thomas</strong> | 4:00 PM</li>
+                        <li class="list-group-item">04/05/25: <strong>Sacred Heart</strong> | 4:00 PM</li>
+                        <li class="list-group-item">11/05/25: <strong>St. George</strong> | 4:00 PM</li>
+                        <li class="list-group-item">18/05/25: <strong>St. Antony</strong> | 4:00 PM</li>
+                        <li class="list-group-item">25/05/25: <strong>St. Benedict</strong> | 4:00 PM</li>
+                    </ul>
+                }
+            </div>
+        </div>
+    </section>
+
+    <!-- Announcements -->
+    <section class="animate-fadeIn">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">Announcements</h3>
+            </div>
+            <div class="card-body">
+                @if (Model.Announcements.Any())
+                {
+                    <ul class="list-group">
+                        @foreach (var announcement in Model.Announcements.OrderByDescending(a => a.PostedDate))
+                        {
+                            <li class="list-group-item">
+                                <h5 class="mb-1">
+                                    @announcement.Title
+                                    <small class="text-muted">(@announcement.PostedDate.ToString("MMMM dd, yyyy"))</small>
+                                </h5>
+                                <p class="mb-1">@announcement.Description</p>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <ul class="list-group">
+                        <li class="list-group-item"><strong>04/05/2025</strong> - CML Chaya Chithra Prayanam</li>
+                        <li class="list-group-item"><strong>25/05/2025</strong> - Solemn Holy Communion (3:00 PM)</li>
+                        <li class="list-group-item"><strong>31/05/2025</strong> - Aylesford Pilgrimage</li>
+                        <li class="list-group-item"><strong>29/06/202-redacted'>Parish Feast Celebration Week</li>
+                    </ul>
+                }
+            </div>
+        </div>
+    </section>
+
+    <!-- Wishes -->
+    <div class="animate-bounceIn">
+        <div class="alert alert-info text-center shadow-sm">
+            🎉 Happy Birthday to all celebrating this month!<br />
+            💒 Congratulations to couples celebrating wedding anniversaries!<br />
+            🎈 A warm welcome to all newcomers joining our community!
         </div>
     </div>
 
-    <!-- Announcements Section -->
-    <div class="card mb-5 shadow-sm border-0">
-        <div class="card-header bg-primary text-white">
-            <h3 class="mb-0">Announcements</h3>
-        </div>
-        <div class="card-body">
-            @if (Model.Announcements.Any())
-            {
-                <p>Stay updated with the latest news and events at St. Thomas Mission:</p>
-                <ul class="list-group list-group-flush">
-                    @foreach (var announcement in Model.Announcements.OrderByDescending(a => a.PostedDate))
-                    {
-                        <li class="list-group-item">
-                            <h5 class="mb-1">
-                                @announcement.Title
-                                <small class="text-muted">(@announcement.PostedDate.ToString("MMMM dd, yyyy"))</small>
-                            </h5>
-                            <p class="mb-1">@announcement.Description</p>
-                        </li>
-                    }
-                </ul>
-            }
-            else
-            {
-                <p>No announcements at this time. Please check back later.</p>
-            }
-        </div>
-    </div>
-
-    <!-- Small Internal Access -->
-    <div class="text-center mt-5 small text-muted">
-        <p>Internal access for staff and members:</p>
+    <!-- Internal Access -->
+    <div class="text-center mt-4">
+        <p class="text-muted mb-2">Internal access for staff and members:</p>
         <a href="@Url.Page("/Account/Login", new { area = "Identity" })" class="btn btn-outline-primary btn-sm me-2">Login</a>
         <a href="@Url.Page("/Account/Register", new { area = "Identity" })" class="btn btn-outline-secondary btn-sm">Register</a>
     </div>

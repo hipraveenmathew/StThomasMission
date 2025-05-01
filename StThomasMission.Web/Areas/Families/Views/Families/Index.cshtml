@@ -2,40 +2,41 @@
 @model StThomasMission.Web.Areas.Families.Models.FamilyIndexViewModel
 @{
     ViewData["Title"] = "Families";
+    Layout = "_Layout";
 }
 
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h3 class="mb-0">Families</h3>
-        <a asp-action="Register" class="btn btn-modern">
+        <a asp-action="Register" class="btn btn-primary btn-sm">
             <i class="fas fa-plus"></i> Register Family
         </a>
     </div>
     <div class="card-body">
         <form asp-action="Index" method="get" class="mb-4">
             <div class="row">
-                <div class="col-md-3">
+                <div class="col-md-6 col-lg-3 mb-3">
                     <div class="form-group">
-                        <label asp-for="Filter.SearchString" class="form-label"></label>
-                        <input asp-for="Filter.SearchString" class="form-control" placeholder="Search by name or ward" />
+                        <label asp-for="Filter.SearchString" class="form-label">Search</label>
+                        <input asp-for="Filter.SearchString" class="form-control rounded-3" placeholder="Search by name or ward" />
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-6 col-lg-3 mb-3">
                     <div class="form-group">
-                        <label asp-for="Filter.Ward" class="form-label"></label>
-                        <input asp-for="Filter.Ward" type="number" class="form-control" placeholder="Filter by ward ID" />
+                        <label asp-for="Filter.Ward" class="form-label">Ward ID</label>
+                        <input asp-for="Filter.Ward" type="number" class="form-control rounded-3" placeholder="Filter by ward ID" />
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-6 col-lg-3 mb-3">
                     <div class="form-group">
-                        <label asp-for="Filter.Status" class="form-label"></label>
-                        <select asp-for="Filter.Status" class="form-select" asp-items="Html.GetEnumSelectList<StThomasMission.Core.Enums.FamilyStatus>()">
+                        <label asp-for="Filter.Status" class="form-label">Status</label>
+                        <select asp-for="Filter.Status" class="form-select rounded-3" asp-items="Html.GetEnumSelectList<StThomasMission.Core.Enums.FamilyStatus>()">
                             <option value="">All Statuses</option>
                         </select>
                     </div>
                 </div>
-                <div class="col-md-3 d-flex align-items-end">
-                    <button type="submit" class="btn btn-modern w-100">Filter</button>
+                <div class="col-md-6 col-lg-3 mb-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Filter</button>
                 </div>
             </div>
         </form>
@@ -46,57 +47,59 @@
         }
         else
         {
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>
-                            <a asp-action="Index" asp-route-sortOrder="@ViewData["NameSortParm"]" asp-route-pageNumber="@Model.Families.PageIndex" asp-route-pageSize="@Model.Families.PageSize" asp-route-searchString="@Model.Filter.SearchString" asp-route-ward="@Model.Filter.Ward" asp-route-status="@Model.Filter.Status">Family Name</a>
-                        </th>
-                        <th>
-                            <a asp-action="Index" asp-route-sortOrder="@ViewData["WardSortParm"]" asp-route-pageNumber="@Model.Families.PageIndex" asp-route-pageSize="@Model.Families.PageSize" asp-route-searchString="@Model.Filter.SearchString" asp-route-ward="@Model.Filter.Ward" asp-route-status="@Model.Filter.Status">Ward</a>
-                        </th>
-                        <th>Registration</th>
-                        <th>Status</th>
-                        <th>Migrated To</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var family in Model.Families)
-                    {
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
                         <tr>
-                            <td>@family.FamilyName</td>
-                            <td>@family.Ward.Name</td>
-                            <td>@(family.IsRegistered ? family.ChurchRegistrationNumber : family.TemporaryID)</td>
-                            <td>@family.Status</td>
-                            <td>@family.MigratedTo</td>
-                            <td>
-                                <a asp-action="Details" asp-route-id="@family.Id" class="btn btn-sm btn-primary">
-                                    <i class="fas fa-info-circle"></i> Details
-                                </a>
-                                <a asp-action="Edit" asp-route-id="@family.Id" class="btn btn-sm btn-primary">
-                                    <i class="fas fa-edit"></i> Edit
-                                </a>
-                                @if (!family.IsRegistered)
-                                {
-                                    <a asp-action="ConvertToRegistered" asp-route-familyId="@family.Id" class="btn btn-sm btn-primary">
-                                        <i class="fas fa-check"></i> Convert to Registered
-                                    </a>
-                                }
-                                @if (family.Status != FamilyStatus.Migrated)
-                                {
-                                    <a asp-action="MarkAsMigrated" asp-route-familyId="@family.Id" class="btn btn-sm btn-primary">
-                                        <i class="fas fa-plane"></i> Mark as Migrated
-                                    </a>
-                                }
-                            </td>
+                            <th>
+                                <a asp-action="Index" asp-route-sortOrder="@ViewData["NameSortParm"]" asp-route-pageNumber="@Model.Families.PageIndex" asp-route-pageSize="@Model.Families.PageSize" asp-route-searchString="@Model.Filter.SearchString" asp-route-ward="@Model.Filter.Ward" asp-route-status="@Model.Filter.Status">Family Name</a>
+                            </th>
+                            <th>
+                                <a asp-action="Index" asp-route-sortOrder="@ViewData["WardSortParm"]" asp-route-pageNumber="@Model.Families.PageIndex" asp-route-pageSize="@Model.Families.PageSize" asp-route-searchString="@Model.Filter.SearchString" asp-route-ward="@Model.Filter.Ward" asp-route-status="@Model.Filter.Status">Ward</a>
+                            </th>
+                            <th>Registration</th>
+                            <th>Status</th>
+                            <th>Migrated To</th>
+                            <th>Actions</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var family in Model.Families)
+                        {
+                            <tr>
+                                <td>@family.FamilyName</td>
+                                <td>@family.Ward.Name</td>
+                                <td>@(family.IsRegistered ? family.ChurchRegistrationNumber : family.TemporaryID)</td>
+                                <td>@family.Status</td>
+                                <td>@family.MigratedTo</td>
+                                <td>
+                                    <a asp-action="Details" asp-route-id="@family.Id" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-info-circle"></i> Details
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@family.Id" class="btn btn-sm btn-outline-warning">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                    @if (!family.IsRegistered)
+                                    {
+                                        <a asp-action="ConvertToRegistered" asp-route-familyId="@family.Id" class="btn btn-sm btn-outline-success">
+                                            <i class="fas fa-check"></i> Convert to Registered
+                                        </a>
+                                    }
+                                    @if (family.Status != FamilyStatus.Migrated)
+                                    {
+                                        <a asp-action="MarkAsMigrated" asp-route-familyId="@family.Id" class="btn btn-sm btn-outline-info">
+                                            <i class="fas fa-plane"></i> Mark as Migrated
+                                        </a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
 
             <nav aria-label="Page navigation">
-                <ul class="pagination">
+                <ul class="pagination justify-content-center">
                     @if (Model.Families.HasPreviousPage)
                     {
                         <li class="page-item">
