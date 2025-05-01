@@ -9,13 +9,13 @@
     </div>
     <div class="card-body">
         <form asp-action="MarkAsMigrated" method="post">
-            <input type="hidden" asp-for="FamilyId" />
-            <input type="hidden" asp-for="FamilyName" />
+@*             <input type="hidden" asp-for="FamilyId" />
+ *@            <input type="hidden" asp-for="FamilyName" />
             <input type="hidden" asp-for="Ward" />
             <input type="hidden" asp-for="IsRegistered" />
             <input type="hidden" asp-for="ChurchRegistrationNumber" />
-            <input type="hidden" asp-for="TemporaryId" />
-            <input type="hidden" asp-for="Status" />
+           @*  <input type="hidden" asp-for="TemporaryId" />
+            <input type="hidden" asp-for="Status" /> *@
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
             <div class="mb-3">
