@@ -1,74 +1,168 @@
 ﻿@model StThomasMission.Web.Areas.Catechism.Models.MarkAttendanceViewModel
+
 @{
     ViewData["Title"] = "Mark Attendance";
 }
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="mb-0">Mark Attendance</h3>
-    </div>
-    <div class="card-body">
-        <form asp-action="MarkAttendance" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-            <div class="row mb-3">
-                <div class="col-md-4">
-                    <label asp-for="Grade" class="form-label"></label>
-                    <input asp-for="Grade" class="form-control" placeholder="e.g., Year 1" />
-                    <span asp-validation-for="Grade" class="text-danger"></span>
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>Mark Attendance</h3>
+        </div>
+        <div class="card-body">
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
-                <div class="col-md-4">
-                    <label asp-for="Date" class="form-label"></label>
-                    <input asp-for="Date" type="date" class="form-control" />
-                    <span asp-validation-for="Date" class="text-danger"></span>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
-                <div class="col-md-4 d-flex align-items-end">
-                    <button type="submit" class="btn btn-modern w-100">Load Students</button>
+            }
+
+            <form asp-action="MarkAttendance" asp-area="Catechism" method="post" id="loadStudentsForm">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-md-4">
+                        <label asp-for="Grade" class="form-label fw-bold"></label>
+                        <input asp-for="Grade" class="form-control" placeholder="e.g., Year 1" required />
+                        <span asp-validation-for="Grade" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label asp-for="Date" class="form-label fw-bold"></label>
+                        <input asp-for="Date" type="date" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                        <span asp-validation-for="Date" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-2"></i>Load Students</button>
+                    </div>
                 </div>
-            </div>
-        </form>
-
-        @if (Model.AttendanceRecords != null && Model.AttendanceRecords.Any())
-        {
-            <form asp-action="SubmitAttendance" method="post">
-                <input type="hidden" asp-for="Grade" />
-                <input type="hidden" asp-for="Date" />
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Student Name</th>
-                            <th>Present</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @for (int i = 0; i < Model.AttendanceRecords.Count; i++)
-                        {
-                            <tr>
-                                <td>
-                                    @Model.AttendanceRecords[i].StudentName
-                                    <input type="hidden" asp-for="AttendanceRecords[i].StudentId" />
-                                    <input type="hidden" asp-for="AttendanceRecords[i].StudentName" />
-                                </td>
-                                <td>
-                                    <div class="form-check">
-                                        <input type="checkbox" class="form-check-input" asp-for="AttendanceRecords[i].IsPresent" />
-                                    </div>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-
-                <button type="submit" class="btn btn-modern">Submit Attendance</button>
-                <a asp-action="Index" class="btn btn-secondary">Cancel</a>
             </form>
-        }
+
+            @if (Model.AttendanceRecords != null && Model.AttendanceRecords.Any())
+            {
+                <form asp-action="SubmitAttendance" asp-area="Catechism" method="post" id="submitAttendanceForm">
+                    <input type="hidden" asp-for="Grade" />
+                    <input type="hidden" asp-for="Date" />
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Student Name</th>
+                                    <th>Present</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (int i = 0; i < Model.AttendanceRecords.Count; i++)
+                                {
+                                    <tr>
+                                        <td>
+                                            @Model.AttendanceRecords[i].StudentName
+                                            <input type="hidden" asp-for="AttendanceRecords[i].StudentId" />
+                                            <input type="hidden" asp-for="AttendanceRecords[i].StudentName" />
+                                        </td>
+                                        <td>
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input" asp-for="AttendanceRecords[i].IsPresent" />
+                                                <label class="form-check-label" for="AttendanceRecords_@(i)__IsPresent">Present</label>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-flex justify-content-end mt-4">
+                        <a asp-action="Index" asp-area="Catechism" class="btn btn-secondary me-2"><i class="fas fa-times me-2"></i>Cancel</a>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Submit Attendance</button>
+                    </div>
+                </form>
+            }
+            else if (Model.AttendanceRecords != null)
+            {
+                <div class="alert alert-info text-center" role="alert">
+                    No students found for the selected grade.
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="attendanceToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">Attendance Status</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body"></div>
     </div>
 </div>
 
 @section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Initialize jQuery Validate for Load Students form
+            $("#loadStudentsForm").validate({
+                rules: {
+                    Grade: {
+                        required: true,
+                        maxlength: 50
+                    },
+                    Date: {
+                        required: true,
+                        date: true
+                    }
+                },
+                messages: {
+                    Grade: {
+                        required: "Please enter a grade.",
+                        maxlength: "Grade cannot exceed 50 characters."
+                    },
+                    Date: {
+                        required: "Please select a date.",
+                        date: "Please enter a valid date."
+                    }
+                },
+                errorElement: "div",
+                errorClass: "text-danger",
+                highlight: function (element) {
+                    $(element).addClass("is-invalid");
+                },
+                unhighlight: function (element) {
+                    $(element).removeClass("is-invalid");
+                }
+            });
+
+            // Initialize jQuery Validate for Submit Attendance form
+            $("#submitAttendanceForm").validate({
+                errorElement: "div",
+                errorClass: "text-danger",
+                highlight: function (element) {
+                    $(element).addClass("is-invalid");
+                },
+                unhighlight: function (element) {
+                    $(element).removeClass("is-invalid");
+                }
+            });
+
+            // Loading spinner for form submissions
+            $("form").on("submit", function () {
+                var $submitButton = $(this).find('button[type="submit"]');
+                if ($(this).valid()) {
+                    $submitButton.prop("disabled", true).prepend('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>');
+                }
+            });
+        });
+    </script>
 }

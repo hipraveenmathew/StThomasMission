@@ -1,94 +1,180 @@
 ﻿@model StThomasMission.Web.Areas.Admin.Models.UserRoleIndexViewModel
+
 @{
     ViewData["Title"] = "Manage Roles";
 }
 
-<div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h3 class="mb-0">Manage Roles</h3>
-        <button type="button" class="btn btn-modern" data-bs-toggle="modal" data-bs-target="#createRoleModal">
-            <i class="fas fa-plus"></i> Create Role
-        </button>
-    </div>
-    <div class="card-body">
-        @if (!Model.Users.Any())
-        {
-            <p>No users found.</p>
-        }
-        else
-        {
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Email</th>
-                        <th>Full Name</th>
-                        <th>Roles</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var user in Model.Users)
-                    {
-                        <tr>
-                            <td>@user.Email</td>
-                            <td>@user.FullName</td>
-                            <td>
-                                @if (user.Roles.Any())
-                                {
-                                    <ul class="list-unstyled">
-                                        @foreach (var role in user.Roles)
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h3 class="mb-0"><i class="fas fa-user-shield me-2"></i>Manage Roles</h3>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createRoleModal">
+                <i class="fas fa-plus me-2"></i>Create Role
+            </button>
+        </div>
+        <div class="card-body">
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            @if (!Model.Users.Any())
+            {
+                <div class="alert alert-info text-center" role="alert">
+                    No users found.
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Email</th>
+                                <th>Full Name</th>
+                                <th>Roles</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var user in Model.Users)
+                            {
+                                <tr>
+                                    <td>@user.Email</td>
+                                    <td>@user.FullName</td>
+                                    <td>
+                                        @if (user.Roles.Any())
                                         {
-                                            <li>
-                                                @role
-                                                <form asp-action="RemoveRole" asp-route-userId="@user.UserId" asp-route-role="@role" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to remove the role @role from @user.FullName?');">
-                                                    <input type="hidden" name="userId" value="@user.UserId" />
-                                                    <input type="hidden" name="role" value="@role" />
-                                                    <button type="submit" class="btn btn-sm btn-danger">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                </form>
-                                            </li>
+                                            <ul class="list-unstyled mb-0">
+                                                @foreach (var role in user.Roles)
+                                                {
+                                                    <li class="d-flex align-items-center mb-1">
+                                                        <span class="badge bg-secondary me-2">@role</span>
+                                                        <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#removeRoleModal-@user.UserId-@role.Replace(" ", "")">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </li>
+                                                }
+                                            </ul>
                                         }
-                                    </ul>
-                                }
-                                else
-                                {
-                                    <span>No roles assigned.</span>
-                                }
-                            </td>
-                            <td>
-                                <a asp-action="AssignRole" asp-route-userId="@user.UserId" class="btn btn-sm btn-primary">
-                                    <i class="fas fa-plus"></i> Assign Role
-                                </a>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        }
+                                        else
+                                        {
+                                            <span class="text-muted">No roles assigned.</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <a asp-action="AssignRole" asp-route-userId="@user.UserId" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-plus me-2"></i>Assign Role
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
     </div>
 </div>
 
 <!-- Create Role Modal -->
 <div class="modal fade" id="createRoleModal" tabindex="-1" aria-labelledby="createRoleModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <form asp-action="CreateRole" method="post">
+            <form asp-action="CreateRole" method="post" id="createRoleForm">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="createRoleModalLabel">Create New Role</h5>
+                    <h5 class="modal-title" id="createRoleModalLabel"><i class="fas fa-plus me-2"></i>Create New Role</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="form-group">
-                        <label for="roleName" class="form-label">Role Name</label>
-                        <input type="text" name="roleName" class="form-control" id="roleName" required />
+                    <div class="mb-3">
+                        <label for="roleName" class="form-label fw-bold">Role Name</label>
+                        <input type="text" name="roleName" class="form-control" id="roleName" required placeholder="Enter role name" />
+                        <div class="invalid-feedback">Please enter a role name.</div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-modern">Create</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times me-2"></i>Close</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Create</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<!-- Remove Role Modals -->
+@foreach (var user in Model.Users)
+{
+    foreach (var role in user.Roles)
+    {
+        <div class="modal fade" id="removeRoleModal-@user.UserId-@role.Replace(" ", "")" tabindex="-1" aria-labelledby="removeRoleModalLabel-@user.UserId-@role.Replace(" ", "")" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="removeRoleModalLabel-@user.UserId-@role.Replace(" ", "")"><i class="fas fa-trash me-2"></i>Remove Role</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        Are you sure you want to remove the role <strong>@role</strong> from <strong>@user.FullName</strong>?
+                    </div>
+                    <form asp-action="RemoveRole" asp-route-userId="@user.UserId" asp-route-role="@role" method="post">
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times me-2"></i>Cancel</button>
+                            <button type="submit" class="btn btn-danger"><i class="fas fa-trash me-2"></i>Remove</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate-unobtrusive/3.2.12/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Initialize jQuery Validate for Create Role form
+            $("#createRoleForm").validate({
+                rules: {
+                    roleName: {
+                        required: true,
+                        maxlength: 256
+                    }
+                },
+                messages: {
+                    roleName: {
+                        required: "Please enter a role name.",
+                        maxlength: "Role name cannot exceed 256 characters."
+                    }
+                },
+                errorElement: "div",
+                errorClass: "invalid-feedback",
+                highlight: function (element) {
+                    $(element).addClass("is-invalid");
+                },
+                unhighlight: function (element) {
+                    $(element).removeClass("is-invalid");
+                }
+            });
+
+            // Loading spinner for form submission
+            $("form").on("submit", function () {
+                var $submitButton = $(this).find('button[type="submit"]');
+                if ($(this).valid()) {
+                    $submitButton.prop("disabled", true).prepend('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>');
+                }
+            });
+        });
+    </script>
+}

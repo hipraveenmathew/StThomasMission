@@ -1,6 +1,9 @@
 using System.Diagnostics;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
+using StThomasMission.Core.Entities;
 using StThomasMission.Core.Interfaces;
+using StThomasMission.Services;
 using StThomasMission.Web.Models;
 
 namespace StThomasMission.Web.Controllers
@@ -56,6 +59,39 @@ namespace StThomasMission.Web.Controllers
         }
 
         public IActionResult Privacy()
+        {
+            return View();
+        }
+        public IActionResult About()
+        {
+            return View();
+        }
+
+        public async Task<IActionResult> Events()
+        {
+            try
+            {
+                var announcements = await _announcementService.GetAnnouncementsAsync();
+                var activeAnnouncements = announcements
+                    .Where(a => a.IsActive && !a.IsDeleted)
+                    .OrderByDescending(a => a.PostedDate)
+                    .ToList();
+
+                var model = new EventsViewModel
+                {
+                    Announcements = activeAnnouncements
+                };
+
+                return View(model);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Failed to load announcements: {ex.Message}";
+                return View(new EventsViewModel());
+            }
+        }
+
+        public IActionResult Contact()
         {
             return View();
         }

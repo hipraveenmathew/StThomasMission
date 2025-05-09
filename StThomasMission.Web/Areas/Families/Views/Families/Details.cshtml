@@ -1,74 +1,122 @@
-﻿@model StThomasMission.Web.Areas.Families.Models.FamilyDetailsViewModel
+﻿@using StThomasMission.Core.Enums
+@model StThomasMission.Web.Areas.Families.Models.FamilyDetailsViewModel
+
 @{
     ViewData["Title"] = "Family Details";
 }
 
-<div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h3 class="mb-0">Family Details: @Model.FamilyName</h3>
-        <a asp-action="AddMember" asp-route-familyId="@Model.Id" class="btn btn-modern">
-            <i class="fas fa-plus"></i> Add Member
-        </a>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
-                <p><strong>Family Name:</strong> @Model.FamilyName</p>
-                <p><strong>Ward:</strong> @Model.Ward</p>
-                <p><strong>Registration:</strong> @(Model.IsRegistered ? Model.ChurchRegistrationNumber : Model.TemporaryId)</p>
-                <p><strong>Status:</strong> @Model.Status</p>
-                @if (!string.IsNullOrEmpty(Model.MigratedTo))
-                {
-                    <p><strong>Migrated To:</strong> @Model.MigratedTo</p>
-                }
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h3 class="mb-0"><i class="fas fa-users me-2"></i>Family Details: @Model.FamilyName</h3>
+            <a asp-action="AddMember" asp-route-familyId="@Model.Id" asp-area="Families" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus me-2"></i>Add Member
+            </a>
+        </div>
+        <div class="card-body">
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <div class="row">
+                <div class="col-12 col-md-6">
+                    <p><strong>Family Name:</strong> @Model.FamilyName</p>
+                    <p><strong>Ward:</strong> @Model.Ward</p>
+                    <p><strong>Registration:</strong> @(Model.IsRegistered ? Model.ChurchRegistrationNumber ?? "N/A" : Model.TemporaryId ?? "N/A")</p>
+                    <p>
+                        <strong>Status:</strong>
+                        <span class="badge @(Model.Status == FamilyStatus.Active.ToString() ? "bg-success" : Model.Status == FamilyStatus.Migrated.ToString() ? "bg-info" : "bg-secondary")">
+                            @Model.Status
+                        </span>
+                    </p>
+                    @if (!string.IsNullOrEmpty(Model.MigratedTo))
+                    {
+                        <p><strong>Migrated To:</strong> @Model.MigratedTo</p>
+                    }
+                </div>
+            </div>
+
+            <h5 class="mt-4">Family Members</h5>
+            @if (Model.Members.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>First Name</th>
+                                <th>Last Name</th>
+                                <th>Relation</th>
+                                <th>Date of Birth</th>
+                                <th>Contact</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var member in Model.Members)
+                            {
+                                <tr>
+                                    <td>@(string.IsNullOrEmpty(member.FirstName) ? "N/A" : member.FirstName)</td>
+                                    <td>@(string.IsNullOrEmpty(member.LastName) ? "N/A" : member.LastName)</td>
+                                    <td>@(member.Relation != default(FamilyMemberRole) ? member.Relation.ToString() : "N/A")</td>
+                                    <td>@(member.DateOfBirth != default ? member.DateOfBirth.ToString("yyyy-MM-dd") : "N/A")</td>
+                                    <td>@(string.IsNullOrEmpty(member.Contact) ? "N/A" : member.Contact)</td>
+                                    <td>@(string.IsNullOrEmpty(member.Email) ? "N/A" : member.Email)</td>
+                                    <td>@(string.IsNullOrEmpty(member.Role) ? "N/A" : member.Role)</td>
+                                    <td>
+                                        <div class="d-flex gap-2">
+                                            <a asp-action="EditMember" asp-route-id="@member.Id" asp-area="Families" class="btn btn-sm btn-outline-warning">
+                                                <i class="fas fa-edit me-2"></i>Edit
+                                            </a>
+                                            <a asp-action="EnrollStudent" asp-route-familyMemberId="@member.Id" asp-area="Families" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-user-plus me-2"></i>Enroll as Student
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info text-center" role="alert">
+                    No family members found.
+                </div>
+            }
+
+            <div class="d-flex justify-content-end mt-4">
+                <a asp-action="Index" asp-area="Families" class="btn btn-secondary"><i class="fas fa-arrow-left me-2"></i>Back to Families</a>
             </div>
         </div>
-
-        <h5 class="mt-4">Family Members</h5>
-        @if (Model.Members.Any())
-        {
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>First Name</th>
-                        <th>Last Name</th>
-                        <th>Relation</th>
-                        <th>Date of Birth</th>
-                        <th>Contact</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var member in Model.Members)
-                    {
-                        <tr>
-                            <td>@member.FirstName</td>
-                            <td>@member.LastName</td>
-                            <td>@member.Relation</td>
-                            <td>@member.DateOfBirth.ToString("yyyy-MM-dd")</td>
-                            <td>@member.Contact</td>
-                            <td>@member.Email</td>
-                            <td>@member.Role</td>
-                            <td>
-                                <a asp-controller="FamilyMembers" asp-action="Edit" asp-route-id="@member.Id" class="btn btn-sm btn-primary">
-                                    <i class="fas fa-edit"></i> Edit
-                                </a>
-                                <a asp-action="EnrollStudent" asp-route-familyMemberId="@member.Id" class="btn btn-sm btn-primary">
-                                    <i class="fas fa-user-plus"></i> Enroll as Student
-                                </a>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        }
-        else
-        {
-            <p>No family members found.</p>
-        }
-
-        <a asp-action="Index" class="btn btn-secondary">Back to Families</a>
     </div>
 </div>
+
+<!-- Toast Notification Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="familyDetailsToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">Family Details Status</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+}

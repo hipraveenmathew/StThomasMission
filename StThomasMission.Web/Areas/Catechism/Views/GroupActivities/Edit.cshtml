@@ -1,54 +1,145 @@
 ﻿@model StThomasMission.Web.Areas.Catechism.Models.EditGroupActivityViewModel
+
 @{
     ViewData["Title"] = "Edit Group Activity";
 }
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="mb-0">Edit Group Activity</h3>
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-warning text-white">
+            <h3 class="mb-0"><i class="fas fa-edit me-2"></i>Edit Group Activity</h3>
+        </div>
+        <div class="card-body">
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <form asp-action="Edit" asp-area="Catechism" method="post" id="editActivityForm">
+                <input type="hidden" asp-for="Id" />
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="row">
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="GroupId" class="form-label fw-bold"></label>
+                        <input asp-for="GroupId" type="number" class="form-control" min="1" required />
+                        <span asp-validation-for="GroupId" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="Name" class="form-label fw-bold"></label>
+                        <input asp-for="Name" class="form-control" required />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="Date" class="form-label fw-bold"></label>
+                        <input asp-for="Date" type="date" class="form-control" required />
+                        <span asp-validation-for="Date" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label asp-for="Description" class="form-label fw-bold"></label>
+                        <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="Points" class="form-label fw-bold"></label>
+                        <input asp-for="Points" type="number" class="form-control" min="0" required />
+                        <span asp-validation-for="Points" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end mt-4">
+                    <a asp-action="Index" asp-area="Catechism" class="btn btn-secondary me-2"><i class="fas fa-times me-2"></i>Cancel</a>
+                    <button type="submit" class="btn btn-warning"><i class="fas fa-save me-2"></i>Save</button>
+                </div>
+            </form>
+        </div>
     </div>
-    <div class="card-body">
-        <form asp-action="Edit" method="post">
-            <input type="hidden" asp-for="Id" />
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+</div>
 
-            <div class="mb-3">
-                <label asp-for="GroupId" class="form-label"></label>
-                <input asp-for="GroupId" type="number" class="form-control" />
-                <span asp-validation-for="GroupId" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="Name" class="form-label"></label>
-                <input asp-for="Name" class="form-control" />
-                <span asp-validation-for="Name" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="Date" class="form-label"></label>
-                <input asp-for="Date" type="date" class="form-control" />
-                <span asp-validation-for="Date" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="Description" class="form-label"></label>
-                <textarea asp-for="Description" class="form-control" rows="3"></textarea>
-                <span asp-validation-for="Description" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="Points" class="form-label"></label>
-                <input asp-for="Points" type="number" class="form-control" />
-                <span asp-validation-for="Points" class="text-danger"></span>
-            </div>
-
-            <button type="submit" class="btn btn-modern">Save</button>
-            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
-        </form>
+<!-- Toast Notification Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="editActivityToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">Activity Update Status</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body"></div>
     </div>
 </div>
 
 @section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Initialize jQuery Validate
+            $("#editActivityForm").validate({
+                rules: {
+                    GroupId: {
+                        required: true,
+                        number: true,
+                        min: 1
+                    },
+                    Name: {
+                        required: true,
+                        maxlength: 100
+                    },
+                    Date: {
+                        required: true,
+                        date: true
+                    },
+                    Description: {
+                        maxlength: 1000
+                    },
+                    Points: {
+                        required: true,
+                        number: true,
+                        min: 0
+                    }
+                },
+                messages: {
+                    GroupId: {
+                        required: "Please enter a group ID.",
+                        number: "Please enter a valid number.",
+                        min: "Group ID must be a positive number."
+                    },
+                    Name: {
+                        required: "Please enter an activity name.",
+                        maxlength: "Activity name cannot exceed 100 characters."
+                    },
+                    Date: {
+                        required: "Please select a date.",
+                        date: "Please enter a valid date."
+                    },
+                    Description: {
+                        maxlength: "Description cannot exceed 1000 characters."
+                    },
+                    Points: {
+                        required: "Please enter points.",
+                        number: "Please enter a valid number.",
+                        min: "Points cannot be negative."
+                    }
+                },
+                errorElement: "div",
+                errorClass: "text-danger",
+                highlight: function (element) {
+                    $(element).addClass("is-invalid");
+                },
+                unhighlight: function (element) {
+                    $(element).removeClass("is-invalid");
+                }
+            });
+
+            // Loading spinner for form submission
+            $("#editActivityForm").on("submit", function () {
+                var $submitButton = $(this).find('button[type="submit"]');
+                if ($(this).valid()) {
+                    $submitButton.prop("disabled", true).prepend('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>');
+                }
+            });
+        });
+    </script>
 }

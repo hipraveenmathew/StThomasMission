@@ -38,8 +38,8 @@ namespace StThomasMission.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Announcement announcement)
         {
-            if (ModelState.IsValid)
-            {
+            //if (ModelState.IsValid)
+            //{
                 announcement.CreatedBy = User.Identity.Name ?? "System";
                 announcement.CreatedAt = DateTime.UtcNow;
                 announcement.PostedDate = DateTime.Today;
@@ -50,8 +50,8 @@ namespace StThomasMission.Web.Areas.Admin.Controllers
                 await _auditService.LogActionAsync(User.Identity.Name, "Create", nameof(Announcement), announcement.Id.ToString(), $"Added announcement: {announcement.Title}");
                 TempData["Success"] = "Announcement created successfully.";
                 return RedirectToAction(nameof(Index));
-            }
-            return View(announcement);
+            //}
+            //return View(announcement);
         }
 
         // GET: /Admin/Announcements/Edit/1
@@ -75,8 +75,8 @@ namespace StThomasMission.Web.Areas.Admin.Controllers
                 return NotFound();
             }
 
-            if (ModelState.IsValid)
-            {
+            //if (ModelState.IsValid)
+            //{
                 var existingAnnouncement = await _unitOfWork.Announcements.GetByIdAsync(id);
                 if (existingAnnouncement == null)
                 {
@@ -95,8 +95,8 @@ namespace StThomasMission.Web.Areas.Admin.Controllers
                 await _auditService.LogActionAsync(User.Identity.Name, "Update", nameof(Announcement), announcement.Id.ToString(), $"Updated announcement: {announcement.Title}");
                 TempData["Success"] = "Announcement updated successfully.";
                 return RedirectToAction(nameof(Index));
-            }
-            return View(announcement);
+            //}
+            //return View(announcement);
         }
 
         // GET: /Admin/Announcements/Delete/1

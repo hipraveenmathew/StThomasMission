@@ -23,7 +23,7 @@ namespace StThomasMission.Infrastructure.Repositories
         {
             return await _context.MassTimings
                 .AsNoTracking()
-                .Where(mt => mt.WeekStartDate == weekStartDate && !mt.IsDeleted)
+                .Where(mt =>  !mt.IsDeleted)
                 .ToListAsync();
         }
 

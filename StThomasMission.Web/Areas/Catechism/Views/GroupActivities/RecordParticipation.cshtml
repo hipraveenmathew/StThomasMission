@@ -1,43 +1,99 @@
 ﻿@model StThomasMission.Web.Areas.Catechism.Models.RecordParticipationViewModel
+
 @{
     ViewData["Title"] = "Record Participation";
 }
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="mb-0">Record Participation</h3>
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0"><i class="fas fa-user-plus me-2"></i>Record Participation</h3>
+        </div>
+        <div class="card-body">
+            <form asp-action="RecordParticipation" asp-area="Catechism" method="post" id="recordParticipationForm">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="row">
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="StudentId" class="form-label fw-bold"></label>
+                        <input asp-for="StudentId" type="number" class="form-control" placeholder="Enter student ID" min="1" required />
+                        <span asp-validation-for="StudentId" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="GroupActivityId" class="form-label fw-bold"></label>
+                        <input asp-for="GroupActivityId" type="number" class="form-control" placeholder="Enter group activity ID" min="1" required />
+                        <span asp-validation-for="GroupActivityId" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end mt-4">
+                    <a asp-action="Index" asp-area="Catechism" class="btn btn-secondary me-2"><i class="fas fa-times me-2"></i>Cancel</a>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Record Participation</button>
+                </div>
+            </form>
+        </div>
     </div>
-    <div class="card-body">
-        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
-        {
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                @Model.SuccessMessage
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        }
+</div>
 
-        <form asp-action="RecordParticipation" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-            <div class="mb-3">
-                <label asp-for="StudentId" class="form-label"></label>
-                <input asp-for="StudentId" type="number" class="form-control" placeholder="Enter student ID" />
-                <span asp-validation-for="StudentId" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="GroupActivityId" class="form-label"></label>
-                <input asp-for="GroupActivityId" type="number" class="form-control" placeholder="Enter group activity ID" />
-                <span asp-validation-for="GroupActivityId" class="text-danger"></span>
-            </div>
-
-            <button type="submit" class="btn btn-modern">Record Participation</button>
-            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
-        </form>
+<!-- Toast Notification Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="participationToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">Participation Status</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body"></div>
     </div>
 </div>
 
 @section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Initialize jQuery Validate
+            $("#recordParticipationForm").validate({
+                rules: {
+                    StudentId: {
+                        required: true,
+                        number: true,
+                        min: 1
+                    },
+                    GroupActivityId: {
+                        required: true,
+                        number: true,
+                        min: 1
+                    }
+                },
+                messages: {
+                    StudentId: {
+                        required: "Please enter a student ID.",
+                        number: "Please enter a valid number.",
+                        min: "Student ID must be a positive number."
+                    },
+                    GroupActivityId: {
+                        required: "Please enter a group activity ID.",
+                        number: "Please enter a valid number.",
+                        min: "Group activity ID must be a positive number."
+                    }
+                },
+                errorElement: "div",
+                errorClass: "text-danger",
+                highlight: function (element) {
+                    $(element).addClass("is-invalid");
+                },
+                unhighlight: function (element) {
+                    $(element).removeClass("is-invalid");
+                }
+            });
+
+            // Loading spinner for form submission
+            $("#recordParticipationForm").on("submit", function () {
+                var $submitButton = $(this).find('button[type="submit"]');
+                if ($(this).valid()) {
+                    $submitButton.prop("disabled", true).prepend('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>');
+                }
+            });
+        });
+    </script>
 }

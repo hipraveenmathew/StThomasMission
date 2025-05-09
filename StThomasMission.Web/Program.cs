@@ -75,7 +75,12 @@ builder.Services.AddScoped<IReportingService, ReportingService>();
 builder.Services.AddScoped<IGroupService, GroupService>();
 builder.Services.AddScoped<IWardService, WardService>();
 builder.Services.AddScoped<IMassTimingService, MassTimingService>(); 
-builder.Services.AddScoped<IAnnouncementService, AnnouncementService>(); 
+builder.Services.AddScoped<IAnnouncementService, AnnouncementService>();
+builder.Services.AddScoped<IAssessmentService, AssessmentService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IExportService, ExportService>();
+builder.Services.AddScoped<IMigrationLogService, MigrationLogService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 var app = builder.Build();
 
@@ -119,6 +124,12 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.MapRazorPages();
+app.Use(async (context, next) =>
+{
+    Console.WriteLine($"Path: {context.Request.Path}, User: {context.User.Identity?.Name}");
+    await next();
+});
+
 
 app.Run();
 

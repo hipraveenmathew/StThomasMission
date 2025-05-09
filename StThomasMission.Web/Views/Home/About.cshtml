@@ -1,0 +1,76 @@
+﻿@{
+    ViewData["Title"] = "About St. Thomas Mission";
+    Layout = "~/Views/Shared/_LayoutPublic.cshtml";
+}
+
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0"><i class="fas fa-info-circle me-2"></i>About St. Thomas Mission</h3>
+        </div>
+        <div class="card-body">
+            <div class="row g-4">
+                <div class="col-12">
+                    <h4 class="mb-3">Our Mission</h4>
+                    <p>
+                        St. Thomas Mission is dedicated to fostering a vibrant, faith-filled community through spiritual growth, education, and service. Inspired by the teachings of St. Thomas, we aim to nurture families, support youth, and spread the message of love and compassion.
+                    </p>
+                </div>
+                <div class="col-12">
+                    <h4 class="mb-3">Our History</h4>
+                    <p>
+                        Founded in [Year], St. Thomas Mission has grown from a small parish to a cornerstone of the community. Over the years, we have expanded our programs to include catechism classes, community events, and outreach initiatives, all rooted in our commitment to faith and fellowship.
+                    </p>
+                </div>
+                <div class="col-12">
+                    <h4 class="mb-3">Our Vision</h4>
+                    <p>
+                        We envision a community where every individual is empowered to live out their faith through active participation, lifelong learning, and service to others. Join us as we continue to build a welcoming and inclusive environment for all.
+                    </p>
+                </div>
+            </div>
+            <div class="d-flex justify-content-end mt-4">
+                <a href="@Url.Action("Index", "Home")" class="btn btn-secondary"><i class="fas fa-arrow-left me-2"></i>Back to Home</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="aboutToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">About Page Status</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Handle TempData feedback with toast notifications
+        @if (TempData["Success"] != null)
+        {
+            <text>
+                    var toast = new bootstrap.Toast(document.getElementById('aboutToast'));
+                    $("#aboutToast .toast-body").text("@TempData["Success"]");
+                    $("#aboutToast .toast-header").removeClass("bg-danger").addClass("bg-success");
+                    toast.show();
+            </text>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <text>
+                    var toast = new bootstrap.Toast(document.getElementById('aboutToast'));
+                    $("#aboutToast .toast-body").text("@TempData["Error"]");
+                    $("#aboutToast .toast-header").removeClass("bg-success").addClass("bg-danger");
+                    toast.show();
+            </text>
+        }
+        });
+    </script>
+}

@@ -1,42 +1,98 @@
 ﻿@model StThomasMission.Web.Areas.Catechism.Models.PromoteStudentsViewModel
+
 @{
     ViewData["Title"] = "Promote Students";
 }
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="mb-0">Promote Students</h3>
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0"><i class="fas fa-graduation-cap me-2"></i>Promote Students</h3>
+        </div>
+        <div class="card-body">
+            <form asp-action="PromoteStudents" asp-area="Catechism" method="post" id="promoteStudentsForm">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="row">
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="Grade" class="form-label fw-bold">Grade</label>
+                        <input asp-for="Grade" class="form-control" placeholder="e.g., Year 1" required />
+                        <span asp-validation-for="Grade" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="AcademicYear" class="form-label fw-bold">Academic Year</label>
+                        <input asp-for="AcademicYear" type="number" class="form-control" min="2000" max="@DateTime.Now.Year" value="@DateTime.Now.Year" required />
+                        <span asp-validation-for="AcademicYear" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end mt-4">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-arrow-up me-2"></i>Promote Students</button>
+                </div>
+            </form>
+        </div>
     </div>
-    <div class="card-body">
-        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
-        {
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                @Model.SuccessMessage
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        }
+</div>
 
-        <form asp-action="PromoteStudents" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-            <div class="mb-3">
-                <label asp-for="Grade" class="form-label"></label>
-                <input asp-for="Grade" class="form-control" placeholder="e.g., Year 1" />
-                <span asp-validation-for="Grade" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="AcademicYear" class="form-label"></label>
-                <input asp-for="AcademicYear" type="number" class="form-control" />
-                <span asp-validation-for="AcademicYear" class="text-danger"></span>
-            </div>
-
-            <button type="submit" class="btn btn-modern">Promote Students</button>
-        </form>
+<!-- Toast Notification Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="promoteStudentsToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">Promotion Status</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body"></div>
     </div>
 </div>
 
 @section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Initialize jQuery Validate
+            $("#promoteStudentsForm").validate({
+                rules: {
+                    Grade: {
+                        required: true,
+                        maxlength: 50
+                    },
+                    AcademicYear: {
+                        required: true,
+                        number: true,
+                        min: 2000,
+                        max: @DateTime.Now.Year
+                    }
+                },
+                messages: {
+                    Grade: {
+                        required: "Please enter a grade.",
+                        maxlength: "Grade cannot exceed 50 characters."
+                    },
+                    AcademicYear: {
+                        required: "Please enter an academic year.",
+                        number: "Please enter a valid number.",
+                        min: "Academic year must be at least 2000.",
+                        max: "Academic year cannot exceed the current year."
+                    }
+                },
+                errorElement: "div",
+                errorClass: "text-danger",
+                highlight: function (element) {
+                    $(element).addClass("is-invalid");
+                },
+                unhighlight: function (element) {
+                    $(element).removeClass("is-invalid");
+                }
+            });
+
+            // Loading spinner for form submission
+            $("#promoteStudentsForm").on("submit", function () {
+                var $submitButton = $(this).find('button[type="submit"]');
+                if ($(this).valid()) {
+                    $submitButton.prop("disabled", true).prepend('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>');
+                }
+            });
+        });
+    </script>
 }

@@ -1,42 +1,123 @@
 ﻿@model StThomasMission.Web.Areas.Catechism.Models.PassFailViewModel
+
 @{
     ViewData["Title"] = "Mark Pass/Fail";
 }
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="mb-0">Mark Pass/Fail for @ViewData["StudentName"]</h3>
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0"><i class="fas fa-check-circle me-2"></i>Mark Pass/Fail for @ViewData["StudentName"]</h3>
+        </div>
+        <div class="card-body">
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <form asp-action="MarkPassFail" asp-area="Catechism" method="post" id="markPassFailForm">
+                <input type="hidden" asp-for="StudentId" />
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="row">
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="AcademicYear" class="form-label fw-bold"></label>
+                        <input asp-for="AcademicYear" type="number" class="form-control" min="2000" max="@DateTime.Now.Year" required />
+                        <span asp-validation-for="AcademicYear" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="PassThreshold" class="form-label fw-bold"></label>
+                        <input asp-for="PassThreshold" type="number" step="0.01" class="form-control" min="0" max="100" required />
+                        <span asp-validation-for="PassThreshold" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label asp-for="Remarks" class="form-label fw-bold"></label>
+                        <textarea asp-for="Remarks" class="form-control" rows="3" placeholder="Enter remarks (optional)"></textarea>
+                        <span asp-validation-for="Remarks" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end mt-4">
+                    <a asp-action="Index" asp-area="Catechism" class="btn btn-secondary me-2"><i class="fas fa-times me-2"></i>Cancel</a>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Record Pass/Fail</button>
+                </div>
+            </form>
+        </div>
     </div>
-    <div class="card-body">
-        <form asp-action="MarkPassFail" method="post">
-            <input type="hidden" asp-for="StudentId" />
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+</div>
 
-            <div class="mb-3">
-                <label asp-for="AcademicYear" class="form-label"></label>
-                <input asp-for="AcademicYear" type="number" class="form-control" />
-                <span asp-validation-for="AcademicYear" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="PassThreshold" class="form-label"></label>
-                <input asp-for="PassThreshold" type="number" step="0.01" class="form-control" />
-                <span asp-validation-for="PassThreshold" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="Remarks" class="form-label"></label>
-                <textarea asp-for="Remarks" class="form-control" rows="3" placeholder="Enter remarks (optional)"></textarea>
-                <span asp-validation-for="Remarks" class="text-danger"></span>
-            </div>
-
-            <button type="submit" class="btn btn-modern">Record Pass/Fail</button>
-            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
-        </form>
+<!-- Toast Notification Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="passFailToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">Pass/Fail Status</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body"></div>
     </div>
 </div>
 
 @section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Initialize jQuery Validate
+            $("#markPassFailForm").validate({
+                rules: {
+                    AcademicYear: {
+                        required: true,
+                        number: true,
+                        min: 2000,
+                        max: @DateTime.Now.Year
+                    },
+                    PassThreshold: {
+                        required: true,
+                        number: true,
+                        min: 0,
+                        max: 100
+                    },
+                    Remarks: {
+                        maxlength: 500
+                    }
+                },
+                messages: {
+                    AcademicYear: {
+                        required: "Please enter an academic year.",
+                        number: "Please enter a valid number.",
+                        min: "Academic year must be at least 2000.",
+                        max: "Academic year cannot exceed the current year."
+                    },
+                    PassThreshold: {
+                        required: "Please enter a pass threshold.",
+                        number: "Please enter a valid number.",
+                        min: "Pass threshold cannot be negative.",
+                        max: "Pass threshold cannot exceed 100."
+                    },
+                    Remarks: {
+                        maxlength: "Remarks cannot exceed 500 characters."
+                    }
+                },
+                errorElement: "div",
+                errorClass: "text-danger",
+                highlight: function (element) {
+                    $(element).addClass("is-invalid");
+                },
+                unhighlight: function (element) {
+                    $(element).removeClass("is-invalid");
+                }
+            });
+
+            // Loading spinner for form submission
+            $("#markPassFailForm").on("submit", function () {
+                var $submitButton = $(this).find('button[type="submit"]');
+                if ($(this).valid()) {
+                    $submitButton.prop("disabled", true).prepend('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>');
+                }
+            });
+        });
+    </script>
 }

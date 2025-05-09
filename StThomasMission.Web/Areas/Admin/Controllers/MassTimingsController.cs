@@ -38,9 +38,7 @@ namespace StThomasMission.Web.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(MassTiming massTiming)
         {
-           // massTiming.CreatedBy = User.Identity.Name ?? "System";
-            if (1==1/*ModelState.IsValid*/)
-            {
+           
                 massTiming.CreatedBy = User.Identity.Name ?? "System";
                 massTiming.CreatedAt = DateTime.UtcNow;
                 massTiming.WeekStartDate = DateTime.Today.AddDays(-(int)DateTime.Today.DayOfWeek); // Start of the week (Sunday)
@@ -51,8 +49,8 @@ namespace StThomasMission.Web.Areas.Admin.Controllers
                 await _auditService.LogActionAsync(User.Identity.Name, "Create", nameof(MassTiming), massTiming.Id.ToString(), $"Added mass timing: {massTiming.Day} at {massTiming.Time}");
                 TempData["Success"] = "Mass timing created successfully.";
                 return RedirectToAction(nameof(Index));
-            }
-            return View(massTiming);
+          
+           // return View(massTiming);
         }
 
         // GET: /Admin/MassTimings/Edit/1
@@ -76,8 +74,8 @@ namespace StThomasMission.Web.Areas.Admin.Controllers
                 return NotFound();
             }
 
-            if (ModelState.IsValid)
-            {
+            //if (ModelState.IsValid)
+            //{
                 var existingTiming = await _unitOfWork.MassTimings.GetByIdAsync(id);
                 if (existingTiming == null)
                 {
@@ -98,8 +96,8 @@ namespace StThomasMission.Web.Areas.Admin.Controllers
                 TempData["Success"] = "Mass timing updated successfully.";
                 return RedirectToAction(nameof(Index));
             }
-            return View(massTiming);
-        }
+        //    return View(massTiming);
+        //}
 
         // GET: /Admin/MassTimings/Delete/1
         public async Task<IActionResult> Delete(int id)

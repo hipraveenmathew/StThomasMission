@@ -1,125 +1,177 @@
 ﻿@using StThomasMission.Core.Enums
 @model StThomasMission.Web.Areas.Families.Models.FamilyIndexViewModel
+
 @{
     ViewData["Title"] = "Families";
     Layout = "_Layout";
 }
 
-<div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h3 class="mb-0">Families</h3>
-        <a asp-action="Register" class="btn btn-primary btn-sm">
-            <i class="fas fa-plus"></i> Register Family
-        </a>
-    </div>
-    <div class="card-body">
-        <form asp-action="Index" method="get" class="mb-4">
-            <div class="row">
-                <div class="col-md-6 col-lg-3 mb-3">
-                    <div class="form-group">
-                        <label asp-for="Filter.SearchString" class="form-label">Search</label>
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h3 class="mb-0"><i class="fas fa-users me-2"></i>Families</h3>
+            <a asp-action="Register" asp-area="Families" class="btn btn-primary btn-sm"><i class="fas fa-plus me-2"></i>Register Family</a>
+        </div>
+        <div class="card-body">
+            <form asp-action="Index" asp-area="Families" method="get" id="filterForm" class="mb-4">
+                <div class="row g-3">
+                    <div class="col-12 col-md-6 col-lg-3 mb-3">
+                        <label asp-for="Filter.SearchString" class="form-label fw-bold">Search</label>
                         <input asp-for="Filter.SearchString" class="form-control rounded-3" placeholder="Search by name or ward" />
                     </div>
-                </div>
-                <div class="col-md-6 col-lg-3 mb-3">
-                    <div class="form-group">
-                        <label asp-for="Filter.Ward" class="form-label">Ward ID</label>
-                        <input asp-for="Filter.Ward" type="number" class="form-control rounded-3" placeholder="Filter by ward ID" />
+                    <div class="col-12 col-md-6 col-lg-3 mb-3">
+                        <label asp-for="Filter.Ward" class="form-label fw-bold">Ward ID</label>
+                        <input asp-for="Filter.Ward" type="number" class="form-control rounded-3" placeholder="Filter by ward ID" min="0" />
                     </div>
-                </div>
-                <div class="col-md-6 col-lg-3 mb-3">
-                    <div class="form-group">
-                        <label asp-for="Filter.Status" class="form-label">Status</label>
+                    <div class="col-12 col-md-6 col-lg-3 mb-3">
+                        <label asp-for="Filter.Status" class="form-label fw-bold">Status</label>
                         <select asp-for="Filter.Status" class="form-select rounded-3" asp-items="Html.GetEnumSelectList<StThomasMission.Core.Enums.FamilyStatus>()">
                             <option value="">All Statuses</option>
                         </select>
                     </div>
+                    <div class="col-12 col-md-6 col-lg-3 mb-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter me-2"></i>Filter</button>
+                    </div>
                 </div>
-                <div class="col-md-6 col-lg-3 mb-3 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary w-100">Filter</button>
-                </div>
-            </div>
-        </form>
+            </form>
 
-        @if (Model.Families.Count == 0)
-        {
-            <p>No families found.</p>
-        }
-        else
-        {
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>
-                                <a asp-action="Index" asp-route-sortOrder="@ViewData["NameSortParm"]" asp-route-pageNumber="@Model.Families.PageIndex" asp-route-pageSize="@Model.Families.PageSize" asp-route-searchString="@Model.Filter.SearchString" asp-route-ward="@Model.Filter.Ward" asp-route-status="@Model.Filter.Status">Family Name</a>
-                            </th>
-                            <th>
-                                <a asp-action="Index" asp-route-sortOrder="@ViewData["WardSortParm"]" asp-route-pageNumber="@Model.Families.PageIndex" asp-route-pageSize="@Model.Families.PageSize" asp-route-searchString="@Model.Filter.SearchString" asp-route-ward="@Model.Filter.Ward" asp-route-status="@Model.Filter.Status">Ward</a>
-                            </th>
-                            <th>Registration</th>
-                            <th>Status</th>
-                            <th>Migrated To</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var family in Model.Families)
-                        {
+            @if (Model.Families.Count == 0)
+            {
+                <div class="alert alert-info text-center" role="alert">
+                    No families found.
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
                             <tr>
-                                <td>@family.FamilyName</td>
-                                <td>@family.Ward.Name</td>
-                                <td>@(family.IsRegistered ? family.ChurchRegistrationNumber : family.TemporaryID)</td>
-                                <td>@family.Status</td>
-                                <td>@family.MigratedTo</td>
-                                <td>
-                                    <a asp-action="Details" asp-route-id="@family.Id" class="btn btn-sm btn-outline-primary">
-                                        <i class="fas fa-info-circle"></i> Details
-                                    </a>
-                                    <a asp-action="Edit" asp-route-id="@family.Id" class="btn btn-sm btn-outline-warning">
-                                        <i class="fas fa-edit"></i> Edit
-                                    </a>
-                                    @if (!family.IsRegistered)
-                                    {
-                                        <a asp-action="ConvertToRegistered" asp-route-familyId="@family.Id" class="btn btn-sm btn-outline-success">
-                                            <i class="fas fa-check"></i> Convert to Registered
-                                        </a>
-                                    }
-                                    @if (family.Status != FamilyStatus.Migrated)
-                                    {
-                                        <a asp-action="MarkAsMigrated" asp-route-familyId="@family.Id" class="btn btn-sm btn-outline-info">
-                                            <i class="fas fa-plane"></i> Mark as Migrated
-                                        </a>
-                                    }
-                                </td>
+                                <th>
+                                    <a asp-action="Index" asp-route-sortOrder="@ViewData["NameSortParm"]" asp-route-pageNumber="@Model.Families.PageIndex" asp-route-pageSize="@Model.Families.PageSize" asp-route-searchString="@Model.Filter.SearchString" asp-route-ward="@Model.Filter.Ward" asp-route-status="@Model.Filter.Status" class="text-decoration-none">Family Name <i class="fas fa-sort"></i></a>
+                                </th>
+                                <th>
+                                    <a asp-action="Index" asp-route-sortOrder="@ViewData["WardSortParm"]" asp-route-pageNumber="@Model.Families.PageIndex" asp-route-pageSize="@Model.Families.PageSize" asp-route-searchString="@Model.Filter.SearchString" asp-route-ward="@Model.Filter.Ward" asp-route-status="@Model.Filter.Status" class="text-decoration-none">Ward <i class="fas fa-sort"></i></a>
+                                </th>
+                                <th>Registration</th>
+                                <th>Status</th>
+                                <th>Migrated To</th>
+                                <th>Actions</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+                        </thead>
+                        <tbody>
+                            @foreach (var family in Model.Families)
+                            {
+                                <tr>
+                                    <td>@family.FamilyName</td>
+                                    <td>@(family.Ward != null ? family.Ward.Name : "N/A")</td>
+                                    <td>@(family.IsRegistered ? family.ChurchRegistrationNumber : family.TemporaryID ?? "N/A")</td>
+                                    <td>
+                                        <span class="badge @(family.Status == FamilyStatus.Active ? "bg-success" : family.Status == FamilyStatus.Migrated ? "bg-info" : "bg-secondary")">
+                                            @family.Status
+                                        </span>
+                                    </td>
+                                    <td>@(string.IsNullOrEmpty(family.MigratedTo) ? "N/A" : family.MigratedTo)</td>
+                                    <td>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <a asp-action="Details" asp-route-id="@family.Id" asp-area="Families" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-info-circle me-2"></i>Details
+                                            </a>
+                                            <a asp-action="Edit" asp-route-id="@family.Id" asp-area="Families" class="btn btn-sm btn-outline-warning">
+                                                <i class="fas fa-edit me-2"></i>Edit
+                                            </a>
+                                            @if (!family.IsRegistered)
+                                            {
+                                                <a asp-action="ConvertToRegistered" asp-route-familyId="@family.Id" asp-area="Families" class="btn btn-sm btn-outline-success">
+                                                    <i class="fas fa-check me-2"></i>Convert to Registered
+                                                </a>
+                                            }
+                                            @if (family.Status != FamilyStatus.Migrated)
+                                            {
+                                                <a asp-action="MarkAsMigrated" asp-route-id="@family.Id" asp-area="Families" class="btn btn-sm btn-outline-info">
+                                                    <i class="fas fa-plane me-2"></i>Mark as Migrated
+                                                </a>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
 
-            <nav aria-label="Page navigation">
-                <ul class="pagination justify-content-center">
-                    @if (Model.Families.HasPreviousPage)
-                    {
-                        <li class="page-item">
-                            <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.Families.PageIndex - 1, pageSize = Model.Families.PageSize, sortOrder = ViewData["CurrentSort"], searchString = Model.Filter.SearchString, ward = Model.Filter.Ward, status = Model.Filter.Status })">Previous</a>
-                        </li>
-                    }
-                    @for (int i = 1; i <= Model.Families.TotalPages; i++)
-                    {
-                        <li class="page-item @(i == Model.Families.PageIndex ? "active" : "")">
-                            <a class="page-link" href="@Url.Action("Index", new { pageNumber = i, pageSize = Model.Families.PageSize, sortOrder = ViewData["CurrentSort"], searchString = Model.Filter.SearchString, ward = Model.Filter.Ward, status = Model.Filter.Status })">@i</a>
-                        </li>
-                    }
-                    @if (Model.Families.HasNextPage)
-                    {
-                        <li class="page-item">
-                            <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.Families.PageIndex + 1, pageSize = Model.Families.PageSize, sortOrder = ViewData["CurrentSort"], searchString = Model.Filter.SearchString, ward = Model.Filter.Ward, status = Model.Filter.Status })">Next</a>
-                        </li>
-                    }
-                </ul>
-            </nav>
-        }
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        @if (Model.Families.HasPreviousPage)
+                        {
+                            <li class="page-item">
+                                <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.Families.PageIndex - 1, pageSize = Model.Families.PageSize, sortOrder = ViewData["CurrentSort"], searchString = Model.Filter.SearchString, ward = Model.Filter.Ward, status = Model.Filter.Status })"><i class="fas fa-chevron-left"></i> Previous</a>
+                            </li>
+                        }
+                        @for (int i = Math.Max(1, Model.Families.PageIndex - 2); i <= Math.Min(Model.Families.TotalPages, Model.Families.PageIndex + 2); i++)
+                        {
+                            <li class="page-item @(i == Model.Families.PageIndex ? "active" : "")">
+                                <a class="page-link" href="@Url.Action("Index", new { pageNumber = i, pageSize = Model.Families.PageSize, sortOrder = ViewData["CurrentSort"], searchString = Model.Filter.SearchString, ward = Model.Filter.Ward, status = Model.Filter.Status })">@i</a>
+                            </li>
+                        }
+                        @if (Model.Families.HasNextPage)
+                        {
+                            <li class="page-item">
+                                <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.Families.PageIndex + 1, pageSize = Model.Families.PageSize, sortOrder = ViewData["CurrentSort"], searchString = Model.Filter.SearchString, ward = Model.Filter.Ward, status = Model.Filter.Status })">Next <i class="fas fa-chevron-right"></i></a>
+                            </li>
+                        }
+                    </ul>
+                    <div class="text-center mt-2">
+                        <small>Showing @(Model.Families.PageIndex * Model.Families.PageSize - Model.Families.PageSize + 1)-@(Math.Min(Model.Families.PageIndex * Model.Families.PageSize, Model.Families.TotalItems)) of @Model.Families.TotalItems families</small>
+                    </div>
+                </nav>
+            }
+        </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Initialize jQuery Validate for filter form
+            $("#filterForm").validate({
+                rules: {
+                    "Filter.SearchString": {
+                        maxlength: 100
+                    },
+                    "Filter.Ward": {
+                        number: true,
+                        min: 0
+                    }
+                },
+                messages: {
+                    "Filter.SearchString": {
+                        maxlength: "Search term cannot exceed 100 characters."
+                    },
+                    "Filter.Ward": {
+                        number: "Please enter a valid number.",
+                        min: "Ward ID cannot be negative."
+                    }
+                },
+                errorElement: "div",
+                errorClass: "text-danger",
+                highlight: function (element) {
+                    $(element).addClass("is-invalid");
+                },
+                unhighlight: function (element) {
+                    $(element).removeClass("is-invalid");
+                }
+            });
+
+            // Loading spinner for form submission
+            $("#filterForm").on("submit", function () {
+                var $submitButton = $(this).find('button[type="submit"]');
+                if ($(this).valid()) {
+                    $submitButton.prop("disabled", true).prepend('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>');
+                }
+            });
+        });
+    </script>
+}

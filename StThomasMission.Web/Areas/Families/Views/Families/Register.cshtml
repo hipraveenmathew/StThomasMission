@@ -1,48 +1,64 @@
 ﻿@model StThomasMission.Web.Areas.Families.Models.FamilyViewModel
+
 @{
     ViewData["Title"] = "Register Family";
 }
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="mb-0">Register Family</h3>
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0"><i class="fas fa-users me-2"></i>Register Family</h3>
+        </div>
+        <div class="card-body">
+            <form asp-action="Register" asp-area="Families" method="post" id="registerFamilyForm">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="row">
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="FamilyName" class="form-label fw-bold"></label>
+                        <input asp-for="FamilyName" class="form-control" placeholder="Enter family name" required />
+                        <span asp-validation-for="FamilyName" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="Ward" class="form-label fw-bold">Ward ID</label>
+                        <input asp-for="Ward" type="number" class="form-control" placeholder="Enter ward ID" min="1" required />
+                        <span asp-validation-for="Ward" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <div class="form-check">
+                            <input asp-for="IsRegistered" type="checkbox" class="form-check-input" id="isRegistered" />
+                            <label class="form-check-label" for="isRegistered">Is Registered?</label>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3" id="churchRegSection" style="@(Model.IsRegistered ? "" : "display:none;")">
+                        <label asp-for="ChurchRegistrationNumber" class="form-label fw-bold">Church Registration Number (Optional)</label>
+                        <input asp-for="ChurchRegistrationNumber" class="form-control" placeholder="e.g., 108021234" />
+                        <span asp-validation-for="ChurchRegistrationNumber" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3" id="tempIdSection" style="@(Model.IsRegistered ? "display:none;" : "")">
+                        <label asp-for="TemporaryId" class="form-label fw-bold">Temporary ID (Optional)</label>
+                        <input asp-for="TemporaryId" class="form-control" placeholder="e.g., TMP-1234" />
+                        <span asp-validation-for="TemporaryId" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end mt-4">
+                    <a asp-action="Index" asp-area="Families" class="btn btn-secondary me-2"><i class="fas fa-times me-2"></i>Cancel</a>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Register</button>
+                </div>
+            </form>
+        </div>
     </div>
-    <div class="card-body">
-        <form asp-action="Register" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+</div>
 
-            <div class="mb-3">
-                <label asp-for="FamilyName" class="form-label"></label>
-                <input asp-for="FamilyName" class="form-control" />
-                <span asp-validation-for="FamilyName" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="Ward" class="form-label"></label>
-                <input asp-for="Ward" type="number" class="form-control" />
-                <span asp-validation-for="Ward" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3 form-check">
-                <input asp-for="IsRegistered" type="checkbox" class="form-check-input" id="isRegistered" />
-                <label class="form-check-label" for="isRegistered">Is Registered?</label>
-            </div>
-
-            <div class="mb-3" id="churchRegSection" style="@(Model.IsRegistered ? "" : "display:none;")">
-                <label asp-for="ChurchRegistrationNumber" class="form-label"></label>
-                <input asp-for="ChurchRegistrationNumber" class="form-control" placeholder="e.g., 108021234" />
-                <span asp-validation-for="ChurchRegistrationNumber" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3" id="tempIdSection" style="@(Model.IsRegistered ? "display:none;" : "")">
-                <label asp-for="TemporaryId" class="form-label"></label>
-                <input asp-for="TemporaryId" class="form-control" placeholder="e.g., TMP-1234" />
-                <span asp-validation-for="TemporaryId" class="text-danger"></span>
-            </div>
-
-            <button type="submit" class="btn btn-modern">Register</button>
-            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
-        </form>
+<!-- Toast Notification Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="registerFamilyToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">Family Registration Status</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body"></div>
     </div>
 </div>
 
@@ -51,6 +67,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
     <script>
         $(document).ready(function () {
+            // Toggle ChurchRegistrationNumber and TemporaryId sections
             $("#isRegistered").change(function () {
                 if (this.checked) {
                     $("#churchRegSection").show();
@@ -58,6 +75,60 @@
                 } else {
                     $("#churchRegSection").hide();
                     $("#tempIdSection").show();
+                }
+            });
+
+            // Initialize jQuery Validate
+            $("#registerFamilyForm").validate({
+                rules: {
+                    FamilyName: {
+                        required: true,
+                        maxlength: 100
+                    },
+                    Ward: {
+                        required: true,
+                        number: true,
+                        min: 1
+                    },
+                    ChurchRegistrationNumber: {
+                        maxlength: 20
+                    },
+                    TemporaryId: {
+                        maxlength: 20
+                    }
+                },
+                messages: {
+                    FamilyName: {
+                        required: "Please enter a family name.",
+                        maxlength: "Family name cannot exceed 100 characters."
+                    },
+                    Ward: {
+                        required: "Please enter a ward ID.",
+                        number: "Please enter a valid number.",
+                        min: "Ward ID must be a positive number."
+                    },
+                    ChurchRegistrationNumber: {
+                        maxlength: "Church registration number cannot exceed 20 characters."
+                    },
+                    TemporaryId: {
+                        maxlength: "Temporary ID cannot exceed 20 characters."
+                    }
+                },
+                errorElement: "div",
+                errorClass: "text-danger",
+                highlight: function (element) {
+                    $(element).addClass("is-invalid");
+                },
+                unhighlight: function (element) {
+                    $(element).removeClass("is-invalid");
+                }
+            });
+
+            // Loading spinner for form submission
+            $("#registerFamilyForm").on("submit", function () {
+                var $submitButton = $(this).find('button[type="submit"]');
+                if ($(this).valid()) {
+                    $submitButton.prop("disabled", true).prepend('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>');
                 }
             });
         });

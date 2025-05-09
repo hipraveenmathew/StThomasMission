@@ -1,25 +1,74 @@
 ﻿@model StThomasMission.Web.Areas.Catechism.Models.StudentDetailsViewModel
+
 @{
     ViewData["Title"] = "Delete Student";
 }
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="mb-0">Delete Student: @Model.FirstName @Model.LastName</h3>
-    </div>
-    <div class="card-body">
-        <div class="alert alert-warning">
-            <h4>Are you sure you want to delete this student?</h4>
-            <p><strong>Name:</strong> @Model.FirstName @Model.LastName</p>
-            <p><strong>Grade:</strong> @Model.Grade</p>
-            <p><strong>Group:</strong> @Model.GroupId</p>
-            <p><strong>Status:</strong> @Model.Status</p>
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-danger text-white">
+            <h3 class="mb-0"><i class="fas fa-trash me-2"></i>Delete Student: @Model.FirstName @Model.LastName</h3>
         </div>
+        <div class="card-body">
+            <div class="alert alert-warning" role="alert">
+                Are you sure you want to delete the student "<strong>@Model.FirstName @Model.LastName</strong>"?
+            </div>
 
-        <form asp-action="Delete" method="post">
-            <input type="hidden" asp-for="Id" />
-            <button type="submit" class="btn btn-danger">Delete</button>
-            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
-        </form>
+            <div class="row">
+                <div class="col-12 col-md-6 mb-3">
+                    <label class="form-label fw-bold">Name</label>
+                    <p class="form-control-plaintext">@Model.FirstName @Model.LastName</p>
+                </div>
+                <div class="col-12 col-md-6 mb-3">
+                    <label class="form-label fw-bold">Grade</label>
+                    <p class="form-control-plaintext">@Model.Grade</p>
+                </div>
+                <div class="col-12 col-md-6 mb-3">
+                    <label class="form-label fw-bold">Group ID</label>
+                    <p class="form-control-plaintext">@(Model.GroupId != 0 ? Model.GroupId.ToString() : "N/A")</p>
+                </div>
+                <div class="col-12 col-md-6 mb-3">
+                    <label class="form-label fw-bold">Status</label>
+                    <p class="form-control-plaintext">@Model.Status</p>
+                </div>
+                <div class="col-12 mb-3">
+                    <label class="form-label fw-bold">Student Organisation</label>
+                    <p class="form-control-plaintext">@(string.IsNullOrEmpty(Model.StudentOrganisation) ? "N/A" : Model.StudentOrganisation)</p>
+                </div>
+            </div>
+
+            <form asp-action="Delete" asp-area="Catechism" method="post" id="deleteStudentForm">
+                <input type="hidden" asp-for="Id" />
+                <div class="d-flex justify-content-end mt-4">
+                    <a asp-action="Index" asp-area="Catechism" class="btn btn-secondary me-2"><i class="fas fa-times me-2"></i>Cancel</a>
+                    <button type="submit" class="btn btn-danger"><i class="fas fa-trash me-2"></i>Delete</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
+
+<!-- Toast Notification Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="deleteStudentToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">Student Deletion Status</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Loading spinner for form submission
+            $("#deleteStudentForm").on("submit", function () {
+                var $submitButton = $(this).find('button[type="submit"]');
+                $submitButton.prop("disabled", true).prepend('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>');
+            });
+        });
+    </script>
+}

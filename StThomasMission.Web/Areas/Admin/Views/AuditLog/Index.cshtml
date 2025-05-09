@@ -1,101 +1,117 @@
 ﻿@model StThomasMission.Web.Areas.Admin.Models.AuditLogIndexViewModel
+
 @{
     ViewData["Title"] = "Audit Logs";
 }
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="mb-0">Audit Logs</h3>
-    </div>
-    <div class="card-body">
-        <form asp-action="Index" method="get" class="mb-4">
-            <div class="row">
-                <div class="col-md-3">
-                    <div class="form-group">
-                        <label asp-for="Filter.SearchString" class="form-label"></label>
-                        <input asp-for="Filter.SearchString" class="form-control" placeholder="Search by action, entity, or details" />
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0"><i class="fas fa-history me-2"></i>Audit Logs</h3>
+        </div>
+        <div class="card-body">
+            <form asp-action="Index" method="get" class="mb-4">
+                <div class="row g-3">
+                    <div class="col-12 col-md-3">
+                        <label asp-for="Filter.SearchString" class="form-label fw-bold"></label>
+                        <input asp-for="Filter.SearchString" class="form-control" placeholder="Search action, entity, details" />
                     </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="form-group">
-                        <label asp-for="Filter.EntityName" class="form-label"></label>
+                    <div class="col-12 col-md-3">
+                        <label asp-for="Filter.EntityName" class="form-label fw-bold"></label>
                         <input asp-for="Filter.EntityName" class="form-control" placeholder="Filter by entity name" />
                     </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="form-group">
-                        <label asp-for="Filter.StartDate" class="form-label"></label>
+                    <div class="col-12 col-md-2">
+                        <label asp-for="Filter.StartDate" class="form-label fw-bold"></label>
                         <input asp-for="Filter.StartDate" type="date" class="form-control" />
                     </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="form-group">
-                        <label asp-for="Filter.EndDate" class="form-label"></label>
+                    <div class="col-12 col-md-2">
+                        <label asp-for="Filter.EndDate" class="form-label fw-bold"></label>
                         <input asp-for="Filter.EndDate" type="date" class="form-control" />
                     </div>
+                    <div class="col-12 col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter me-2"></i>Filter</button>
+                    </div>
                 </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-modern w-100">Filter</button>
+            </form>
+
+            @if (Model.Logs.Count == 0)
+            {
+                <div class="alert alert-info text-center" role="alert">
+                    No audit logs found.
                 </div>
-            </div>
-        </form>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>
+                                    <a asp-action="Index" asp-route-sortOrder="@ViewData["DateSortParm"]" asp-route-pageNumber="@Model.Logs.PageIndex" asp-route-pageSize="@Model.Logs.PageSize" asp-route-searchString="@Model.Filter.SearchString" asp-route-entityName="@Model.Filter.EntityName" asp-route-startDate="@(Model.Filter.StartDate?.ToString("yyyy-MM-dd"))" asp-route-endDate="@(Model.Filter.EndDate?.ToString("yyyy-MM-dd"))" class="text-decoration-none">Timestamp <i class="fas fa-sort"></i></a>
+                                </th>
+                                <th>
+                                    <a asp-action="Index" asp-route-sortOrder="@ViewData["ActionSortParm"]" asp-route-pageNumber="@Model.Logs.PageIndex" asp-route-pageSize="@Model.Logs.PageSize" asp-route-searchString="@Model.Filter.SearchString" asp-route-entityName="@Model.Filter.EntityName" asp-route-startDate="@(Model.Filter.StartDate?.ToString("yyyy-MM-dd"))" asp-route-endDate="@(Model.Filter.EndDate?.ToString("yyyy-MM-dd"))" class="text-decoration-none">Action <i class="fas fa-sort"></i></a>
+                                </th>
+                                <th>Entity Name</th>
+                                <th>Details</th>
+                                <th>Username</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var log in Model.Logs)
+                            {
+                                <tr>
+                                    <td>@log.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                    <td>@log.Action</td>
+                                    <td>@log.EntityName</td>
+                                    <td>@log.Details</td>
+                                    <td>@log.Username</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
 
-        @if (Model.Logs.Count == 0)
-        {
-            <p>No audit logs found.</p>
-        }
-        else
-        {
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>
-                            <a asp-action="Index" asp-route-sortOrder="@ViewData["DateSortParm"]" asp-route-pageNumber="@Model.Logs.PageIndex" asp-route-pageSize="@Model.Logs.PageSize" asp-route-searchString="@Model.Filter.SearchString" asp-route-entityName="@Model.Filter.EntityName" asp-route-startDate="@(Model.Filter.StartDate?.ToString("yyyy-MM-dd"))" asp-route-endDate="@(Model.Filter.EndDate?.ToString("yyyy-MM-dd"))">Timestamp</a>
-                        </th>
-                        <th>
-                            <a asp-action="Index" asp-route-sortOrder="@ViewData["ActionSortParm"]" asp-route-pageNumber="@Model.Logs.PageIndex" asp-route-pageSize="@Model.Logs.PageSize" asp-route-searchString="@Model.Filter.SearchString" asp-route-entityName="@Model.Filter.EntityName" asp-route-startDate="@(Model.Filter.StartDate?.ToString("yyyy-MM-dd"))" asp-route-endDate="@(Model.Filter.EndDate?.ToString("yyyy-MM-dd"))">Action</a>
-                        </th>
-                        <th>Entity Name</th>
-                        <th>Details</th>
-                        <th>Username</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var log in Model.Logs)
-                    {
-                        <tr>
-                            <td>@log.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
-                            <td>@log.Action</td>
-                            <td>@log.EntityName</td>
-                            <td>@log.Details</td>
-                            <td>@log.Username</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-
-            <nav aria-label="Page navigation">
-                <ul class="pagination">
-                    @if (Model.Logs.HasPreviousPage)
-                    {
-                        <li class="page-item">
-                            <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.Logs.PageIndex - 1, pageSize = Model.Logs.PageSize, sortOrder = ViewData["CurrentSort"], searchString = Model.Filter.SearchString, entityName = Model.Filter.EntityName, startDate = Model.Filter.StartDate?.ToString("yyyy-MM-dd"), endDate = Model.Filter.EndDate?.ToString("yyyy-MM-dd") })">Previous</a>
-                        </li>
-                    }
-                    @for (int i = 1; i <= Model.Logs.TotalPages; i++)
-                    {
-                        <li class="page-item @(i == Model.Logs.PageIndex ? "active" : "")">
-                            <a class="page-link" href="@Url.Action("Index", new { pageNumber = i, pageSize = Model.Logs.PageSize, sortOrder = ViewData["CurrentSort"], searchString = Model.Filter.SearchString, entityName = Model.Filter.EntityName, startDate = Model.Filter.StartDate?.ToString("yyyy-MM-dd"), endDate = Model.Filter.EndDate?.ToString("yyyy-MM-dd") })">@i</a>
-                        </li>
-                    }
-                    @if (Model.Logs.HasNextPage)
-                    {
-                        <li class="page-item">
-                            <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.Logs.PageIndex + 1, pageSize = Model.Logs.PageSize, sortOrder = ViewData["CurrentSort"], searchString = Model.Filter.SearchString, entityName = Model.Filter.EntityName, startDate = Model.Filter.StartDate?.ToString("yyyy-MM-dd"), endDate = Model.Filter.EndDate?.ToString("yyyy-MM-dd") })">Next</a>
-                        </li>
-                    }
-                </ul>
-            </nav>
-        }
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        @if (Model.Logs.HasPreviousPage)
+                        {
+                            <li class="page-item">
+                                <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.Logs.PageIndex - 1, pageSize = Model.Logs.PageSize, sortOrder = ViewData["CurrentSort"], searchString = Model.Filter.SearchString, entityName = Model.Filter.EntityName, startDate = Model.Filter.StartDate?.ToString("yyyy-MM-dd"), endDate = Model.Filter.EndDate?.ToString("yyyy-MM-dd") })"><i class="fas fa-chevron-left"></i> Previous</a>
+                            </li>
+                        }
+                        @for (int i = Math.Max(1, Model.Logs.PageIndex - 2); i <= Math.Min(Model.Logs.TotalPages, Model.Logs.PageIndex + 2); i++)
+                        {
+                            <li class="page-item @(i == Model.Logs.PageIndex ? "active" : "")">
+                                <a class="page-link" href="@Url.Action("Index", new { pageNumber = i, pageSize = Model.Logs.PageSize, sortOrder = ViewData["CurrentSort"], searchString = Model.Filter.SearchString, entityName = Model.Filter.EntityName, startDate = Model.Filter.StartDate?.ToString("yyyy-MM-dd"), endDate = Model.Filter.EndDate?.ToString("yyyy-MM-dd") })">@i</a>
+                            </li>
+                        }
+                        @if (Model.Logs.HasNextPage)
+                        {
+                            <li class="page-item">
+                                <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.Logs.PageIndex + 1, pageSize = Model.Logs.PageSize, sortOrder = ViewData["CurrentSort"], searchString = Model.Filter.SearchString, entityName = Model.Filter.EntityName, startDate = Model.Filter.StartDate?.ToString("yyyy-MM-dd"), endDate = Model.Filter.EndDate?.ToString("yyyy-MM-dd") })">Next <i class="fas fa-chevron-right"></i></a>
+                            </li>
+                        }
+                    </ul>
+                    <div class="text-center mt-2">
+                        <small>Showing @(Model.Logs.PageIndex * Model.Logs.PageSize - Model.Logs.PageSize + 1)-@(Math.Min(Model.Logs.PageIndex * Model.Logs.PageSize, Model.Logs.TotalItems)) of @Model.Logs.TotalItems logs</small>
+                    </div>
+                </nav>
+            }
+        </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate-unobtrusive/3.2.12/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Loading spinner for form submission
+            $("form").on("submit", function () {
+                var $submitButton = $(this).find('button[type="submit"]');
+                $submitButton.prop("disabled", true).prepend('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>');
+            });
+        });
+    </script>
+}

@@ -1,53 +1,136 @@
 ﻿@model StThomasMission.Web.Areas.Admin.Models.UserViewModel
+
 @{
     ViewData["Title"] = "Create User";
 }
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="mb-0">Create User</h3>
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0"><i class="fas fa-user-plus me-2"></i>Create User</h3>
+        </div>
+        <div class="card-body">
+            <form asp-action="Create" asp-area="Admin" method="post" id="createUserForm">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="row">
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="Email" class="form-label fw-bold"></label>
+                        <input asp-for="Email" class="form-control" placeholder="Enter email" required />
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="FullName" class="form-label fw-bold"></label>
+                        <input asp-for="FullName" class="form-control" placeholder="Enter full name" required />
+                        <span asp-validation-for="FullName" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="WardId" class="form-label fw-bold"></label>
+                        <input asp-for="WardId" type="number" class="form-control" placeholder="Enter ward ID" min="0" />
+                        <span asp-validation-for="WardId" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="Password" class="form-label fw-bold"></label>
+                        <input asp-for="Password" type="password" class="form-control" placeholder="Enter password" required />
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="Role" class="form-label fw-bold"></label>
+                        <input asp-for="Role" class="form-control" placeholder="e.g., Admin, Teacher" required />
+                        <span asp-validation-for="Role" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end mt-4">
+                    <a asp-action="Index" asp-area="Admin" class="btn btn-secondary me-2"><i class="fas fa-times me-2"></i>Cancel</a>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Create</button>
+                </div>
+            </form>
+        </div>
     </div>
-    <div class="card-body">
-        <form asp-action="Create" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+</div>
 
-            <div class="mb-3">
-                <label asp-for="Email" class="form-label"></label>
-                <input asp-for="Email" class="form-control" />
-                <span asp-validation-for="Email" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="FullName" class="form-label"></label>
-                <input asp-for="FullName" class="form-control" />
-                <span asp-validation-for="FullName" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="WardId" class="form-label"></label>
-                <input asp-for="WardId" type="number" class="form-control" />
-                <span asp-validation-for="WardId" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="Password" class="form-label"></label>
-                <input asp-for="Password" type="password" class="form-control" />
-                <span asp-validation-for="Password" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="Role" class="form-label"></label>
-                <input asp-for="Role" class="form-control" placeholder="e.g., Admin, Teacher" />
-                <span asp-validation-for="Role" class="text-danger"></span>
-            </div>
-
-            <button type="submit" class="btn btn-modern">Create</button>
-            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
-        </form>
+<!-- Toast Notification Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="createUserToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">User Creation</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body"></div>
     </div>
 </div>
 
 @section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Initialize jQuery Validate
+            $("#createUserForm").validate({
+                rules: {
+                    Email: {
+                        required: true,
+                        email: true,
+                        maxlength: 256
+                    },
+                    FullName: {
+                        required: true,
+                        maxlength: 100
+                    },
+                    WardId: {
+                        number: true,
+                        min: 0
+                    },
+                    Password: {
+                        required: true,
+                        minlength: 6
+                    },
+                    Role: {
+                        required: true,
+                        maxlength: 50
+                    }
+                },
+                messages: {
+                    Email: {
+                        required: "Please enter an email address.",
+                        email: "Please enter a valid email address.",
+                        maxlength: "Email cannot exceed 256 characters."
+                    },
+                    FullName: {
+                        required: "Please enter the full name.",
+                        maxlength: "Full name cannot exceed 100 characters."
+                    },
+                    WardId: {
+                        number: "Please enter a valid number.",
+                        min: "Ward ID cannot be negative."
+                    },
+                    Password: {
+                        required: "Please enter a password.",
+                        minlength: "Password must be at least 6 characters long."
+                    },
+                    Role: {
+                        required: "Please enter a role.",
+                        maxlength: "Role cannot exceed 50 characters."
+                    }
+                },
+                errorElement: "div",
+                errorClass: "text-danger",
+                highlight: function (element) {
+                    $(element).addClass("is-invalid");
+                },
+                unhighlight: function (element) {
+                    $(element).removeClass("is-invalid");
+                }
+            });
+
+            // Loading spinner for form submission
+            $("#createUserForm").on("submit", function () {
+                var $submitButton = $(this).find('button[type="submit"]');
+                if ($(this).valid()) {
+                    $submitButton.prop("disabled", true).prepend('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>');
+                }
+            });
+        });
+    </script>
 }

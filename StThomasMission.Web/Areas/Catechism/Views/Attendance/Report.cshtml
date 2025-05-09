@@ -1,87 +1,159 @@
 ﻿@using StThomasMission.Core.Enums
 @model StThomasMission.Web.Models.PaginatedList<StThomasMission.Core.Entities.Student>
+
 @{
     ViewData["Title"] = "Attendance Summary Report";
 }
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="mb-0">Attendance Summary Report</h3>
-    </div>
-    <div class="card-body">
-        <form asp-action="Report" method="get" class="mb-4">
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label for="grade" class="form-label">Grade</label>
-                        <input type="text" name="grade" class="form-control" value="@ViewData["Grade"]" placeholder="e.g., Year 1" required />
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Attendance Summary Report</h3>
+        </div>
+        <div class="card-body">
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <form asp-action="Report" asp-area="Catechism" method="get" class="mb-4" id="reportForm">
+                <div class="row g-3">
+                    <div class="col-12 col-md-4">
+                        <label for="grade" class="form-label fw-bold">Grade</label>
+                        <input type="text" name="grade" id="grade" class="form-control" value="@ViewData["Grade"]" placeholder="e.g., Year 1" required />
+                        <div class="invalid-feedback">Please enter a grade.</div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label for="academicYear" class="form-label fw-bold">Academic Year</label>
+                        <input type="number" name="academicYear" id="academicYear" class="form-control" value="@ViewData["Year"]" min="2000" max="@DateTime.Now.Year" required />
+                        <div class="invalid-feedback">Please enter a valid academic year.</div>
+                    </div>
+                    <div class="col-12 col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-chart-bar me-2"></i>Generate Report</button>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label for="academicYear" class="form-label">Academic Year</label>
-                        <input type="number" name="academicYear" class="form-control" value="@ViewData["Year"]" required />
+            </form>
+
+            @if (Model.Count == 0)
+            {
+                <div class="alert alert-info text-center" role="alert">
+                    No students found for this report.
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Student</th>
+                                <th>Present Days</th>
+                                <th>Absent Days</th>
+                                <th>Total Days</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var student in Model)
+                            {
+                                var presentDays = student.Attendances?.Count(a => a.Status == AttendanceStatus.Present) ?? 0;
+                                var absentDays = student.Attendances?.Count(a => a.Status == AttendanceStatus.Absent) ?? 0;
+                                var totalDays = presentDays + absentDays;
+                                <tr>
+                                    <td>
+                                        @(student.FamilyMember != null
+                                            ? $"{student.FamilyMember.FirstName} {student.FamilyMember.LastName}"
+                                            : "N/A")
+                                    </td>
+                                    <td>@presentDays</td>
+                                    <td>@absentDays</td>
+                                    <td>@totalDays</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        @if (Model.HasPreviousPage)
+                        {
+                            <li class="page-item">
+                                <a class="page-link" href="@Url.Action("Report", new { pageNumber = Model.PageIndex - 1, pageSize = Model.PageSize, grade = ViewData["Grade"], academicYear = ViewData["Year"] })"><i class="fas fa-chevron-left"></i> Previous</a>
+                            </li>
+                        }
+                        @for (int i = Math.Max(1, Model.PageIndex - 2); i <= Math.Min(Model.TotalPages, Model.PageIndex + 2); i++)
+                        {
+                            <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                                <a class="page-link" href="@Url.Action("Report", new { pageNumber = i, pageSize = Model.PageSize, grade = ViewData["Grade"], academicYear = ViewData["Year"] })">@i</a>
+                            </li>
+                        }
+                        @if (Model.HasNextPage)
+                        {
+                            <li class="page-item">
+                                <a class="page-link" href="@Url.Action("Report", new { pageNumber = Model.PageIndex + 1, pageSize = Model.PageSize, grade = ViewData["Grade"], academicYear = ViewData["Year"] })">Next <i class="fas fa-chevron-right"></i></a>
+                            </li>
+                        }
+                    </ul>
+                    <div class="text-center mt-2">
+                        <small>Showing @(Model.PageIndex * Model.PageSize - Model.PageSize + 1)-@(Math.Min(Model.PageIndex * Model.PageSize, Model.TotalItems)) of @Model.TotalItems students</small>
                     </div>
-                </div>
-                <div class="col-md-4 d-flex align-items-end">
-                    <button type="submit" class="btn btn-modern w-100">Generate Report</button>
-                </div>
-            </div>
-        </form>
-
-        @if (Model.Count == 0)
-        {
-            <p>No students found for this report.</p>
-        }
-        else
-        {
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Student</th>
-                        <th>Present Days</th>
-                        <th>Absent Days</th>
-                        <th>Total Days</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var student in Model)
-                    {
-                        var presentDays = student.Attendances.Count(a => a.Status == AttendanceStatus.Present);
-                        var absentDays = student.Attendances.Count(a => a.Status == AttendanceStatus.Absent);
-                        var totalDays = presentDays + absentDays;
-                        <tr>
-                            <td>@(student.FamilyMember?.FirstName ?? "N/A") @(student.FamilyMember?.LastName ?? "N/A")</td>
-                            <td>@presentDays</td>
-                            <td>@absentDays</td>
-                            <td>@totalDays</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-
-            <nav aria-label="Page navigation">
-                <ul class="pagination">
-                    @if (Model.HasPreviousPage)
-                    {
-                        <li class="page-item">
-                            <a class="page-link" href="@Url.Action("Report", new { pageNumber = Model.PageIndex - 1, pageSize = Model.PageSize, grade = ViewData["Grade"], academicYear = ViewData["Year"] })">Previous</a>
-                        </li>
-                    }
-                    @for (int i = 1; i <= Model.TotalPages; i++)
-                    {
-                        <li class="page-item @(i == Model.PageIndex ? "active" : "")">
-                            <a class="page-link" href="@Url.Action("Report", new { pageNumber = i, pageSize = Model.PageSize, grade = ViewData["Grade"], academicYear = ViewData["Year"] })">@i</a>
-                        </li>
-                    }
-                    @if (Model.HasNextPage)
-                    {
-                        <li class="page-item">
-                            <a class="page-link" href="@Url.Action("Report", new { pageNumber = Model.PageIndex + 1, pageSize = Model.PageSize, grade = ViewData["Grade"], academicYear = ViewData["Year"] })">Next</a>
-                        </li>
-                    }
-                </ul>
-            </nav>
-        }
+                </nav>
+            }
+        </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Initialize jQuery Validate for report form
+            $("#reportForm").validate({
+                rules: {
+                    grade: {
+                        required: true,
+                        maxlength: 50
+                    },
+                    academicYear: {
+                        required: true,
+                        number: true,
+                        min: 2000,
+                        max: @DateTime.Now.Year
+                    }
+                },
+                messages: {
+                    grade: {
+                        required: "Please enter a grade.",
+                        maxlength: "Grade cannot exceed 50 characters."
+                    },
+                    academicYear: {
+                        required: "Please enter an academic year.",
+                        number: "Please enter a valid number.",
+                        min: "Academic year must be at least 2000.",
+                        max: "Academic year cannot exceed the current year."
+                    }
+                },
+                errorElement: "div",
+                errorClass: "invalid-feedback",
+                highlight: function (element) {
+                    $(element).addClass("is-invalid");
+                },
+                unhighlight: function (element) {
+                    $(element).removeClass("is-invalid");
+                }
+            });
+
+            // Loading spinner for form submission
+            $("#reportForm").on("submit", function () {
+                var $submitButton = $(this).find('button[type="submit"]');
+                if ($(this).valid()) {
+                    $submitButton.prop("disabled", true).prepend('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>');
+                }
+            });
+        });
+    </script>
+}

@@ -1,63 +1,78 @@
-﻿@model StThomasMission.Web.Areas.Families.Models.FamilyViewModel
+﻿@using StThomasMission.Core.Enums
+@model StThomasMission.Web.Areas.Families.Models.FamilyViewModel
+
 @{
     ViewData["Title"] = "Edit Family";
 }
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="mb-0">Edit Family: @Model.FamilyName</h3>
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-warning text-white">
+            <h3 class="mb-0"><i class="fas fa-users me-2"></i>Edit Family: @Model.FamilyName</h3>
+        </div>
+        <div class="card-body">
+            <form asp-action="Edit" asp-area="Families" method="post" id="editFamilyForm">
+                <input type="hidden" asp-for="Id" />
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="row">
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="FamilyName" class="form-label fw-bold"></label>
+                        <input asp-for="FamilyName" class="form-control" placeholder="Enter family name" required />
+                        <span asp-validation-for="FamilyName" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="Ward" class="form-label fw-bold">Ward ID</label>
+                        <input asp-for="Ward" type="number" class="form-control" placeholder="Enter ward ID" min="1" required />
+                        <span asp-validation-for="Ward" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <div class="form-check">
+                            <input asp-for="IsRegistered" type="checkbox" class="form-check-input" id="isRegistered" />
+                            <label class="form-check-label" for="isRegistered">Is Registered?</label>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3" id="churchRegSection" style="@(Model.IsRegistered ? "" : "display:none;")">
+                        <label asp-for="ChurchRegistrationNumber" class="form-label fw-bold"></label>
+                        <input asp-for="ChurchRegistrationNumber" class="form-control" placeholder="e.g., 108021234" />
+                        <span asp-validation-for="ChurchRegistrationNumber" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3" id="tempIdSection" style="@(Model.IsRegistered ? "display:none;" : "")">
+                        <label asp-for="TemporaryId" class="form-label fw-bold"></label>
+                        <input asp-for="TemporaryId" class="form-control" placeholder="e.g., TMP-1234" />
+                        <span asp-validation-for="TemporaryId" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="Status" class="form-label fw-bold"></label>
+                        <select asp-for="Status" class="form-select" asp-items="Html.GetEnumSelectList<StThomasMission.Core.Enums.FamilyStatus>()" required>
+                            <option value="">Select Status</option>
+                        </select>
+                        <span asp-validation-for="Status" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3" id="migratedToSection" style="@(Model.Status == "Migrated" ? "" : "display:none;")">
+                        <label asp-for="MigratedTo" class="form-label fw-bold"></label>
+                        <input asp-for="MigratedTo" class="form-control" placeholder="e.g., New Parish" />
+                        <span asp-validation-for="MigratedTo" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end mt-4">
+                    <a asp-action="Index" asp-area="Families" class="btn btn-secondary me-2"><i class="fas fa-times me-2"></i>Cancel</a>
+                    <button type="submit" class="btn btn-warning"><i class="fas fa-save me-2"></i>Save</button>
+                </div>
+            </form>
+        </div>
     </div>
-    <div class="card-body">
-        <form asp-action="Edit" method="post">
-            <input type="hidden" asp-for="Id" />
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+</div>
 
-            <div class="mb-3">
-                <label asp-for="FamilyName" class="form-label"></label>
-                <input asp-for="FamilyName" class="form-control" />
-                <span asp-validation-for="FamilyName" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="Ward" class="form-label"></label>
-                <input asp-for="Ward" type="number" class="form-control" />
-                <span asp-validation-for="Ward" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3 form-check">
-                <input asp-for="IsRegistered" type="checkbox" class="form-check-input" id="isRegistered" />
-                <label class="form-check-label" for="isRegistered">Is Registered?</label>
-            </div>
-
-            <div class="mb-3" id="churchRegSection" style="@(Model.IsRegistered ? "" : "display:none;")">
-                <label asp-for="ChurchRegistrationNumber" class="form-label"></label>
-                <input asp-for="ChurchRegistrationNumber" class="form-control" placeholder="e.g., 108021234" />
-                <span asp-validation-for="ChurchRegistrationNumber" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3" id="tempIdSection" style="@(Model.IsRegistered ? "display:none;" : "")">
-                <label asp-for="TemporaryId" class="form-label"></label>
-                <input asp-for="TemporaryId" class="form-control" placeholder="e.g., TMP-1234" />
-                <span asp-validation-for="TemporaryId" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="Status" class="form-label"></label>
-                <select asp-for="Status" class="form-select" asp-items="Html.GetEnumSelectList<StThomasMission.Core.Enums.FamilyStatus>()">
-                    <option value="">Select Status</option>
-                </select>
-                <span asp-validation-for="Status" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3" id="migratedToSection" style="@(Model.Status == "Migrated" ? "" : "display:none;")">
-                <label asp-for="MigratedTo" class="form-label"></label>
-                <input asp-for="MigratedTo" class="form-control" placeholder="e.g., New Parish" />
-                <span asp-validation-for="MigratedTo" class="text-danger"></span>
-            </div>
-
-            <button type="submit" class="btn btn-modern">Save</button>
-            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
-        </form>
+<!-- Toast Notification Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="editFamilyToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">Family Update Status</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body"></div>
     </div>
 </div>
 
@@ -66,21 +81,101 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
     <script>
         $(document).ready(function () {
+            // Toggle ChurchRegistrationNumber and TemporaryId sections
             $("#isRegistered").change(function () {
                 if (this.checked) {
                     $("#churchRegSection").show();
                     $("#tempIdSection").hide();
+                    $("#ChurchRegistrationNumber").attr("required", "required");
+                    $("#TemporaryId").removeAttr("required");
                 } else {
                     $("#churchRegSection").hide();
                     $("#tempIdSection").show();
+                    $("#ChurchRegistrationNumber").removeAttr("required");
+                    $("#TemporaryId").attr("required", "required");
                 }
             });
 
+            // Toggle MigratedTo section
             $("#Status").change(function () {
                 if ($(this).val() === "Migrated") {
                     $("#migratedToSection").show();
+                    $("#MigratedTo").attr("required", "required");
                 } else {
                     $("#migratedToSection").hide();
+                    $("#MigratedTo").removeAttr("required");
+                }
+            });
+
+            // Initialize jQuery Validate
+            $("#editFamilyForm").validate({
+                rules: {
+                    FamilyName: {
+                        required: true,
+                        maxlength: 100
+                    },
+                    Ward: {
+                        required: true,
+                        number: true,
+                        min: 1
+                    },
+                    ChurchRegistrationNumber: {
+                        required: function () { return $("#isRegistered").is(":checked"); },
+                        maxlength: 20
+                    },
+                    TemporaryId: {
+                        required: function () { return !$("#isRegistered").is(":checked"); },
+                        maxlength: 20
+                    },
+                    Status: {
+                        required: true
+                    },
+                    MigratedTo: {
+                        required: function () { return $("#Status").val() === "Migrated"; },
+                        maxlength: 100
+                    }
+                },
+                messages: {
+                    FamilyName: {
+                        required: "Please enter a family name.",
+                        maxlength: "Family name cannot exceed 100 characters."
+                    },
+                    Ward: {
+                        required: "Please enter a ward ID.",
+                        number: "Please enter a valid number.",
+                        min: "Ward ID must be a positive number."
+                    },
+                    ChurchRegistrationNumber: {
+                        required: "Please enter a church registration number.",
+                        maxlength: "Church registration number cannot exceed 20 characters."
+                    },
+                    TemporaryId: {
+                        required: "Please enter a temporary ID.",
+                        maxlength: "Temporary ID cannot exceed 20 characters."
+                    },
+                    Status: {
+                        required: "Please select a status."
+                    },
+                    MigratedTo: {
+                        required: "Please enter the migration destination.",
+                        maxlength: "Migration destination cannot exceed 100 characters."
+                    }
+                },
+                errorElement: "div",
+                errorClass: "text-danger",
+                highlight: function (element) {
+                    $(element).addClass("is-invalid");
+                },
+                unhighlight: function (element) {
+                    $(element).removeClass("is-invalid");
+                }
+            });
+
+            // Loading spinner for form submission
+            $("#editFamilyForm").on("submit", function () {
+                var $submitButton = $(this).find('button[type="submit"]');
+                if ($(this).valid()) {
+                    $submitButton.prop("disabled", true).prepend('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>');
                 }
             });
         });

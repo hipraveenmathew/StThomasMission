@@ -1,81 +1,124 @@
 ﻿@model StThomasMission.Web.Areas.Catechism.Models.StudentDetailsViewModel
+
 @{
     ViewData["Title"] = "Student Details";
 }
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="mb-0">Student Details: @Model.FirstName @Model.LastName</h3>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
-                <p><strong>Name:</strong> @Model.FirstName @Model.LastName</p>
-                <p><strong>Grade:</strong> @Model.Grade</p>
-                <p><strong>Group:</strong> @Model.GroupId</p>
-                <p><strong>Student Organisation:</strong> @Model.StudentOrganisation</p>
-                <p><strong>Status:</strong> @Model.Status</p>
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0"><i class="fas fa-user-graduate me-2"></i>Student Details: @Model.FirstName @Model.LastName</h3>
+        </div>
+        <div class="card-body">
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <div class="row">
+                <div class="col-12 col-md-6 mb-3">
+                    <label class="form-label fw-bold">Name</label>
+                    <p class="form-control-plaintext">@Model.FirstName @Model.LastName</p>
+                </div>
+                <div class="col-12 col-md-6 mb-3">
+                    <label class="form-label fw-bold">Grade</label>
+                    <p class="form-control-plaintext">@Model.Grade</p>
+                </div>
+                <div class="col-12 col-md-6 mb-3">
+                    <label class="form-label fw-bold">Group ID</label>
+                    <p class="form-control-plaintext">@(Model.GroupId != 0 ? Model.GroupId.ToString() : "N/A")</p>
+                </div>
+                <div class="col-12 col-md-6 mb-3">
+                    <label class="form-label fw-bold">Student Organisation</label>
+                    <p class="form-control-plaintext">@(string.IsNullOrEmpty(Model.StudentOrganisation) ? "N/A" : Model.StudentOrganisation)</p>
+                </div>
+                <div class="col-12 col-md-6 mb-3">
+                    <label class="form-label fw-bold">Status</label>
+                    <p class="form-control-plaintext">@Model.Status</p>
+                </div>
+            </div>
+
+            <h5 class="mt-4">Attendance Records</h5>
+            @if (Model.Attendances.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var attendance in Model.Attendances)
+                            {
+                                <tr>
+                                    <td>@attendance.Date.ToString("yyyy-MM-dd")</td>
+                                    <td>
+                                        <span class="badge @(attendance.Status == StThomasMission.Core.Enums.AttendanceStatus.Present ? "bg-success" : "bg-danger")">
+                                            @attendance.Status
+                                        </span>
+                                    </td>
+                                    <td>@(string.IsNullOrEmpty(attendance.Description) ? "N/A" : attendance.Description)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info text-center" role="alert">
+                    No attendance records found.
+                </div>
+            }
+
+            <h5 class="mt-4">Assessments</h5>
+            @if (Model.Assessments.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Marks</th>
+                                <th>Total Marks</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var assessment in Model.Assessments)
+                            {
+                                <tr>
+                                    <td>@assessment.Name</td>
+                                    <td>@assessment.Marks</td>
+                                    <td>@assessment.TotalMarks</td>
+                                    <td>@assessment.Type</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info text-center" role="alert">
+                    No assessments found.
+                </div>
+            }
+
+            <div class="d-flex justify-content-end mt-4">
+                <a asp-action="Index" asp-area="Catechism" class="btn btn-secondary"><i class="fas fa-arrow-left me-2"></i>Back to Students</a>
             </div>
         </div>
-
-        <h5 class="mt-4">Attendance Records</h5>
-        @if (Model.Attendances.Any())
-        {
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Status</th>
-                        <th>Description</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var attendance in Model.Attendances)
-                    {
-                        <tr>
-                            <td>@attendance.Date.ToString("yyyy-MM-dd")</td>
-                            <td>@attendance.Status</td>
-                            <td>@attendance.Description</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        }
-        else
-        {
-            <p>No attendance records found.</p>
-        }
-
-        <h5 class="mt-4">Assessments</h5>
-        @if (Model.Assessments.Any())
-        {
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Marks</th>
-                        <th>Total Marks</th>
-                        <th>Type</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var assessment in Model.Assessments)
-                    {
-                        <tr>
-                            <td>@assessment.Name</td>
-                            <td>@assessment.Marks</td>
-                            <td>@assessment.TotalMarks</td>
-                            <td>@assessment.Type </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        }
-        else
-        {
-            <p>No assessments found.</p>
-        }
-
-        <a asp-action="Index" class="btn btn-secondary">Back to Students</a>
     </div>
 </div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+}

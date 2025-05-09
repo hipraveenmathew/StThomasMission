@@ -1,59 +1,135 @@
 ﻿@model StThomasMission.Web.Areas.Catechism.Models.SendGroupUpdateViewModel
+
 @{
     ViewData["Title"] = "Send Group Update";
 }
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="mb-0">Send Group Update</h3>
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0"><i class="fas fa-users me-2"></i>Send Group Update</h3>
+        </div>
+        <div class="card-body">
+            <form asp-action="SendGroupUpdate" asp-area="Catechism" method="post" id="sendGroupUpdateForm">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="row">
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="GroupId" class="form-label fw-bold">Group ID</label>
+                        <input asp-for="GroupId" type="number" class="form-control" placeholder="Enter group ID" min="1" required />
+                        <span asp-validation-for="GroupId" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label asp-for="UpdateMessage" class="form-label fw-bold">Update Message</label>
+                        <textarea asp-for="UpdateMessage" class="form-control" rows="5" placeholder="Enter update message" required></textarea>
+                        <span asp-validation-for="UpdateMessage" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <label class="form-label fw-bold">Communication Methods</label>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="sms" name="CommunicationMethods" value="SMS" @(Model.CommunicationMethods.Contains("SMS") ? "checked" : "") />
+                            <label class="form-check-label" for="sms">SMS</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="email" name="CommunicationMethods" value="Email" @(Model.CommunicationMethods.Contains("Email") ? "checked" : "") />
+                            <label class="form-check-label" for="email">Email</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="whatsapp" name="CommunicationMethods" value="WhatsApp" @(Model.CommunicationMethods.Contains("WhatsApp") ? "checked" : "") />
+                            <label class="form-check-label" for="whatsapp">WhatsApp</label>
+                        </div>
+                        <div id="communicationMethodsError" class="text-danger" style="display: none;">Please select at least one communication method.</div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end mt-4">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane me-2"></i>Send Update</button>
+                </div>
+            </form>
+        </div>
     </div>
-    <div class="card-body">
-        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
-        {
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                @Model.SuccessMessage
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        }
+</div>
 
-        <form asp-action="SendGroupUpdate" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-            <div class="mb-3">
-                <label asp-for="GroupId" class="form-label"></label>
-                <input asp-for="GroupId" type="number" class="form-control" placeholder="Enter group ID" />
-                <span asp-validation-for="GroupId" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="UpdateMessage" class="form-label"></label>
-                <textarea asp-for="UpdateMessage" class="form-control" rows="5" placeholder="Enter update message"></textarea>
-                <span asp-validation-for="UpdateMessage" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">Communication Methods</label>
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="sms" name="CommunicationMethods" value="SMS" @(Model.CommunicationMethods.Contains("SMS") ? "checked" : "") />
-                    <label class="form-check-label" for="sms">SMS</label>
-                </div>
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="email" name="CommunicationMethods" value="Email" @(Model.CommunicationMethods.Contains("Email") ? "checked" : "") />
-                    <label class="form-check-label" for="email">Email</label>
-                </div>
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="whatsapp" name="CommunicationMethods" value="WhatsApp" @(Model.CommunicationMethods.Contains("WhatsApp") ? "checked" : "") />
-                    <label class="form-check-label" for="whatsapp">WhatsApp</label>
-                </div>
-                <span asp-validation-for="CommunicationMethods" class="text-danger"></span>
-            </div>
-
-            <button type="submit" class="btn btn-modern">Send Update</button>
-        </form>
+<!-- Toast Notification Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="groupUpdateToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">Group Update Status</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body"></div>
     </div>
 </div>
 
 @section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Initialize jQuery Validate
+            $("#sendGroupUpdateForm").validate({
+                rules: {
+                    GroupId: {
+                        required: true,
+                        number: true,
+                        min: 1
+                    },
+                    UpdateMessage: {
+                        required: true,
+                        maxlength: 2000
+                    },
+                    "CommunicationMethods": {
+                        required: true
+                    }
+                },
+                messages: {
+                    GroupId: {
+                        required: "Please enter a group ID.",
+                        number: "Please enter a valid number.",
+                        min: "Group ID must be a positive number."
+                    },
+                    UpdateMessage: {
+                        required: "Please enter an update message.",
+                        maxlength: "Update message cannot exceed 2000 characters."
+                    },
+                    "CommunicationMethods": {
+                        required: "Please select at least one communication method."
+                    }
+                },
+                errorElement: "div",
+                errorClass: "text-danger",
+                highlight: function (element) {
+                    $(element).addClass("is-invalid");
+                },
+                unhighlight: function (element) {
+                    $(element).removeClass("is-invalid");
+                },
+                errorPlacement: function (error, element) {
+                    if (element.attr("name") === "CommunicationMethods") {
+                        $("#communicationMethodsError").text(error.text()).show();
+                    } else {
+                        error.insertAfter(element);
+                    }
+                }
+            });
+
+            // Custom validation method for checkboxes
+            $.validator.addMethod("checkboxRequired", function (value, element) {
+                return $("input[name='CommunicationMethods']:checked").length > 0;
+            }, "Please select at least one communication method.");
+
+            // Apply custom validation to CommunicationMethods
+            $("input[name='CommunicationMethods']").rules("add", {
+                checkboxRequired: true
+            });
+
+            // Loading spinner for form submission
+            $("#sendGroupUpdateForm").on("submit", function () {
+                var $submitButton = $(this).find('button[type="submit"]');
+                if ($(this).valid()) {
+                    $submitButton.prop("disabled", true).prepend('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>');
+                }
+            });
+        });
+    </script>
 }

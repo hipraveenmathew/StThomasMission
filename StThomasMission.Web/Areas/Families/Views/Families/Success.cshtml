@@ -1,20 +1,53 @@
 ﻿@model StThomasMission.Web.Areas.Families.Models.FamilyViewModel
+
 @{
     ViewData["Title"] = "Registration Successful";
 }
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="mb-0">Registration Successful</h3>
-    </div>
-    <div class="card-body">
-        <div class="alert alert-success">
-            <h4>Family Registered Successfully!</h4>
-            <p>Family Name: @Model.FamilyName</p>
-            <p>Ward: @Model.Ward</p>
-            <p>Registration: @(Model.IsRegistered ? Model.ChurchRegistrationNumber : Model.TemporaryId)</p>
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+            <h3 class="mb-0"><i class="fas fa-check-circle me-2"></i>Registration Successful</h3>
         </div>
-        <a asp-action="AddMember" asp-route-familyId="@Model.Id" class="btn btn-modern">Add Family Member</a>
-        <a asp-action="Index" class="btn btn-secondary">Back to Families</a>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-12">
+                    <p><strong>Family Name:</strong> @Model.FamilyName</p>
+                    <p><strong>Ward:</strong> @Model.Ward</p>
+                    <p><strong>Registration:</strong> @(Model.IsRegistered ? Model.ChurchRegistrationNumber ?? "N/A" : Model.TemporaryID ?? "N/A")</p>
+                </div>
+            </div>
+            <div class="d-flex justify-content-end mt-4 gap-2">
+                <a asp-action="AddMember" asp-route-familyId="@Model.Id" asp-area="Families" class="btn btn-primary">
+                    <i class="fas fa-user-plus me-2"></i>Add Family Member
+                </a>
+                <a asp-action="Index" asp-area="Families" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Families
+                </a>
+            </div>
+        </div>
     </div>
 </div>
+
+<!-- Toast Notification Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="registrationSuccessToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-success text-white">
+            <strong class="me-auto">Registration Status</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">Family registered successfully!</div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Automatically show success toast on page load
+            var toast = new bootstrap.Toast(document.getElementById('registrationSuccessToast'));
+            toast.show();
+        });
+    </script>
+}
