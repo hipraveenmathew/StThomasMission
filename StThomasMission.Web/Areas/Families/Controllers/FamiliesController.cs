@@ -115,7 +115,7 @@ namespace StThomasMission.Web.Areas.Families.Controllers
                 IsRegistered = family.IsRegistered,
                 ChurchRegistrationNumber = family.ChurchRegistrationNumber,
                 TemporaryID = family.TemporaryID,
-                Status = family.Status.ToString(),
+                Status = family.Status,
                 MigratedTo = family.MigratedTo
             };
 
@@ -202,35 +202,39 @@ namespace StThomasMission.Web.Areas.Families.Controllers
                 return NotFound("Family not found.");
             }
 
-            var model = new ConvertToRegisteredViewModel
-            {
-                FamilyId = family.Id,
-                FamilyName = family.FamilyName
-            };
-
-            return View(model);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ConvertToRegistered(ConvertToRegisteredViewModel model)
-        {
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
-
             try
             {
-                await _familyService.ConvertTemporaryIdToChurchIdAsync(model.FamilyId, model.ChurchRegistrationNumber);
-                return RedirectToAction(nameof(Success), new { familyId = model.FamilyId });
+                await _familyService.ConvertTemporaryIdToChurchIdAsync(familyId);
+                return RedirectToAction(nameof(Success), new { familyId = familyId });
             }
             catch (Exception ex)
             {
                 ModelState.AddModelError(string.Empty, $"Failed to convert family: {ex.Message}");
-                return View(model);
+                return View();
             }
+            
         }
+
+        //[HttpPost]
+        //[ValidateAntiForgeryToken]
+        //public async Task<IActionResult> ConvertToRegistered(ConvertToRegisteredViewModel model)
+        //{
+        //    if (!ModelState.IsValid)
+        //    {
+        //        return View(model);
+        //    }
+
+        //    try
+        //    {
+        //        await _familyService.ConvertTemporaryIdToChurchIdAsync(model.FamilyId);
+        //        return RedirectToAction(nameof(Success), new { familyId = model.FamilyId });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        ModelState.AddModelError(string.Empty, $"Failed to convert family: {ex.Message}");
+        //        return View(model);
+        //    }
+        //}
 
         [HttpGet]
         public async Task<IActionResult> MarkAsMigrated(int id)
@@ -296,7 +300,7 @@ namespace StThomasMission.Web.Areas.Families.Controllers
                 IsRegistered = family.IsRegistered,
                 ChurchRegistrationNumber = family.ChurchRegistrationNumber,
                 TemporaryID = family.TemporaryID,
-                Status = family.Status.ToString(),
+                Status = family.Status,
                 MigratedTo = family.MigratedTo
             };
 
@@ -321,7 +325,7 @@ namespace StThomasMission.Web.Areas.Families.Controllers
                     model.IsRegistered,
                     model.ChurchRegistrationNumber,
                     model.TemporaryID,
-                    Enum.Parse<FamilyStatus>(model.Status), // Parse string to FamilyStatus
+                    model.Status, // Parse string to FamilyStatus
                     model.MigratedTo);
                 return RedirectToAction(nameof(Index));
             }
@@ -352,7 +356,7 @@ namespace StThomasMission.Web.Areas.Families.Controllers
                 IsRegistered = family.IsRegistered,
                 ChurchRegistrationNumber = family.ChurchRegistrationNumber,
                 TemporaryID = family.TemporaryID,
-                Status = family.Status.ToString(),
+                Status = family.Status,
                 MigratedTo = family.MigratedTo,
                 Members = members.Select(m => new FamilyMemberViewModel
                 {
@@ -373,11 +377,8 @@ namespace StThomasMission.Web.Areas.Families.Controllers
 
         private async Task<string> GenerateUniqueChurchRegistrationNumber()
         {
-            string number;
-            do
-            {
-                number = $"10802{new Random().Next(1000, 9999)}";
-            } while (await _familyService.GetByChurchRegistrationNumberAsync(number) != null);
+            
+            string number = await _familyService.NewChurchIdAsync();            
             return number;
         }
 

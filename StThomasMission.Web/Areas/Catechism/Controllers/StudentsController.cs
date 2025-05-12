@@ -38,6 +38,28 @@ namespace StThomasMission.Web.Areas.Catechism.Controllers
             {
                 var studentsQuery = _studentService.GetStudentsQueryable(s => true);
 
+                // Filter students by year for teachers
+                if (User.IsInRole("Teacher"))
+                {
+                    // Extract the teacher's year from their username (e.g., teacher1 -> Year 1)
+                    var username = User.Identity.Name; // e.g., teacher1@stthomasmission.com
+                    var teacherNumber = username.Replace("@stthomasmission.com", "").Replace("teacher", ""); // e.g., "1"
+                    if (int.TryParse(teacherNumber, out int year))
+                    {
+                        var teacherYear = $"Year {year}"; // e.g., "Year 1"
+                        studentsQuery = studentsQuery.Where(s => s.Grade == teacherYear);
+                    }
+                    else
+                    {
+                        // Fallback: If the year cannot be parsed, show no students
+                        TempData["Error"] = "Unable to determine your assigned year. Please contact the administrator.";
+                        return View(new PaginatedList<Student>(new List<Student>(), 0, pageNumber, pageSize));
+                    }
+                }
+                // HeadTeacher, ParishPriest, and Admin see all students
+                // No additional filtering needed
+
+                // Apply search filter
                 if (!string.IsNullOrEmpty(searchString))
                 {
                     var searchLower = searchString.ToLower();
@@ -46,6 +68,7 @@ namespace StThomasMission.Web.Areas.Catechism.Controllers
                         s.Grade.ToLower().Contains(searchLower));
                 }
 
+                // Apply sorting
                 studentsQuery = sortOrder switch
                 {
                     "name_desc" => studentsQuery.OrderByDescending(s => s.FamilyMember.FirstName),
@@ -54,6 +77,7 @@ namespace StThomasMission.Web.Areas.Catechism.Controllers
                     _ => studentsQuery.OrderBy(s => s.FamilyMember.FirstName),
                 };
 
+                // Apply pagination
                 int totalItems = await studentsQuery.CountAsync();
                 var pagedStudents = await studentsQuery
                     .Skip((pageNumber - 1) * pageSize)
@@ -70,7 +94,6 @@ namespace StThomasMission.Web.Areas.Catechism.Controllers
                 return View(new PaginatedList<Student>(new List<Student>(), 0, pageNumber, pageSize));
             }
         }
-
         [HttpGet]
         public async Task<IActionResult> MarkAttendance(string grade)
         {

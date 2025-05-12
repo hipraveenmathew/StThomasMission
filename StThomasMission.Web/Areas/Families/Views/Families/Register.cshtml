@@ -31,14 +31,13 @@
                         </div>
                     </div>
                     <div class="col-12 col-md-6 mb-3" id="churchRegSection" style="@(Model.IsRegistered ? "" : "display:none;")">
-                        <label asp-for="ChurchRegistrationNumber" class="form-label fw-bold">Church Registration Number (Optional)</label>
+                        <label asp-for="ChurchRegistrationNumber" class="form-label fw-bold">Church Registration Number</label>
                         <input asp-for="ChurchRegistrationNumber" class="form-control" placeholder="e.g., 108021234" />
                         <span asp-validation-for="ChurchRegistrationNumber" class="text-danger"></span>
                     </div>
                     <div class="col-12 col-md-6 mb-3" id="tempIdSection" style="@(Model.IsRegistered ? "display:none;" : "")">
-                        <label asp-for="TemporaryId" class="form-label fw-bold">Temporary ID (Optional)</label>
-                        <input asp-for="TemporaryId" class="form-control" placeholder="e.g., TMP-1234" />
-                        <span asp-validation-for="TemporaryId" class="text-danger"></span>
+                        <label asp-for="TemporaryID" class="form-label fw-bold">Temporary ID (Optional)</label>
+                        <input asp-for="TemporaryID" class="form-control" placeholder="e.g., TMP-1234" />
                     </div>
                 </div>
 

@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using StThomasMission.Core.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace StThomasMission.Web.Areas.Families.Models
 {
@@ -14,19 +15,19 @@ namespace StThomasMission.Web.Areas.Families.Models
         [Range(1, int.MaxValue, ErrorMessage = "Please select a valid ward.")]
         public string Ward { get; set; } = string.Empty;
 
-        public string TemporaryID { get; set; } = string.Empty;
+       
 
         public bool IsRegistered { get; set; }
 
-        [StringLength(8, ErrorMessage = "Church Registration Number must be 8 characters long.", MinimumLength = 8)]
+        [StringLength(9, ErrorMessage = "Church Registration Number must be 9 characters long.", MinimumLength = 9)]
         [RegularExpression(@"^10802\d{4}$", ErrorMessage = "Church Registration Number must be in format '10802XXXX'.")]
         public string? ChurchRegistrationNumber { get; set; }
 
         [StringLength(8, ErrorMessage = "Temporary ID must be 8 characters long.", MinimumLength = 8)]
         [RegularExpression(@"^TMP-\d{4}$", ErrorMessage = "Temporary ID must be in format 'TMP-XXXX'.")]
-        public string? TemporaryId { get; set; }
+        public string? TemporaryID { get; set; }
 
-        public string Status { get; set; } = string.Empty;
+        public FamilyStatus Status { get; set; } 
 
         [StringLength(150, ErrorMessage = "Migrated to location cannot exceed 150 characters.")]
         public string? MigratedTo { get; set; }

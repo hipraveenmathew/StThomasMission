@@ -81,6 +81,8 @@ builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IExportService, ExportService>();
 builder.Services.AddScoped<IMigrationLogService, MigrationLogService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IGroupActivityService, GroupActivityService>();
+
 
 var app = builder.Build();
 
@@ -95,6 +97,13 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+
+app.Use(async (context, next) =>
+{
+    Console.WriteLine($"Path: {context.Request.Path}, User: {context.User.Identity?.Name}");
+    await next();
+});
+
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -124,11 +133,7 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.MapRazorPages();
-app.Use(async (context, next) =>
-{
-    Console.WriteLine($"Path: {context.Request.Path}, User: {context.User.Identity?.Name}");
-    await next();
-});
+
 
 
 app.Run();

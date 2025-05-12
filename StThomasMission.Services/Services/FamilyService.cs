@@ -184,18 +184,40 @@ namespace StThomasMission.Services
             });
         }
 
-        public async Task ConvertTemporaryIdToChurchIdAsync(int familyId, string churchRegistrationNumber)
+        public async Task<string> NewChurchIdAsync()
+        {
+            // Get all families where ChurchRegistrationNumber is not null
+            var families = await _unitOfWork.Families.GetAllQueryable()
+                .Where(f => f.ChurchRegistrationNumber != null)
+                .Select(f => f.ChurchRegistrationNumber)
+                .ToListAsync();
+
+            // If no registered families exist, start with a default ChurchRegistrationNumber
+            if (!families.Any())
+            {
+                return "108020001"; // Starting point for new registrations
+            }
+
+            // Parse the ChurchRegistrationNumber values as integers and find the maximum
+            var maxChurchId = families
+                .Select(num => int.Parse(num))
+                .Max();
+
+            // Increment the maximum value by 1 and format it back to a string
+            var newChurchId = (maxChurchId + 1).ToString(); // Ensures at least 8 digits with leading zeros if needed
+
+            return newChurchId;
+        }
+        public async Task ConvertTemporaryIdToChurchIdAsync(int familyId)
         {
             var family = await GetFamilyByIdAsync(familyId);
             if (family.IsRegistered)
                 throw new InvalidOperationException("Family is already registered.");
 
-            if (string.IsNullOrEmpty(churchRegistrationNumber))
-                throw new ArgumentException("Church Registration Number is required.", nameof(churchRegistrationNumber));
-
-            var existing = await _unitOfWork.Families.GetByChurchRegistrationNumberAsync(churchRegistrationNumber);
-            if (existing != null && existing.Id != familyId)
-                throw new InvalidOperationException($"Church Registration Number {churchRegistrationNumber} already exists.");
+            var churchRegistrationNumber = await NewChurchIdAsync();
+            //var existing = await _unitOfWork.Families.GetByChurchRegistrationNumberAsync(churchRegistrationNumber);
+            //if (existing != null && existing.Id != familyId)
+            //    throw new InvalidOperationException($"Church Registration Number {churchRegistrationNumber} already exists.");
 
             family.IsRegistered = true;
             family.ChurchRegistrationNumber = churchRegistrationNumber;

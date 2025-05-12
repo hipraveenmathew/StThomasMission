@@ -38,18 +38,17 @@
                         <span asp-validation-for="ChurchRegistrationNumber" class="text-danger"></span>
                     </div>
                     <div class="col-12 col-md-6 mb-3" id="tempIdSection" style="@(Model.IsRegistered ? "display:none;" : "")">
-                        <label asp-for="TemporaryId" class="form-label fw-bold"></label>
-                        <input asp-for="TemporaryId" class="form-control" placeholder="e.g., TMP-1234" />
-                        <span asp-validation-for="TemporaryId" class="text-danger"></span>
+                        <label asp-for="TemporaryID" class="form-label fw-bold"></label>
+                        <input asp-for="TemporaryID" class="form-control" placeholder="e.g., TMP-1234" />
+                        <span asp-validation-for="TemporaryID" class="text-danger"></span>
                     </div>
                     <div class="col-12 col-md-6 mb-3">
                         <label asp-for="Status" class="form-label fw-bold"></label>
                         <select asp-for="Status" class="form-select" asp-items="Html.GetEnumSelectList<StThomasMission.Core.Enums.FamilyStatus>()" required>
-                            <option value="">Select Status</option>
                         </select>
                         <span asp-validation-for="Status" class="text-danger"></span>
                     </div>
-                    <div class="col-12 col-md-6 mb-3" id="migratedToSection" style="@(Model.Status == "Migrated" ? "" : "display:none;")">
+                    <div class="col-12 col-md-6 mb-3" id="migratedToSection" style="@(Model.Status == StThomasMission.Core.Enums.FamilyStatus.Migrated ? "" : "display:none;")">
                         <label asp-for="MigratedTo" class="form-label fw-bold"></label>
                         <input asp-for="MigratedTo" class="form-control" placeholder="e.g., New Parish" />
                         <span asp-validation-for="MigratedTo" class="text-danger"></span>
@@ -97,22 +96,28 @@
             });
 
             // Toggle MigratedTo section
-            $("#Status").change(function () {
-                if ($(this).val() === "Migrated") {
+            function toggleMigratedToSection() {
+                if ($("#Status").val() === "Migrated") {
                     $("#migratedToSection").show();
                     $("#MigratedTo").attr("required", "required");
                 } else {
                     $("#migratedToSection").hide();
                     $("#MigratedTo").removeAttr("required");
                 }
-            });
+            }
+
+            // Call on page load to set initial state
+            toggleMigratedToSection();
+
+            // Call on change
+            $("#Status").change(toggleMigratedToSection);
 
             // Initialize jQuery Validate
             $("#editFamilyForm").validate({
                 rules: {
                     FamilyName: {
                         required: true,
-                        maxlength: 100
+                        maxlength: 150
                     },
                     Ward: {
                         required: true,
@@ -121,24 +126,26 @@
                     },
                     ChurchRegistrationNumber: {
                         required: function () { return $("#isRegistered").is(":checked"); },
-                        maxlength: 20
+                        maxlength: 9,
+                        pattern: "^10802\\d{4}$"
                     },
                     TemporaryId: {
                         required: function () { return !$("#isRegistered").is(":checked"); },
-                        maxlength: 20
+                        maxlength: 8,
+                        pattern: "^TMP-\\d{4}$"
                     },
                     Status: {
                         required: true
                     },
                     MigratedTo: {
                         required: function () { return $("#Status").val() === "Migrated"; },
-                        maxlength: 100
+                        maxlength: 150
                     }
                 },
                 messages: {
                     FamilyName: {
                         required: "Please enter a family name.",
-                        maxlength: "Family name cannot exceed 100 characters."
+                        maxlength: "Family name cannot exceed 150 characters."
                     },
                     Ward: {
                         required: "Please enter a ward ID.",
@@ -147,18 +154,20 @@
                     },
                     ChurchRegistrationNumber: {
                         required: "Please enter a church registration number.",
-                        maxlength: "Church registration number cannot exceed 20 characters."
+                        maxlength: "Church registration number must be 9 characters long.",
+                        pattern: "Church registration number must be in format '10802XXXX'."
                     },
                     TemporaryId: {
                         required: "Please enter a temporary ID.",
-                        maxlength: "Temporary ID cannot exceed 20 characters."
+                        maxlength: "Temporary ID must be 8 characters long.",
+                        pattern: "Temporary ID must be in format 'TMP-XXXX'."
                     },
                     Status: {
                         required: "Please select a status."
                     },
                     MigratedTo: {
                         required: "Please enter the migration destination.",
-                        maxlength: "Migration destination cannot exceed 100 characters."
+                        maxlength: "Migration destination cannot exceed 150 characters."
                     }
                 },
                 errorElement: "div",

@@ -12,93 +12,94 @@
 
     <style>
         body {
-            background-color: #f8f9fa;
-            padding-top: 70px; /* Ensure content is not overlapped by the navbar */
+        background-color: #f8f9fa;
+        padding-top: 70px; /* Ensure content is not overlapped by the navbar */
         }
 
         .navbar {
-            background-color: #343a40;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        background-color: #343a40;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .navbar-brand {
-            font-weight: bold;
-            font-size: 1.5rem;
-            color: #fff !important;
+        font-weight: bold;
+        font-size: 1.5rem;
+        color: #fff !important;
         }
 
         .navbar-nav .nav-link {
-            color: #adb5bd !important;
-            padding: 0.5rem 1rem;
+        color: #adb5bd !important;
+        padding: 0.5rem 1rem;
         }
 
-            .navbar-nav .nav-link:hover,
-            .navbar-nav .nav-link.active {
-                color: #fff !important;
-                background-color: #495057;
-                border-radius: 4px;
-            }
+        .navbar-nav .nav-link:hover,
+        .navbar-nav .nav-link.active {
+        color: #fff !important;
+        background-color: #495057;
+        border-radius: 4px;
+        }
 
         .dropdown-menu {
-            background-color: #343a40;
-            border: none;
+        background-color: #343a40;
+        border: none;
         }
 
         .dropdown-item {
-            color: #adb5bd !important;
+        color: #adb5bd !important;
         }
 
-            .dropdown-item:hover {
-                background-color: #495057;
-                color: #fff !important;
-            }
+        .dropdown-item:hover {
+        background-color: #495057;
+        color: #fff !important;
+        }
 
         .auth-buttons {
-            font-size: 0.9rem;
+        font-size: 0.9rem;
         }
 
         footer {
-            background-color: #f8f9fa;
-            padding: 1rem 0;
-            border-top: 1px solid #dee2e6;
-            text-align: center;
+        background-color: #f8f9fa;
+        padding: 1rem 0;
+        border-top: 1px solid #dee2e6;
+        text-align: center;
         }
 
         main {
-            min-height: calc(100vh - 150px); /* Ensure main content takes up remaining height */
-            padding: 1rem;
+        min-height: calc(100vh - 150px); /* Ensure main content takes up remaining height */
+        padding: 1rem;
         }
 
         /* Mobile-specific adjustments */
         @@media (max-width: 991px) {
-            .navbar-nav
+        .navbar-nav
 
         {
-            padding: 0.5rem 0;
+        padding: 0.5rem 0;
         }
 
         .navbar-nav .nav-item {
-            border-bottom: 1px solid #495057;
+        border-bottom: 1px solid #495057;
         }
 
         .navbar-nav .nav-link {
-            padding: 0.75rem 1rem;
+        padding: 0.75rem 1rem;
         }
 
         .dropdown-menu {
-            background-color: #343a40;
-            border: none;
-            box-shadow: none;
+        background-color: #343a40;
+        border: none;
+        box-shadow: none;
         }
 
         .dropdown-item {
-            padding: 0.5rem 1.5rem;
+        padding: 0.5rem 1.5rem;
         }
 
         }
     </style>
 </head>
 <body>
+    <!-- Navbar -->
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
         <div class="container-fluid">
@@ -117,13 +118,16 @@
                         <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
                     </li>
 
-                    <!-- Public Links (Available to All) -->
-                    <li class="nav-item">
-                        <a class="nav-link" asp-area="Admin" asp-controller="MassTimings" asp-action="Index">Mass Timings</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" asp-area="Admin" asp-controller="Announcements" asp-action="Index">Announcements</a>
-                    </li>
+                    <!-- Public Links (Hidden from Teachers) -->
+                    @if (!User.IsInRole("Teacher"))
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="Admin" asp-controller="MassTimings" asp-action="Index">Mass Timings</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="Admin" asp-controller="Announcements" asp-action="Index">Announcements</a>
+                        </li>
+                    }
 
                     <!-- Authenticated User Links -->
                     @if (User.Identity.IsAuthenticated)
@@ -161,8 +165,6 @@
                                 </a>
                                 <ul class="dropdown-menu" aria-labelledby="familiesDropdown">
                                     <li><a class="dropdown-item" asp-area="Families" asp-controller="Families" asp-action="Index">Families</a></li>
-                                    <li><a class="dropdown-item" asp-area="Admin" asp-controller="Announcements" asp-action="Create">Add Announcement</a></li>
-                                    <li><a class="dropdown-item" asp-area="Admin" asp-controller="MassTimings" asp-action="Create">Add Mass Timing</a></li>
                                     <li><a class="dropdown-item" asp-area="Families" asp-controller="MessageHistory" asp-action="Index">Message History</a></li>
                                 </ul>
                             </li>
@@ -177,7 +179,7 @@
                         }
 
                         <!-- Admin Panel (Admin, ParishAdmin, ParishPriest) -->
-                        @if (User.IsInRole("Admin") || User.IsInRole("ParishAdmin") || User.IsInRole("ParishPriest"))
+                        @if (User.IsInRole("Admin") || User.IsInRole("ParishAdmin"))
                         {
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -192,8 +194,6 @@
                                         <li><a class="dropdown-item" asp-area="Admin" asp-controller="Import" asp-action="Index">Import Data</a></li>
                                         <li><a class="dropdown-item" asp-area="Admin" asp-controller="Backup" asp-action="Index">Backups</a></li>
                                     }
-                                    <li><a class="dropdown-item" asp-area="Admin" asp-controller="Announcements" asp-action="Index">Manage Announcements</a></li>
-                                    <li><a class="dropdown-item" asp-area="Admin" asp-controller="MassTimings" asp-action="Index">Manage Mass Timings</a></li>
                                 </ul>
                             </li>
                         }

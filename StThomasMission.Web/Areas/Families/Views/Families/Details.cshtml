@@ -33,10 +33,10 @@
                 <div class="col-12 col-md-6">
                     <p><strong>Family Name:</strong> @Model.FamilyName</p>
                     <p><strong>Ward:</strong> @Model.Ward</p>
-                    <p><strong>Registration:</strong> @(Model.IsRegistered ? Model.ChurchRegistrationNumber ?? "N/A" : Model.TemporaryId ?? "N/A")</p>
+                    <p><strong>Registration:</strong> @(Model.IsRegistered ? Model.ChurchRegistrationNumber ?? "N/A" : Model.TemporaryID?? "N/A")</p>
                     <p>
                         <strong>Status:</strong>
-                        <span class="badge @(Model.Status == FamilyStatus.Active.ToString() ? "bg-success" : Model.Status == FamilyStatus.Migrated.ToString() ? "bg-info" : "bg-secondary")">
+                        <span class="badge @(Model.Status == FamilyStatus.Active ? "bg-success" : Model.Status == FamilyStatus.Migrated ? "bg-info" : Model.Status == FamilyStatus.Inactive ? "bg-secondary" : "bg-danger")">
                             @Model.Status
                         </span>
                     </p>
@@ -77,7 +77,7 @@
                                     <td>@(string.IsNullOrEmpty(member.Role) ? "N/A" : member.Role)</td>
                                     <td>
                                         <div class="d-flex gap-2">
-                                            <a asp-action="EditMember" asp-route-id="@member.Id" asp-area="Families" class="btn btn-sm btn-outline-warning">
+                                            <a asp-area="Families" asp-controller="FamilyMembers" asp-action="Edit" asp-route-id="@member.Id"  class="btn btn-sm btn-outline-warning">
                                                 <i class="fas fa-edit me-2"></i>Edit
                                             </a>
                                             <a asp-action="EnrollStudent" asp-route-familyMemberId="@member.Id" asp-area="Families" class="btn btn-sm btn-outline-primary">
