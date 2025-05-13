@@ -8,11 +8,11 @@ namespace StThomasMission.Core.Entities
         public int Id { get; set; }
 
         [Required]
-        public int FamilyId { get; set; } // Foreign key to Family
-        public Family Family { get; set; } = null!; // Navigation property
+        public int FamilyId { get; set; }
+        public Family Family { get; set; } = null!;
 
-        public string? UserId { get; set; } // Foreign key to ApplicationUser
-        public ApplicationUser? User { get; set; } // Navigation property
+        public string? UserId { get; set; }
+        public ApplicationUser? User { get; set; }
 
         [Required(ErrorMessage = "First name is required.")]
         [StringLength(100, ErrorMessage = "First name cannot exceed 100 characters.")]
@@ -21,6 +21,9 @@ namespace StThomasMission.Core.Entities
         [Required(ErrorMessage = "Last name is required.")]
         [StringLength(100, ErrorMessage = "Last name cannot exceed 100 characters.")]
         public string LastName { get; set; } = string.Empty;
+
+        [StringLength(100, ErrorMessage = "Baptismal name cannot exceed 100 characters.")]
+        public string? BaptismalName { get; set; }
 
         [Required]
         public FamilyMemberRole Relation { get; set; } = FamilyMemberRole.Other;
@@ -37,9 +40,16 @@ namespace StThomasMission.Core.Entities
         public string? Email { get; set; }
 
         [StringLength(50, ErrorMessage = "Role cannot exceed 50 characters.")]
-        public string? Role { get; set; } // e.g., Catechism Student
+        public string? Role { get; set; }
 
-        public Student? StudentProfile { get; set; } // Navigation to Student
+        public DateTime? DateOfBaptism { get; set; }
+        public DateTime? DateOfChrismation { get; set; }
+        public DateTime? DateOfHolyCommunion { get; set; }
+        public DateTime? DateOfDeath { get; set; }
+
+        public DateTime? DateOfMarriage { get; set; }
+
+        public Student? StudentProfile { get; set; }
 
         [Required]
         public string CreatedBy { get; set; } = string.Empty;
@@ -47,10 +57,8 @@ namespace StThomasMission.Core.Entities
         public string? UpdatedBy { get; set; }
 
         [Timestamp]
-        public byte[] RowVersion { get; set; } = null!; // Optimistic concurrency
+        public byte[] RowVersion { get; set; } = null!;
 
         public string FullName => $"{FirstName} {LastName}";
-
-        // Suggested index: FamilyId, UserId
     }
 }

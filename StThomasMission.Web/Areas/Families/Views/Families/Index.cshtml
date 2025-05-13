@@ -10,7 +10,12 @@
     <div class="card shadow-sm">
         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
             <h3 class="mb-0"><i class="fas fa-users me-2"></i>Families</h3>
-            <a asp-action="Register" asp-area="Families" class="btn btn-primary btn-sm"><i class="fas fa-plus me-2"></i>Register Family</a>
+            <div class="d-flex gap-2">
+                <a asp-action="Register" asp-area="Families" class="btn btn-primary btn-sm"><i class="fas fa-plus me-2"></i>Register Family</a>
+                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#importFamiliesModal">
+                    <i class="fas fa-file-import me-2"></i>Import Families
+                </button>
+            </div>
         </div>
         <div class="card-body">
             <form asp-action="Index" asp-area="Families" method="get" id="filterForm" class="mb-4">
@@ -35,6 +40,21 @@
                 </div>
             </form>
 
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
             @if (Model.Families.Count == 0)
             {
                 <div class="alert alert-info text-center" role="alert">
@@ -56,6 +76,16 @@
                                 <th>Registration</th>
                                 <th>Status</th>
                                 <th>Migrated To</th>
+                                <th>House Number</th>
+                                <th>Street Name</th>
+                                <th>City</th>
+                                <th>Post Code</th>
+                                <th>Email</th>
+                                <th>Gift Aid</th>
+                                <th>Parish India</th>
+                                <th>Eparchy India</th>
+                                <th>Created By</th>
+                                <th>Updated By</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -72,6 +102,16 @@
                                         </span>
                                     </td>
                                     <td>@(string.IsNullOrEmpty(family.MigratedTo) ? "N/A" : family.MigratedTo)</td>
+                                    <td>@(string.IsNullOrEmpty(family.HouseNumber) ? "N/A" : family.HouseNumber)</td>
+                                    <td>@(string.IsNullOrEmpty(family.StreetName) ? "N/A" : family.StreetName)</td>
+                                    <td>@(string.IsNullOrEmpty(family.City) ? "N/A" : family.City)</td>
+                                    <td>@(string.IsNullOrEmpty(family.PostCode) ? "N/A" : family.PostCode)</td>
+                                    <td>@(string.IsNullOrEmpty(family.Email) ? "N/A" : family.Email)</td>
+                                    <td>@(family.GiftAid ? "Yes" : "No")</td>
+                                    <td>@(string.IsNullOrEmpty(family.ParishIndia) ? "N/A" : family.ParishIndia)</td>
+                                    <td>@(string.IsNullOrEmpty(family.EparchyIndia) ? "N/A" : family.EparchyIndia)</td>
+                                    <td>@(string.IsNullOrEmpty(family.CreatedBy) ? "N/A" : family.CreatedBy)</td>
+                                    <td>@(string.IsNullOrEmpty(family.UpdatedBy) ? "N/A" : family.UpdatedBy)</td>
                                     <td>
                                         <div class="d-flex flex-wrap gap-2">
                                             <a asp-action="Details" asp-route-id="@family.Id" asp-area="Families" class="btn btn-sm btn-outline-primary">
@@ -130,12 +170,33 @@
     </div>
 </div>
 
+<div class="modal fade" id="importFamiliesModal" tabindex="-1" aria-labelledby="importFamiliesModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="importFamiliesModalLabel">Import Families</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form asp-action="ImportFamilies" asp-area="Families" method="post" enctype="multipart/form-data" id="importFamiliesForm">
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Select Excel File</label>
+                        <input type="file" name="file" id="file" class="form-control" accept=".xlsx,.xls" required />
+                        <small class="form-text text-muted">Only .xlsx and .xls files are supported.</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Import</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
     <script>
         $(document).ready(function () {
-            // Initialize jQuery Validate for filter form
             $("#filterForm").validate({
                 rules: {
                     "Filter.SearchString": {
@@ -165,8 +226,30 @@
                 }
             });
 
-            // Loading spinner for form submission
-            $("#filterForm").on("submit", function () {
+            $("#importFamiliesForm").validate({
+                rules: {
+                    file: {
+                        required: true,
+                        accept: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                    }
+                },
+                messages: {
+                    file: {
+                        required: "Please select a file to upload.",
+                        accept: "Please upload a valid Excel file (.xlsx or .xls)."
+                    }
+                },
+                errorElement: "div",
+                errorClass: "text-danger",
+                highlight: function (element) {
+                    $(element).addClass("is-invalid");
+                },
+                unhighlight: function (element) {
+                    $(element).removeClass("is-invalid");
+                }
+            });
+
+            $("#filterForm, #importFamiliesForm").on("submit", function () {
                 var $submitButton = $(this).find('button[type="submit"]');
                 if ($(this).valid()) {
                     $submitButton.prop("disabled", true).prepend('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>');

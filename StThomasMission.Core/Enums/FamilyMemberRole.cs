@@ -4,6 +4,10 @@ namespace StThomasMission.Core.Enums
 {
     public enum FamilyMemberRole
     {
+        [Display(Name = "Father")]
+        Father,
+        [Display(Name = "Mother")]
+        Mother,
         [Display(Name = "Parent")]
         Parent,
         [Display(Name = "Child")]

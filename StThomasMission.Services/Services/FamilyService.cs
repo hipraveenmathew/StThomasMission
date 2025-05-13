@@ -26,48 +26,40 @@ namespace StThomasMission.Services
             QuestPDF.Settings.License = LicenseType.Community;
         }
 
-        public async Task<Family> RegisterFamilyAsync(string familyName, int wardId, bool isRegistered, string? churchRegistrationNumber, string? temporaryId)
+        public async Task<Family> RegisterFamilyAsync(Family family)
         {
-            if (string.IsNullOrEmpty(familyName))
-                throw new ArgumentException("Family name is required.", nameof(familyName));
-            if (wardId <= 0)
-                throw new ArgumentException("Ward ID must be a positive integer.", nameof(wardId));
-            if (isRegistered && string.IsNullOrEmpty(churchRegistrationNumber))
-                throw new ArgumentException("Church Registration Number is required for registered families.", nameof(churchRegistrationNumber));
-            if (!isRegistered && string.IsNullOrEmpty(temporaryId))
-                throw new ArgumentException("Temporary ID is required for unregistered families.", nameof(temporaryId));
+            if (string.IsNullOrEmpty(family.FamilyName))
+                throw new ArgumentException("Family name is required.", nameof(family.FamilyName));
+            if (family.WardId <= 0)
+                throw new ArgumentException("Ward ID must be a positive integer.", nameof(family.WardId));
+            if (family.IsRegistered && string.IsNullOrEmpty(family.ChurchRegistrationNumber))
+                throw new ArgumentException("Church Registration Number is required for registered families.", nameof(family.ChurchRegistrationNumber));
+            if (!family.IsRegistered && string.IsNullOrEmpty(family.TemporaryID))
+                throw new ArgumentException("Temporary ID is required for unregistered families.", nameof(family.TemporaryID));
 
-            await _unitOfWork.Wards.GetByIdAsync(wardId);
+            await _unitOfWork.Wards.GetByIdAsync(family.WardId);
 
-            if (isRegistered)
+            if (family.IsRegistered)
             {
-                var existing = await _unitOfWork.Families.GetByChurchRegistrationNumberAsync(churchRegistrationNumber);
+                var existing = await _unitOfWork.Families.GetByChurchRegistrationNumberAsync(family.ChurchRegistrationNumber);
                 if (existing != null)
-                    throw new InvalidOperationException($"Church Registration Number {churchRegistrationNumber} already exists.");
+                    throw new InvalidOperationException($"Church Registration Number {family.ChurchRegistrationNumber} already exists.");
             }
             else
             {
-                var existing = await _unitOfWork.Families.GetByTemporaryIdAsync(temporaryId);
+                var existing = await _unitOfWork.Families.GetByTemporaryIdAsync(family.TemporaryID);
                 if (existing != null)
-                    throw new InvalidOperationException($"Temporary ID {temporaryId} already exists.");
+                    throw new InvalidOperationException($"Temporary ID {family.TemporaryID} already exists.");
             }
 
-            var family = new Family
-            {
-                FamilyName = familyName,
-                WardId = wardId,
-                IsRegistered = isRegistered,
-                ChurchRegistrationNumber = churchRegistrationNumber,
-                TemporaryID = temporaryId,
-                Status = FamilyStatus.Active,
-                CreatedBy = "System",
-                CreatedDate = DateTime.UtcNow
-            };
+            family.Status = FamilyStatus.Active;
+            family.CreatedBy = string.IsNullOrEmpty(family.CreatedBy) ? "System" : family.CreatedBy;
+            family.CreatedDate = DateTime.UtcNow;
 
             await _unitOfWork.Families.AddAsync(family);
             await _unitOfWork.CompleteAsync();
 
-            await _auditService.LogActionAsync("System", "Create", nameof(Family), family.Id.ToString(), $"Registered family: {familyName}");
+            await _auditService.LogActionAsync(family.CreatedBy, "Create", nameof(Family), family.Id.ToString(), $"Registered family: {family.FamilyName}");
             return family;
         }
 
@@ -101,50 +93,51 @@ namespace StThomasMission.Services
 
         // ... (other methods remain the same)
 
-        public async Task UpdateFamilyAsync(int familyId, string familyName, int wardId, bool isRegistered, string? churchRegistrationNumber, string? temporaryId, FamilyStatus status, string? migratedTo)
+        public async Task UpdateFamilyAsync(Family family)
         {
-            var family = await GetFamilyByIdAsync(familyId);
+            if (family.Id <= 0)
+                throw new ArgumentException("Valid family ID is required.", nameof(family.Id));
+            if (string.IsNullOrWhiteSpace(family.FamilyName))
+                throw new ArgumentException("Family name is required.", nameof(family.FamilyName));
+            if (family.WardId <= 0)
+                throw new ArgumentException("Ward ID must be a positive integer.", nameof(family.WardId));
+            if (family.IsRegistered && string.IsNullOrEmpty(family.ChurchRegistrationNumber))
+                throw new ArgumentException("Church registration number is required for registered families.", nameof(family.ChurchRegistrationNumber));
+            if (!family.IsRegistered && string.IsNullOrEmpty(family.TemporaryID))
+                throw new ArgumentException("Temporary ID is required for unregistered families.", nameof(family.TemporaryID));
 
-            if (string.IsNullOrWhiteSpace(familyName))
-                throw new ArgumentException("Family name is required.", nameof(familyName));
+            var existingFamily = await GetFamilyByIdAsync(family.Id);
+            await _unitOfWork.Wards.GetByIdAsync(family.WardId);
 
-            var ward = await _unitOfWork.Wards.GetByIdAsync(wardId);
-            if (ward == null)
-                throw new ArgumentException("Ward not found.", nameof(wardId));
-
-            if (isRegistered && string.IsNullOrWhiteSpace(churchRegistrationNumber))
-                throw new ArgumentException("Church registration number is required for registered families.", nameof(churchRegistrationNumber));
-            if (!isRegistered && string.IsNullOrWhiteSpace(temporaryId))
-                throw new ArgumentException("Temporary ID is required for unregistered families.", nameof(temporaryId));
-
-            if (churchRegistrationNumber != null && churchRegistrationNumber != family.ChurchRegistrationNumber)
+            if (!string.IsNullOrEmpty(family.ChurchRegistrationNumber) && family.ChurchRegistrationNumber != existingFamily.ChurchRegistrationNumber)
             {
-                var existingByChurchReg = await _unitOfWork.Families.GetByChurchRegistrationNumberAsync(churchRegistrationNumber);
-                if (existingByChurchReg != null && existingByChurchReg.Id != familyId)
-                    throw new ArgumentException("Church registration number already exists.", nameof(churchRegistrationNumber));
+                var existingByChurchReg = await _unitOfWork.Families.GetByChurchRegistrationNumberAsync(family.ChurchRegistrationNumber);
+                if (existingByChurchReg != null && existingByChurchReg.Id != family.Id)
+                    throw new ArgumentException("Church registration number already exists.", nameof(family.ChurchRegistrationNumber));
             }
 
-            if (temporaryId != null && temporaryId != family.TemporaryID)
+            if (!string.IsNullOrEmpty(family.TemporaryID) && family.TemporaryID != existingFamily.TemporaryID)
             {
-                var existingByTempId = await _unitOfWork.Families.GetByTemporaryIdAsync(temporaryId);
-                if (existingByTempId != null && existingByTempId.Id != familyId)
-                    throw new ArgumentException("Temporary ID already exists.", nameof(temporaryId));
+                var existingByTempId = await _unitOfWork.Families.GetByTemporaryIdAsync(family.TemporaryID);
+                if (existingByTempId != null && existingByTempId.Id != family.Id)
+                    throw new ArgumentException("Temporary ID already exists.", nameof(family.TemporaryID));
             }
 
-            family.FamilyName = familyName;
-            family.WardId = wardId;
-            family.IsRegistered = isRegistered;
-            family.ChurchRegistrationNumber = churchRegistrationNumber;
-            family.TemporaryID = temporaryId;
-            family.Status = status;
-            family.MigratedTo = status == FamilyStatus.Migrated ? migratedTo : null;
-            family.UpdatedBy = "System";
-            family.UpdatedDate = DateTime.UtcNow;
+            existingFamily.FamilyName = family.FamilyName;
+            existingFamily.WardId = family.WardId;
+            existingFamily.IsRegistered = family.IsRegistered;
+            existingFamily.ChurchRegistrationNumber = family.ChurchRegistrationNumber;
+            existingFamily.TemporaryID = family.TemporaryID;
+            existingFamily.Status = family.Status;
+            existingFamily.MigratedTo = family.Status == FamilyStatus.Migrated ? family.MigratedTo : null;
+            existingFamily.UpdatedBy = string.IsNullOrEmpty(family.UpdatedBy) ? "System" : family.UpdatedBy;
+            existingFamily.UpdatedDate = DateTime.UtcNow;
 
-            await _unitOfWork.Families.UpdateAsync(family);
+            await _unitOfWork.Families.UpdateAsync(existingFamily);
             await _unitOfWork.CompleteAsync();
 
-            await _auditService.LogActionAsync("System", "Update", nameof(Family), familyId.ToString(), $"Updated family: {familyName}, Status: {status}");
+            await _auditService.LogActionAsync(existingFamily.UpdatedBy, "Update", nameof(Family), existingFamily.Id.ToString(),
+                $"Updated family: {existingFamily.FamilyName}, Status: {existingFamily.Status}");
         }
 
         public async Task<byte[]> GenerateRegistrationSlipAsync(int familyId)
@@ -256,38 +249,69 @@ namespace StThomasMission.Services
 
             return query.Include(f => f.Ward);
         }
-
-        public async Task AddFamilyMemberAsync(int familyId, string firstName, string lastName, FamilyMemberRole relation, DateTime dateOfBirth, string? contact, string? email, string? role)
+        public async Task TransitionChildToNewFamilyAsync(int familyMemberId, string newFamilyName, int newWardId, bool isRegistered, string? churchRegistrationNumber, string? temporaryId)
         {
-            await GetFamilyByIdAsync(familyId);
+            // Get the family member (child)
+            var child = await _unitOfWork.FamilyMembers.GetAsync(fm => fm.Id == familyMemberId);
+            var childMember = child.FirstOrDefault() ?? throw new ArgumentException("Family member not found.", nameof(familyMemberId));
 
-            if (string.IsNullOrWhiteSpace(firstName))
-                throw new ArgumentException("First name is required.", nameof(firstName));
-            if (string.IsNullOrWhiteSpace(lastName))
-                throw new ArgumentException("Last name is required.", nameof(lastName));
-
-            var familyMember = new FamilyMember
+            // Get the original family
+            var originalFamily = await _unitOfWork.Families.GetByIdAsync(childMember.FamilyId);
+            if (originalFamily == null)
             {
-                FamilyId = familyId,
-                FirstName = firstName,
-                LastName = lastName,
-                Relation = relation,
-                DateOfBirth = dateOfBirth,
-                Contact = contact,
-                Email = email,
-                Role = role,
-                CreatedBy = "System"               
+                throw new ArgumentException("Original family not found.");
+            }
+
+            // Create a new family for the child
+            var newFamily = new Family
+            {
+                FamilyName = newFamilyName,
+                WardId = newWardId,
+                IsRegistered = isRegistered,
+                ChurchRegistrationNumber = churchRegistrationNumber,
+                TemporaryID = temporaryId,
+                Status = FamilyStatus.Active,
+                PreviousFamilyId = originalFamily.Id, // Link to the original family
+                CreatedBy = "System",
+                CreatedDate = DateTime.UtcNow
             };
+
+            await _unitOfWork.Families.AddAsync(newFamily);
+            await _unitOfWork.CompleteAsync();
+
+            // Update the child's FamilyId to the new family
+            childMember.FamilyId = newFamily.Id;
+            await _unitOfWork.FamilyMembers.UpdateAsync(childMember);
+            await _unitOfWork.CompleteAsync();
+
+            // Log the transition
+            await _auditService.LogActionAsync("System", "Transition", nameof(FamilyMember), childMember.Id.ToString(), $"Child {childMember.FullName} transitioned to new family: {newFamilyName}");
+        }
+
+        public async Task AddFamilyMemberAsync(FamilyMember familyMember)
+        {
+            if (familyMember.FamilyId <= 0)
+                throw new ArgumentException("Valid family ID is required.", nameof(familyMember.FamilyId));
+            if (string.IsNullOrWhiteSpace(familyMember.FirstName))
+                throw new ArgumentException("First name is required.", nameof(familyMember.FirstName));
+            if (string.IsNullOrWhiteSpace(familyMember.LastName))
+                throw new ArgumentException("Last name is required.", nameof(familyMember.LastName));
+
+            await GetFamilyByIdAsync(familyMember.FamilyId);
+
+            familyMember.CreatedBy = string.IsNullOrEmpty(familyMember.CreatedBy) ? "System" : familyMember.CreatedBy;
 
             await _unitOfWork.FamilyMembers.AddAsync(familyMember);
             await _unitOfWork.CompleteAsync();
 
-            await _auditService.LogActionAsync("System", "Create", nameof(FamilyMember), familyMember.Id.ToString(), $"Added family member: {firstName} {lastName} to family {familyId}");
+            await _auditService.LogActionAsync(familyMember.CreatedBy, "Create", nameof(FamilyMember), familyMember.Id.ToString(),
+                $"Added family member: {familyMember.FirstName} {familyMember.LastName} to family {familyMember.FamilyId}");
         }
         public async Task<FamilyMember> GetFamilyMemberByUserIdAsync(string userId)
         {
             var familyMember = await _unitOfWork.FamilyMembers.GetAsync(fm => fm.UserId == userId);
             return familyMember.FirstOrDefault() ?? throw new ArgumentException("Family member not found for the given user.", nameof(userId));
         }
+       
     }
 }

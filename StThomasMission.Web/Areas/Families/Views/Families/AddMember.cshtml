@@ -27,6 +27,11 @@
                         <span asp-validation-for="LastName" class="text-danger"></span>
                     </div>
                     <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="BaptismalName" class="form-label fw-bold">Baptismal Name (Optional)</label>
+                        <input asp-for="BaptismalName" class="form-control" placeholder="Enter baptismal name" />
+                        <span asp-validation-for="BaptismalName" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
                         <label asp-for="Relation" class="form-label fw-bold">Relation</label>
                         <select asp-for="Relation" class="form-select" asp-items="Html.GetEnumSelectList<StThomasMission.Core.Enums.FamilyMemberRole>()" required>
                             <option value="">Select Relation</option>
@@ -37,6 +42,31 @@
                         <label asp-for="DateOfBirth" class="form-label fw-bold">Date of Birth</label>
                         <input asp-for="DateOfBirth" type="date" class="form-control" max="@DateTime.Now.ToString("yyyy-MM-dd")" required />
                         <span asp-validation-for="DateOfBirth" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="DateOfBaptism" class="form-label fw-bold">Date of Baptism (Optional)</label>
+                        <input asp-for="DateOfBaptism" type="date" class="form-control" max="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                        <span asp-validation-for="DateOfBaptism" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="DateOfChrismation" class="form-label fw-bold">Date of Chrismation (Optional)</label>
+                        <input asp-for="DateOfChrismation" type="date" class="form-control" max="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                        <span asp-validation-for="DateOfChrismation" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="DateOfHolyCommunion" class="form-label fw-bold">Date of Holy Communion (Optional)</label>
+                        <input asp-for="DateOfHolyCommunion" type="date" class="form-control" max="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                        <span asp-validation-for="DateOfHolyCommunion" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="DateOfMarriage" class="form-label fw-bold">Date of Marriage (Optional)</label>
+                        <input asp-for="DateOfMarriage" type="date" class="form-control" max="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                        <span asp-validation-for="DateOfMarriage" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="DateOfDeath" class="form-label fw-bold">Date of Death (Optional)</label>
+                        <input asp-for="DateOfDeath" type="date" class="form-control" max="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                        <span asp-validation-for="DateOfDeath" class="text-danger"></span>
                     </div>
                     <div class="col-12 col-md-6 mb-3">
                         <label asp-for="Contact" class="form-label fw-bold">Contact (Optional)</label>
@@ -53,6 +83,16 @@
                         <input asp-for="Role" class="form-control" placeholder="e.g., Parent, Child" />
                         <span asp-validation-for="Role" class="text-danger"></span>
                     </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="CreatedBy" class="form-label fw-bold">Created By</label>
+                        <input asp-for="CreatedBy" class="form-control" placeholder="Enter creator" required />
+                        <span asp-validation-for="CreatedBy" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-3">
+                        <label asp-for="UpdatedBy" class="form-label fw-bold"> UPDATED By (Optional)</label>
+                        <input asp-for="UpdatedBy" class="form-control" placeholder="Enter updater" />
+                        <span asp-validation-for="UpdatedBy" class="text-danger"></span>
+                    </div>
                 </div>
 
                 <div class="d-flex justify-content-end mt-4">
@@ -64,7 +104,6 @@
     </div>
 </div>
 
-<!-- Toast Notification Container -->
 <div class="toast-container position-fixed bottom-0 end-0 p-3">
     <div id="addMemberToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="toast-header">
@@ -80,16 +119,18 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
     <script>
         $(document).ready(function () {
-            // Initialize jQuery Validate
             $("#addMemberForm").validate({
                 rules: {
                     FirstName: {
                         required: true,
-                        maxlength: 50
+                        maxlength: 100
                     },
                     LastName: {
                         required: true,
-                        maxlength: 50
+                        maxlength: 100
+                    },
+                    BaptismalName: {
+                        maxlength: 100
                     },
                     Relation: {
                         required: true
@@ -98,25 +139,51 @@
                         required: true,
                         date: true
                     },
+                    DateOfBaptism: {
+                        date: true
+                    },
+                    DateOfChrismation: {
+                        date: true
+                    },
+                    DateOfHolyCommunion: {
+                        date: true
+                    },
+                    DateOfMarriage: {
+                        date: true
+                    },
+                    DateOfDeath: {
+                        date: true
+                    },
                     Contact: {
-                        maxlength: 20
+                        maxlength: 20,
+                        pattern: /^\+?\d{10,15}$/
                     },
                     Email: {
                         email: true,
-                        maxlength: 100
+                        maxlength: 150
                     },
                     Role: {
                         maxlength: 50
+                    },
+                    CreatedBy: {
+                        required: true,
+                        maxlength: 100
+                    },
+                    UpdatedBy: {
+                        maxlength: 100
                     }
                 },
                 messages: {
                     FirstName: {
                         required: "Please enter a first name.",
-                        maxlength: "First name cannot exceed 50 characters."
+                        maxlength: "First name cannot exceed 100 characters."
                     },
                     LastName: {
                         required: "Please enter a last name.",
-                        maxlength: "Last name cannot exceed 50 characters."
+                        maxlength: "Last name cannot exceed 100 characters."
+                    },
+                    BaptismalName: {
+                        maxlength: "Baptismal name cannot exceed 100 characters."
                     },
                     Relation: {
                         required: "Please select a relation."
@@ -125,15 +192,38 @@
                         required: "Please select a date of birth.",
                         date: "Please enter a valid date."
                     },
+                    DateOfBaptism: {
+                        date: "Please enter a valid date."
+                    },
+                    DateOfChrismation: {
+                        date: "Please enter a valid date."
+                    },
+                    DateOfHolyCommunion: {
+                        date: "Please enter a valid date."
+                    },
+                    DateOfMarriage: {
+                        date: "Please enter a valid date."
+                    },
+                    DateOfDeath: {
+                        date: "Please enter a valid date."
+                    },
                     Contact: {
-                        maxlength: "Contact number cannot exceed 20 characters."
+                        maxlength: "Contact number cannot exceed 20 characters.",
+                        pattern: "Invalid phone number format."
                     },
                     Email: {
                         email: "Please enter a valid email address.",
-                        maxlength: "Email cannot exceed 100 characters."
+                        maxlength: "Email cannot exceed 150 characters."
                     },
                     Role: {
                         maxlength: "Role cannot exceed 50 characters."
+                    },
+                    CreatedBy: {
+                        required: "Please enter the creator.",
+                        maxlength: "Created by cannot exceed 100 characters."
+                    },
+                    UpdatedBy: {
+                        maxlength: "Updated by cannot exceed 100 characters."
                     }
                 },
                 errorElement: "div",
@@ -146,7 +236,6 @@
                 }
             });
 
-            // Loading spinner for form submission
             $("#addMemberForm").on("submit", function () {
                 var $submitButton = $(this).find('button[type="submit"]');
                 if ($(this).valid()) {

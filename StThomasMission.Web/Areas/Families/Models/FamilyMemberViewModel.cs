@@ -19,12 +19,30 @@ namespace StThomasMission.Web.Areas.Families.Models
         [StringLength(100, ErrorMessage = "Last name cannot exceed 100 characters.")]
         public string LastName { get; set; } = string.Empty;
 
+        [StringLength(100, ErrorMessage = "Baptismal name cannot exceed 100 characters.")]
+        public string? BaptismalName { get; set; }
+
         [Required]
-        public FamilyMemberRole Relation { get; set; }
+        public FamilyMemberRole Relation { get; set; } = FamilyMemberRole.Other;
 
         [Required]
         [DataType(DataType.Date)]
         public DateTime DateOfBirth { get; set; }
+
+        [DataType(DataType.Date)]
+        public DateTime? DateOfBaptism { get; set; }
+
+        [DataType(DataType.Date)]
+        public DateTime? DateOfChrismation { get; set; }
+
+        [DataType(DataType.Date)]
+        public DateTime? DateOfHolyCommunion { get; set; }
+
+        [DataType(DataType.Date)]
+        public DateTime? DateOfMarriage { get; set; }
+
+        [DataType(DataType.Date)]
+        public DateTime? DateOfDeath { get; set; }
 
         [StringLength(20, ErrorMessage = "Contact number cannot exceed 20 characters.")]
         [RegularExpression(@"^\+?\d{10,15}$", ErrorMessage = "Invalid phone number format.")]
@@ -36,5 +54,10 @@ namespace StThomasMission.Web.Areas.Families.Models
 
         [StringLength(50, ErrorMessage = "Role cannot exceed 50 characters.")]
         public string? Role { get; set; }
+
+        [Required]
+        public string CreatedBy { get; set; } = string.Empty;
+
+        public string? UpdatedBy { get; set; }
     }
 }

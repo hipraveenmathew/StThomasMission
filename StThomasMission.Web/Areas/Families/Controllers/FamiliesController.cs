@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using StThomasMission.Core.Entities;
 using StThomasMission.Core.Enums;
 using StThomasMission.Core.Interfaces;
+using StThomasMission.Infrastructure;
+using StThomasMission.Services;
 using StThomasMission.Web.Areas.Families.Models;
 using StThomasMission.Web.Models;
 using System;
@@ -17,10 +19,14 @@ namespace StThomasMission.Web.Areas.Families.Controllers
     public class FamiliesController : Controller
     {
         private readonly IFamilyService _familyService;
+        private readonly IFamilyMemberService _familyMemberService;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public FamiliesController(IFamilyService familyService)
+        public FamiliesController(IFamilyService familyService, IUnitOfWork unitOfWork, IFamilyMemberService familyMemberService)
         {
             _familyService = familyService;
+            _unitOfWork = unitOfWork;
+            _familyMemberService = familyMemberService;
         }
 
         [HttpGet]
@@ -82,13 +88,18 @@ namespace StThomasMission.Web.Areas.Families.Controllers
                     ? (model.TemporaryID ?? await GenerateUniqueTemporaryId())
                     : null;
 
-                var family = await _familyService.RegisterFamilyAsync(
-                    model.FamilyName,
-                    int.Parse(model.Ward),
-                    model.IsRegistered,
-                    churchRegNumber,
-                    tempId);
+                var family = new Family
+                {
+                    FamilyName = model.FamilyName,
+                    WardId = int.Parse(model.Ward),
+                    IsRegistered = model.IsRegistered,
+                    ChurchRegistrationNumber = churchRegNumber,
+                    TemporaryID = tempId,
+                    CreatedBy = User.Identity?.Name ?? "System",
+                    CreatedDate = DateTime.UtcNow
+                };
 
+                await _familyService.RegisterFamilyAsync(family);
                 return RedirectToAction(nameof(Success), new { familyId = family.Id });
             }
             catch (Exception ex)
@@ -139,15 +150,20 @@ namespace StThomasMission.Web.Areas.Families.Controllers
 
             try
             {
-                await _familyService.AddFamilyMemberAsync(
-                    model.FamilyId,
-                    model.FirstName,
-                    model.LastName,
-                    model.Relation,
-                    model.DateOfBirth,
-                    model.Contact,
-                    model.Email,
-                    model.Role);
+                var familyMember = new FamilyMember
+                {
+                    FamilyId = model.FamilyId,
+                    FirstName = model.FirstName,
+                    LastName = model.LastName,
+                    Relation = model.Relation,
+                    DateOfBirth = model.DateOfBirth,
+                    Contact = model.Contact,
+                    Email = model.Email,
+                    Role = model.Role,
+                    CreatedBy = User.Identity?.Name ?? "System"
+                };
+
+                await _familyService.AddFamilyMemberAsync(familyMember);
                 return RedirectToAction(nameof(Details), new { id = model.FamilyId });
             }
             catch (Exception ex)
@@ -265,15 +281,21 @@ namespace StThomasMission.Web.Areas.Families.Controllers
 
             try
             {
-                await _familyService.UpdateFamilyAsync(
-                    model.Id,
-                    model.FamilyName,
-                    int.Parse(model.Ward),
-                    model.IsRegistered,
-                    model.ChurchRegistrationNumber,
-                    model.TemporaryID,
-                    FamilyStatus.Migrated,
-                    model.MigratedTo);
+                var family = new Family
+                {
+                    Id = model.Id,
+                    FamilyName = model.FamilyName,
+                    WardId = int.Parse(model.Ward),
+                    IsRegistered = model.IsRegistered,
+                    ChurchRegistrationNumber = model.ChurchRegistrationNumber,
+                    TemporaryID = model.TemporaryID,
+                    Status = FamilyStatus.Migrated,
+                    MigratedTo = model.MigratedTo,
+                    UpdatedBy = User.Identity?.Name ?? "System",
+                    UpdatedDate = DateTime.UtcNow
+                };
+
+                await _familyService.UpdateFamilyAsync(family);
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
@@ -318,15 +340,21 @@ namespace StThomasMission.Web.Areas.Families.Controllers
 
             try
             {
-                await _familyService.UpdateFamilyAsync(
-                    model.Id,
-                    model.FamilyName,
-                    int.Parse(model.Ward),
-                    model.IsRegistered,
-                    model.ChurchRegistrationNumber,
-                    model.TemporaryID,
-                    model.Status, // Parse string to FamilyStatus
-                    model.MigratedTo);
+                var family = new Family
+                {
+                    Id = model.Id,
+                    FamilyName = model.FamilyName,
+                    WardId = int.Parse(model.Ward),
+                    IsRegistered = model.IsRegistered,
+                    ChurchRegistrationNumber = model.ChurchRegistrationNumber,
+                    TemporaryID = model.TemporaryID,
+                    Status = model.Status,
+                    MigratedTo = model.MigratedTo,
+                    UpdatedBy = User.Identity?.Name ?? "System",
+                    UpdatedDate = DateTime.UtcNow
+                };
+
+                await _familyService.UpdateFamilyAsync(family);
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
@@ -335,7 +363,6 @@ namespace StThomasMission.Web.Areas.Families.Controllers
                 return View(model);
             }
         }
-
 
 
         [HttpGet]
@@ -358,6 +385,8 @@ namespace StThomasMission.Web.Areas.Families.Controllers
                 TemporaryID = family.TemporaryID,
                 Status = family.Status,
                 MigratedTo = family.MigratedTo,
+                PreviousFamilyId = family.PreviousFamilyId,
+                PreviousFamily = family.PreviousFamily,
                 Members = members.Select(m => new FamilyMemberViewModel
                 {
                     Id = m.Id,
@@ -390,6 +419,29 @@ namespace StThomasMission.Web.Areas.Families.Controllers
                 id = $"TMP-{new Random().Next(1000, 9999)}";
             } while (await _familyService.GetByTemporaryIdAsync(id) != null);
             return id;
+        }
+        [HttpPost]
+        public async Task<IActionResult> ImportFamilies(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+            {
+                TempData["Error"] = "Please upload a valid Excel file.";
+                return RedirectToAction("Index");
+            }
+
+            try
+            {
+                using var stream = file.OpenReadStream();
+                var importService = new FamilyImportService(_familyService, _unitOfWork, _familyMemberService);
+                await importService.ImportFamiliesFromExcelAsync(stream);
+                TempData["Success"] = "Families imported successfully.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Failed to import families: {ex.Message}";
+            }
+
+            return RedirectToAction("Index");
         }
     }
 }

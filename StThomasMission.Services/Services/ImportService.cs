@@ -28,7 +28,7 @@ namespace StThomasMission.Services
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
         }
 
-        public async Task ImportFamiliesAndStudentsAsync(Stream fileStream , ImportType fileType)
+        public async Task ImportFamiliesAndStudentsAsync(Stream fileStream, ImportType fileType)
         {
             if (fileStream == null)
                 throw new ArgumentNullException(nameof(fileStream));
@@ -94,8 +94,7 @@ namespace StThomasMission.Services
                         Family family = null;
                         if (isRegistered)
                         {
-                            var families = await _unitOfWork.Families.GetByChurchRegistrationNumberAsync(churchRegistrationNumber);
-                            family = families;
+                            family = await _unitOfWork.Families.GetByChurchRegistrationNumberAsync(churchRegistrationNumber);
                         }
                         else
                         {
@@ -105,13 +104,18 @@ namespace StThomasMission.Services
 
                         if (family == null)
                         {
-                            family = await _familyService.RegisterFamilyAsync(
-                            familyName,
-                            wardId,
-                            isRegistered,
-                            churchRegistrationNumber,
-                            temporaryId
-                            );
+                            family = new Family
+                            {
+                                FamilyName = familyName,
+                                WardId = wardId,
+                                IsRegistered = isRegistered,
+                                ChurchRegistrationNumber = churchRegistrationNumber,
+                                TemporaryID = temporaryId,
+                                Status = FamilyStatus.Active,
+                                CreatedBy = "System",
+                                CreatedDate = DateTime.UtcNow
+                            };
+                            await _familyService.RegisterFamilyAsync(family);
                         }
 
                         string firstName = worksheet.Cells[row, 6].Text?.Trim();
@@ -157,23 +161,27 @@ namespace StThomasMission.Services
                             _ => FamilyMemberRole.Other
                         };
 
-                        await _familyMemberService.AddFamilyMemberAsync(
-                        family.Id,
-                        firstName,
-                        lastName,
-                        relation,
-                        dob,
-                        contact,
-                        email,
-                        role
-                        );
+                        var familyMember = new FamilyMember
+                        {
+                            FamilyId = family.Id,
+                            FirstName = firstName,
+                            LastName = lastName,
+                            Relation = relation,
+                            DateOfBirth = dob,
+                            Contact = contact,
+                            Email = email,
+                            Role = role,
+                            CreatedBy = "System"
+                        };
 
-                        var familyMember = (await _familyMemberService.GetFamilyMembersByFamilyIdAsync(family.Id))
-                        .FirstOrDefault(m => m.FirstName == firstName && m.LastName == lastName);
-                        if (familyMember == null)
+                        await _familyMemberService.AddFamilyMemberAsync(familyMember);
+
+                        var addedMember = (await _familyMemberService.GetFamilyMembersByFamilyIdAsync(family.Id))
+                            .FirstOrDefault(m => m.FirstName == firstName && m.LastName == lastName);
+                        if (addedMember == null)
                         {
                             errors.Add($"Row {row}: Failed to add family member.");
-                            continue;
+                             continue;
                         }
 
                         string grade = worksheet.Cells[row, 12].Text?.Trim();
@@ -198,11 +206,11 @@ namespace StThomasMission.Services
                             }
 
                             await _studentService.EnrollStudentAsync(
-                            familyMember.Id,
-                            grade,
-                            academicYear,
-                            groupId,
-                            null
+                                addedMember.Id,
+                                grade,
+                                academicYear,
+                                groupId,
+                                null
                             );
                         }
                     }

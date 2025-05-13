@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StThomasMission.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using StThomasMission.Infrastructure.Data;
 namespace StThomasMission.Infrastructure.Migrations
 {
     [DbContext(typeof(StThomasMissionDbContext))]
-    partial class StThomasMissionDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250512153014_UpdateFamily2")]
+    partial class UpdateFamily2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -541,10 +544,6 @@ namespace StThomasMission.Infrastructure.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
-                    b.Property<string>("EparchyIndia")
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
                     b.Property<string>("FamilyName")
                         .IsRequired()
                         .HasMaxLength(150)
@@ -561,10 +560,6 @@ namespace StThomasMission.Infrastructure.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("MigratedTo")
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<string>("ParishIndia")
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
@@ -662,6 +657,10 @@ namespace StThomasMission.Infrastructure.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
+                    b.Property<string>("EparchyIndia")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
                     b.Property<int>("FamilyId")
                         .HasColumnType("int");
 
@@ -674,6 +673,10 @@ namespace StThomasMission.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ParishIndia")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
 
                     b.Property<int>("Relation")
                         .HasColumnType("int");

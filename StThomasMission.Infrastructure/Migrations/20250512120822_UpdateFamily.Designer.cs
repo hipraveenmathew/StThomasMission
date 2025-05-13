@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StThomasMission.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using StThomasMission.Infrastructure.Data;
 namespace StThomasMission.Infrastructure.Migrations
 {
     [DbContext(typeof(StThomasMissionDbContext))]
-    partial class StThomasMissionDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250512120822_UpdateFamily")]
+    partial class UpdateFamily
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -541,10 +544,6 @@ namespace StThomasMission.Infrastructure.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
-                    b.Property<string>("EparchyIndia")
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
                     b.Property<string>("FamilyName")
                         .IsRequired()
                         .HasMaxLength(150)
@@ -564,16 +563,9 @@ namespace StThomasMission.Infrastructure.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
-                    b.Property<string>("ParishIndia")
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
                     b.Property<string>("PostCode")
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
-
-                    b.Property<int?>("PreviousFamilyId")
-                        .HasColumnType("int");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
@@ -607,8 +599,6 @@ namespace StThomasMission.Infrastructure.Migrations
                     b.HasIndex("ChurchRegistrationNumber")
                         .IsUnique()
                         .HasFilter("[ChurchRegistrationNumber] IS NOT NULL");
-
-                    b.HasIndex("PreviousFamilyId");
 
                     b.HasIndex("TemporaryID")
                         .IsUnique()
@@ -662,6 +652,10 @@ namespace StThomasMission.Infrastructure.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
+                    b.Property<string>("EparchyIndia")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
                     b.Property<int>("FamilyId")
                         .HasColumnType("int");
 
@@ -674,6 +668,10 @@ namespace StThomasMission.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ParishIndia")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
 
                     b.Property<int>("Relation")
                         .HasColumnType("int");
@@ -1239,17 +1237,11 @@ namespace StThomasMission.Infrastructure.Migrations
 
             modelBuilder.Entity("StThomasMission.Core.Entities.Family", b =>
                 {
-                    b.HasOne("StThomasMission.Core.Entities.Family", "PreviousFamily")
-                        .WithMany()
-                        .HasForeignKey("PreviousFamilyId");
-
                     b.HasOne("StThomasMission.Core.Entities.Ward", "Ward")
                         .WithMany("Families")
                         .HasForeignKey("WardId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("PreviousFamily");
 
                     b.Navigation("Ward");
                 });

@@ -19,73 +19,99 @@ namespace StThomasMission.Services
             _auditService = auditService;
         }
 
-        public async Task AddFamilyMemberAsync(int familyId, string firstName, string lastName, FamilyMemberRole relation, DateTime dateOfBirth, string? contact, string? email, string? role)
+        public async Task AddFamilyMemberAsync(FamilyMember familyMember)
         {
-            if (string.IsNullOrEmpty(firstName))
-                throw new ArgumentException("First name is required.", nameof(firstName));
-            if (string.IsNullOrEmpty(lastName))
-                throw new ArgumentException("Last name is required.", nameof(lastName));
-            if (dateOfBirth > DateTime.UtcNow)
-                throw new ArgumentException("Date of birth cannot be in the future.", nameof(dateOfBirth));
-            if (!string.IsNullOrEmpty(contact) && !Regex.IsMatch(contact, @"^\+?\d{10,15}$"))
-                throw new ArgumentException("Invalid phone number.", nameof(contact));
-            if (!string.IsNullOrEmpty(email) && !Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
-                throw new ArgumentException("Invalid email address.", nameof(email));
+            if (familyMember == null)
+                throw new ArgumentNullException(nameof(familyMember));
 
-            // Use IUnitOfWork directly instead of IFamilyService
-            var family = await _unitOfWork.Families.GetByIdAsync(familyId);
+            // Validate required fields
+            if (string.IsNullOrWhiteSpace(familyMember.FirstName))
+                throw new ArgumentException("First name is required.", nameof(familyMember.FirstName));
+            if (string.IsNullOrWhiteSpace(familyMember.LastName))
+                throw new ArgumentException("Last name is required.", nameof(familyMember.LastName));
+            if (familyMember.DateOfBirth > DateTime.UtcNow)
+                throw new ArgumentException("Date of birth cannot be in the future.", nameof(familyMember.DateOfBirth));
+
+            // Validate contact
+            if (!string.IsNullOrEmpty(familyMember.Contact) && !Regex.IsMatch(familyMember.Contact, @"^\+?\d{10,15}$"))
+                throw new ArgumentException("Invalid phone number.", nameof(familyMember.Contact));
+
+            // Validate email
+            if (!string.IsNullOrEmpty(familyMember.Email) && !Regex.IsMatch(familyMember.Email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+                throw new ArgumentException("Invalid email address.", nameof(familyMember.Email));
+
+            // Validate role length
+            if (!string.IsNullOrEmpty(familyMember.Role) && familyMember.Role.Length > 50)
+                throw new ArgumentException("Role cannot exceed 50 characters.", nameof(familyMember.Role));
+
+            // Check family exists
+            var family = await _unitOfWork.Families.GetByIdAsync(familyMember.FamilyId);
             if (family == null)
-                throw new ArgumentException("Family not found.", nameof(familyId));
+                throw new ArgumentException("Family not found.", nameof(familyMember.FamilyId));
 
-            var familyMember = new FamilyMember
-            {
-                FamilyId = familyId,
-                FirstName = firstName,
-                LastName = lastName,
-                Relation = relation,
-                DateOfBirth = dateOfBirth,
-                Contact = contact,
-                Email = email,
-                Role = role,
-                CreatedBy = "System",
-            };
+            // Ensure CreatedBy is set
+            familyMember.CreatedBy = string.IsNullOrWhiteSpace(familyMember.CreatedBy) ? "System" : familyMember.CreatedBy;
 
             await _unitOfWork.FamilyMembers.AddAsync(familyMember);
             await _unitOfWork.CompleteAsync();
 
-            await _auditService.LogActionAsync("System", "Create", nameof(FamilyMember), familyMember.Id.ToString(), $"Added family member: {familyMember.FirstName} {familyMember.LastName}");
+            await _auditService.LogActionAsync(
+                familyMember.CreatedBy,
+                "Create",
+                nameof(FamilyMember),
+                familyMember.Id.ToString(),
+                $"Added family member: {familyMember.FullName}"
+            );
         }
 
-        public async Task UpdateFamilyMemberAsync(int familyMemberId, string firstName, string lastName, FamilyMemberRole relation, DateTime dateOfBirth, string? contact, string? email, string? role)
+
+        public async Task UpdateFamilyMemberAsync(FamilyMember updatedMember)
         {
-            var familyMember = await GetFamilyMemberByIdAsync(familyMemberId);
+            if (updatedMember == null)
+                throw new ArgumentNullException(nameof(updatedMember));
 
-            if (string.IsNullOrEmpty(firstName))
-                throw new ArgumentException("First name is required.", nameof(firstName));
-            if (string.IsNullOrEmpty(lastName))
-                throw new ArgumentException("Last name is required.", nameof(lastName));
-            if (dateOfBirth > DateTime.UtcNow)
-                throw new ArgumentException("Date of birth cannot be in the future.", nameof(dateOfBirth));
-            if (!string.IsNullOrEmpty(contact) && !Regex.IsMatch(contact, @"^\+?\d{10,15}$"))
-                throw new ArgumentException("Invalid phone number.", nameof(contact));
-            if (!string.IsNullOrEmpty(email) && !Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
-                throw new ArgumentException("Invalid email address.", nameof(email));
+            if (string.IsNullOrWhiteSpace(updatedMember.FirstName))
+                throw new ArgumentException("First name is required.", nameof(updatedMember.FirstName));
+            if (string.IsNullOrWhiteSpace(updatedMember.LastName))
+                throw new ArgumentException("Last name is required.", nameof(updatedMember.LastName));
+            if (updatedMember.DateOfBirth > DateTime.UtcNow)
+                throw new ArgumentException("Date of birth cannot be in the future.", nameof(updatedMember.DateOfBirth));
+            if (!string.IsNullOrEmpty(updatedMember.Contact) && !Regex.IsMatch(updatedMember.Contact, @"^\+?\d{10,15}$"))
+                throw new ArgumentException("Invalid phone number.", nameof(updatedMember.Contact));
+            if (!string.IsNullOrEmpty(updatedMember.Email) && !Regex.IsMatch(updatedMember.Email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+                throw new ArgumentException("Invalid email address.", nameof(updatedMember.Email));
 
-            familyMember.FirstName = firstName;
-            familyMember.LastName = lastName;
-            familyMember.Relation = relation;
-            familyMember.DateOfBirth = dateOfBirth;
-            familyMember.Contact = contact;
-            familyMember.Email = email;
-            familyMember.Role = role;
-            familyMember.UpdatedBy = "System";
-           
+            var existingMember = await GetFamilyMemberByIdAsync(updatedMember.Id);
+            if (existingMember == null)
+                throw new ArgumentException("Family member not found.", nameof(updatedMember.Id));
 
-            await _unitOfWork.FamilyMembers.UpdateAsync(familyMember);
+            // Update fields
+            existingMember.FirstName = updatedMember.FirstName;
+            existingMember.LastName = updatedMember.LastName;
+            existingMember.BaptismalName = updatedMember.BaptismalName;
+            existingMember.Relation = updatedMember.Relation;
+            existingMember.DateOfBirth = updatedMember.DateOfBirth;
+            existingMember.DateOfDeath = updatedMember.DateOfDeath;
+            existingMember.DateOfBaptism = updatedMember.DateOfBaptism;
+            existingMember.DateOfChrismation = updatedMember.DateOfChrismation;
+            existingMember.DateOfHolyCommunion = updatedMember.DateOfHolyCommunion;
+            existingMember.DateOfMarriage = updatedMember.DateOfMarriage;
+            existingMember.Contact = updatedMember.Contact;
+            existingMember.Email = updatedMember.Email;
+            existingMember.Role = updatedMember.Role;
+            existingMember.UpdatedBy = updatedMember.UpdatedBy ?? "System";
+
+            await _unitOfWork.FamilyMembers.UpdateAsync(existingMember);
             await _unitOfWork.CompleteAsync();
 
-            await _auditService.LogActionAsync("System", "Update", nameof(FamilyMember), familyMemberId.ToString(), $"Updated family member: {familyMember.FirstName} {familyMember.LastName}");
+            await _auditService.LogActionAsync(
+                existingMember.UpdatedBy,
+                "Update",
+                nameof(FamilyMember),
+                existingMember.Id.ToString(),
+                $"Updated family member: {existingMember.FirstName} {existingMember.LastName}");
         }
+
 
         public async Task DeleteFamilyMemberAsync(int familyMemberId)
         {
