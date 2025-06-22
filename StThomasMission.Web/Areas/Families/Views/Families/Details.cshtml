@@ -5,15 +5,15 @@
     ViewData["Title"] = "Family Details";
 }
 
-<div class="container mt-4">
-    <div class="card shadow-sm">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h3 class="mb-0"><i class="fas fa-users me-2"></i>Family Details: @Model.FamilyName</h3>
-            <a asp-action="AddMember" asp-route-familyId="@Model.Id" asp-area="Families" class="btn btn-primary btn-sm">
+<div class="container my-4">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-primary text-white d-flex flex-column flex-md-row justify-content-between align-items-md-center p-3">
+            <h3 class="mb-0"><i class="fas fa-users me-2"></i>@Model.FamilyName</h3>
+            <a asp-action="AddMember" asp-route-familyId="@Model.Id" asp-area="Families" class="btn btn-light btn-sm mt-2 mt-md-0">
                 <i class="fas fa-plus me-2"></i>Add Member
             </a>
         </div>
-        <div class="card-body">
+        <div class="card-body p-3">
             @if (TempData["Success"] != null)
             {
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -29,101 +29,113 @@
                 </div>
             }
 
-            <div class="row">
-                <div class="col-12 col-md-6">
-                    <p><strong>Family Name:</strong> @Model.FamilyName</p>
-                    <p><strong>Ward:</strong> @Model.Ward</p>
-                    <p><strong>Registration:</strong> @(Model.IsRegistered ? Model.ChurchRegistrationNumber ?? "N/A" : Model.TemporaryID ?? "N/A")</p>
-                    <p>
-                        <strong>Status:</strong>
-                        <span class="badge @(Model.Status == FamilyStatus.Active ? "bg-success" : Model.Status == FamilyStatus.Migrated ? "bg-info" : Model.Status == FamilyStatus.Inactive ? "bg-secondary" : "bg-danger")">
-                            @Model.Status
-                        </span>
-                    </p>
-                    @if (!string.IsNullOrEmpty(Model.MigratedTo))
-                    {
-                        <p><strong>Migrated To:</strong> @Model.MigratedTo</p>
-                    }
-                    <p><strong>House Number:</strong> @(string.IsNullOrEmpty(Model.HouseNumber) ? "N/A" : Model.HouseNumber)</p>
-                    <p><strong>Street Name:</strong> @(string.IsNullOrEmpty(Model.StreetName) ? "N/A" : Model.StreetName)</p>
-                    <p><strong>City:</strong> @(string.IsNullOrEmpty(Model.City) ? "N/A" : Model.City)</p>
-                    <p><strong>Post Code:</strong> @(string.IsNullOrEmpty(Model.PostCode) ? "N/A" : Model.PostCode)</p>
-                    <p><strong>Email:</strong> @(string.IsNullOrEmpty(Model.Email) ? "N/A" : Model.Email)</p>
-                    <p><strong>Gift Aid:</strong> @(Model.GiftAid ? "Yes" : "No")</p>
-                    <p><strong>Parish in India:</strong> @(string.IsNullOrEmpty(Model.ParishIndia) ? "N/A" : Model.ParishIndia)</p>
-                    <p><strong>Eparchy in India:</strong> @(string.IsNullOrEmpty(Model.EparchyIndia) ? "N/A" : Model.EparchyIndia)</p>
-                    <p><strong>Created By:</strong> @(string.IsNullOrEmpty(Model.CreatedBy) ? "N/A" : Model.CreatedBy)</p>
-                    <p><strong>Updated By:</strong> @(string.IsNullOrEmpty(Model.UpdatedBy) ? "N/A" : Model.UpdatedBy)</p>
-                    @if (Model.PreviousFamilyId.HasValue)
-                    {
-                        <p>
-                            <strong>Previous Family:</strong>
-                            <a asp-action="Details" asp-controller="Families" asp-area="Families" asp-route-id="@Model.PreviousFamilyId">
-                                @Model.PreviousFamily?.FamilyName ?? "View Previous Family"
-                            </a>
+            <!-- Family Info -->
+            <div class="mb-4">
+                <h5 class="fw-bold mb-3">Family Information</h5>
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <p class="mb-2"><strong>Family Name:</strong> @Model.FamilyName</p>
+                        <p class="mb-2"><strong>Ward:</strong> @Model.Ward</p>
+                        <p class="mb-2"><strong>Registration:</strong> @(Model.IsRegistered ? Model.ChurchRegistrationNumber ?? "N/A" : Model.TemporaryID ?? "N/A")</p>
+                        <p class="mb-2">
+                            <strong>Status:</strong>
+                            <span class="badge @(Model.Status == FamilyStatus.Active ? "bg-success" : Model.Status == FamilyStatus.Migrated ? "bg-info" : Model.Status == FamilyStatus.Inactive ? "bg-secondary" : "bg-danger")">
+                                @Model.Status
+                            </span>
                         </p>
-                    }
+                        @if (!string.IsNullOrEmpty(Model.MigratedTo))
+                        {
+                            <p class="mb-2"><strong>Migrated To:</strong> @Model.MigratedTo</p>
+                        }
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <!-- Collapsible Additional Details -->
+                        <div class="accordion" id="familyDetailsAccordion">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingDetails">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDetails" aria-expanded="false" aria-controls="collapseDetails">
+                                        Additional Details
+                                    </button>
+                                </h2>
+                                <div id="collapseDetails" class="accordion-collapse collapse" aria-labelledby="headingDetails" data-bs-parent="#familyDetailsAccordion">
+                                    <div class="accordion-body">
+                                        <p class="mb-2"><strong>House Number:</strong> @(string.IsNullOrEmpty(Model.HouseNumber) ? "N/A" : Model.HouseNumber)</p>
+                                        <p class="mb-2"><strong>Street Name:</strong> @(string.IsNullOrEmpty(Model.StreetName) ? "N/A" : Model.StreetName)</p>
+                                        <p class="mb-2"><strong>City:</strong> @(string.IsNullOrEmpty(Model.City) ? "N/A" : Model.City)</p>
+                                        <p class="mb-2"><strong>Post Code:</strong> @(string.IsNullOrEmpty(Model.PostCode) ? "N/A" : Model.PostCode)</p>
+                                        <p class="mb-2"><strong>Email:</strong> @(string.IsNullOrEmpty(Model.Email) ? "N/A" : Model.Email)</p>
+                                        <p class="mb-2"><strong>Gift Aid:</strong> @(Model.GiftAid ? "Yes" : "No")</p>
+                                        <p class="mb-2"><strong>Parish in India:</strong> @(string.IsNullOrEmpty(Model.ParishIndia) ? "N/A" : Model.ParishIndia)</p>
+                                        <p class="mb-2"><strong>Eparchy in India:</strong> @(string.IsNullOrEmpty(Model.EparchyIndia) ? "N/A" : Model.EparchyIndia)</p>
+                                        <p class="mb-2"><strong>Created By:</strong> @(string.IsNullOrEmpty(Model.CreatedBy) ? "N/A" : Model.CreatedBy)</p>
+                                        <p class="mb-2"><strong>Updated By:</strong> @(string.IsNullOrEmpty(Model.UpdatedBy) ? "N/A" : Model.UpdatedBy)</p>
+                                        @if (Model.PreviousFamilyId.HasValue)
+                                        {
+                                            <p class="mb-2">
+                                                <strong>Previous Family:</strong>
+                                                <a asp-action="Details" asp-controller="Families" asp-area="Families" asp-route-id="@Model.PreviousFamilyId">
+                                                    @Model.PreviousFamily?.FamilyName ?? "View Previous Family"
+                                                </a>
+                                            </p>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <h5 class="mt-4">Family Members</h5>
+            <!-- Family Members -->
+            <h5 class="fw-bold mb-3">Family Members</h5>
             @if (Model.Members.Any())
             {
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>First Name</th>
-                                <th>Last Name</th>
-                                <th>Baptismal Name</th>
-                                <th>Relation</th>
-                                <th>Date of Birth</th>
-                                <th>Date of Baptism</th>
-                                <th>Date of Chrismation</th>
-                                <th>Date of Holy Communion</th>
-                                <th>Date of Marriage</th>
-                                <th>Date of Death</th>
-                                <th>Contact</th>
-                                <th>Email</th>
-                                <th>Role</th>
-                                <th>Created By</th>
-                                <th>Updated By</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var member in Model.Members)
-                            {
-                                <tr>
-                                    <td>@(string.IsNullOrEmpty(member.FirstName) ? "N/A" : member.FirstName)</td>
-                                    <td>@(string.IsNullOrEmpty(member.LastName) ? "N/A" : member.LastName)</td>
-                                    <td>@(string.IsNullOrEmpty(member.BaptismalName) ? "N/A" : member.BaptismalName)</td>
-                                    <td>@(member.Relation != default(FamilyMemberRole) ? member.Relation.ToString() : "N/A")</td>
-                                    <td>@(member.DateOfBirth != default ? member.DateOfBirth.ToString("yyyy-MM-dd") : "N/A")</td>
-                                    <td>@(member.DateOfBaptism.HasValue ? member.DateOfBaptism.Value.ToString("yyyy-MM-dd") : "N/A")</td>
-                                    <td>@(member.DateOfChrismation.HasValue ? member.DateOfChrismation.Value.ToString("yyyy-MM-dd") : "N/A")</td>
-                                    <td>@(member.DateOfHolyCommunion.HasValue ? member.DateOfHolyCommunion.Value.ToString("yyyy-MM-dd") : "N/A")</td>
-                                    <td>@(member.DateOfMarriage.HasValue ? member.DateOfMarriage.Value.ToString("yyyy-MM-dd") : "N/A")</td>
-                                    <td>@(member.DateOfDeath.HasValue ? member.DateOfDeath.Value.ToString("yyyy-MM-dd") : "N/A")</td>
-                                    <td>@(string.IsNullOrEmpty(member.Contact) ? "N/A" : member.Contact)</td>
-                                    <td>@(string.IsNullOrEmpty(member.Email) ? "N/A" : member.Email)</td>
-                                    <td>@(string.IsNullOrEmpty(member.Role) ? "N/A" : member.Role)</td>
-                                    <td>@(string.IsNullOrEmpty(member.CreatedBy) ? "N/A" : member.CreatedBy)</td>
-                                    <td>@(string.IsNullOrEmpty(member.UpdatedBy) ? "N/A" : member.UpdatedBy)</td>
-                                    <td>
-                                        <div class="d-flex gap-2">
-                                            <a asp-area="Families" asp-controller="FamilyMembers" asp-action="Edit" asp-route-id="@member.Id" class="btn btn-sm btn-outline-warning">
-                                                <i class="fas fa-edit me-2"></i>Edit
-                                            </a>
-                                            <a asp-action="EnrollStudent" asp-route-familyMemberId="@member.Id" asp-area="Families" class="btn btn-sm btn-outline-primary">
-                                                <i class="fas fa-user-plus me-2"></i>Enroll as Student
-                                            </a>
+                <div class="row g-3">
+                    @foreach (var member in Model.Members)
+                    {
+                        <div class="col-12">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body">
+                                    <h6 class="card-title fw-bold">@(string.IsNullOrEmpty(member.FirstName) ? "N/A" : member.FirstName) @(string.IsNullOrEmpty(member.LastName) ? "N/A" : member.LastName)</h6>
+                                    <p class="mb-1"><strong>Relation:</strong> @(member.Relation != default(FamilyMemberRole) ? member.Relation.ToString() : "N/A")</p>
+                                    <p class="mb-1"><strong>Date of Birth:</strong> @(member.DateOfBirth != default ? member.DateOfBirth.ToString("yyyy-MM-dd") : "N/A")</p>
+                                    <!-- Collapsible Member Details -->
+                                    <div class="accordion" id="memberAccordion_@member.Id">
+                                        <div class="accordion-item border-0">
+                                            <h2 class="accordion-header" id="heading_@member.Id">
+                                                <button class="accordion-button collapsed p-0 bg-transparent text-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_@member.Id" aria-expanded="false" aria-controls="collapse_@member.Id">
+                                                    More Details
+                                                </button>
+                                            </h2>
+                                            <div id="collapse_@member.Id" class="accordion-collapse collapse" aria-labelledby="heading_@member.Id" data-bs-parent="#memberAccordion_@member.Id">
+                                                <div class="accordion-body p-0 pt-2">
+                                                    <p class="mb-1"><strong>Baptismal Name:</strong> @(string.IsNullOrEmpty(member.BaptismalName) ? "N/A" : member.BaptismalName)</p>
+                                                    <p class="mb-1"><strong>Date of Baptism:</strong> @(member.DateOfBaptism.HasValue ? member.DateOfBaptism.Value.ToString("yyyy-MM-dd") : "N/A")</p>
+                                                    <p class="mb-1"><strong>Date of Chrismation:</strong> @(member.DateOfChrismation.HasValue ? member.DateOfChrismation.Value.ToString("yyyy-MM-dd") : "N/A")</p>
+                                                    <p class="mb-1"><strong>Date of Holy Communion:</strong> @(member.DateOfHolyCommunion.HasValue ? member.DateOfHolyCommunion.Value.ToString("yyyy-MM-dd") : "N/A")</p>
+                                                    <p class="mb-1"><strong>Date of Marriage:</strong> @(member.DateOfMarriage.HasValue ? member.DateOfMarriage.Value.ToString("yyyy-MM-dd") : "N/A")</p>
+                                                    <p class="mb-1"><strong>Date of Death:</strong> @(member.DateOfDeath.HasValue ? member.DateOfDeath.Value.ToString("yyyy-MM-dd") : "N/A")</p>
+                                                    <p class="mb-1"><strong>Contact:</strong> @(string.IsNullOrEmpty(member.Contact) ? "N/A" : member.Contact)</p>
+                                                    <p class="mb-1"><strong>Email:</strong> @(string.IsNullOrEmpty(member.Email) ? "N/A" : member.Email)</p>
+                                                    <p class="mb-1"><strong>Role:</strong> @(string.IsNullOrEmpty(member.Role) ? "N/A" : member.Role)</p>
+                                                    <p class="mb-1"><strong>Created By:</strong> @(string.IsNullOrEmpty(member.CreatedBy) ? "N/A" : member.CreatedBy)</p>
+                                                    <p class="mb-1"><strong>Updated By:</strong> @(string.IsNullOrEmpty(member.UpdatedBy) ? "N/A" : member.UpdatedBy)</p>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+                                    </div>
+                                    <div class="d-flex gap-2 mt-2">
+                                        <a asp-area="Families" asp-controller="FamilyMembers" asp-action="Edit" asp-route-id="@member.Id" class="btn btn-sm btn-outline-warning w-100">
+                                            <i class="fas fa-edit me-2"></i>Edit
+                                        </a>
+                                        <a asp-action="EnrollStudent" asp-route-familyMemberId="@member.Id" asp-area="Families" class="btn btn-sm btn-outline-primary w-100">
+                                            <i class="fas fa-user-plus me-2"></i>Enroll as Student
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
                 </div>
             }
             else
@@ -144,7 +156,7 @@
     <div id="familyDetailsToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="toast-header">
             <strong class="me-auto">Family Details Status</strong>
-            <button type="button" class="btn-close" data<|control298|>="toast" aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
         <div class="toast-body"></div>
     </div>
@@ -153,4 +165,12 @@
 @section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Ensure accordions are touch-friendly
+            $('.accordion-button').on('touchstart', function (e) {
+                $(this).trigger('click');
+            });
+        });
+    </script>
 }

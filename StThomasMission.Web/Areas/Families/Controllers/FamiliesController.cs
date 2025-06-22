@@ -259,43 +259,26 @@ namespace StThomasMission.Web.Areas.Families.Controllers
             if (family == null)
             {
                 return NotFound("Family not found.");
-            }
+            }           
 
-            var model = new MarkAsMigratedViewModel
-            {
-                Id = family.Id,
-                FamilyName = family.FamilyName
-            };
-
-            return View(model);
+            return View(family);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> MarkAsMigrated(MarkAsMigratedViewModel model)
+        public async Task<IActionResult> MarkAsMigrated(Family model)
         {
-            if (!ModelState.IsValid)
+            if (string.IsNullOrWhiteSpace(model.MigratedTo))
             {
                 return View(model);
             }
 
             try
             {
-                var family = new Family
-                {
-                    Id = model.Id,
-                    FamilyName = model.FamilyName,
-                    WardId = int.Parse(model.Ward),
-                    IsRegistered = model.IsRegistered,
-                    ChurchRegistrationNumber = model.ChurchRegistrationNumber,
-                    TemporaryID = model.TemporaryID,
-                    Status = FamilyStatus.Migrated,
-                    MigratedTo = model.MigratedTo,
-                    UpdatedBy = User.Identity?.Name ?? "System",
-                    UpdatedDate = DateTime.UtcNow
-                };
+                model.Status = FamilyStatus.Migrated;
+               
 
-                await _familyService.UpdateFamilyAsync(family);
+                await _familyService.UpdateFamilyAsync(model);
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
@@ -323,7 +306,17 @@ namespace StThomasMission.Web.Areas.Families.Controllers
                 ChurchRegistrationNumber = family.ChurchRegistrationNumber,
                 TemporaryID = family.TemporaryID,
                 Status = family.Status,
-                MigratedTo = family.MigratedTo
+                MigratedTo = family.MigratedTo,
+                HouseNumber = family.HouseNumber,
+                StreetName = family.StreetName,
+                City = family.City,
+                PostCode = family.PostCode,
+                Email = family.Email,
+                GiftAid = family.GiftAid,
+                ParishIndia = family.ParishIndia,
+                EparchyIndia = family.EparchyIndia,
+                CreatedBy = family.CreatedBy,
+                UpdatedBy = family.UpdatedBy
             };
 
             return View(model);
@@ -350,6 +343,15 @@ namespace StThomasMission.Web.Areas.Families.Controllers
                     TemporaryID = model.TemporaryID,
                     Status = model.Status,
                     MigratedTo = model.MigratedTo,
+                    HouseNumber = model.HouseNumber,
+                    StreetName = model.StreetName,
+                    City = model.City,
+                    PostCode = model.PostCode,
+                    Email = model.Email,
+                    GiftAid = model.GiftAid,
+                    ParishIndia = model.ParishIndia,
+                    EparchyIndia = model.EparchyIndia,
+                    CreatedBy = model.CreatedBy,
                     UpdatedBy = User.Identity?.Name ?? "System",
                     UpdatedDate = DateTime.UtcNow
                 };
@@ -385,6 +387,16 @@ namespace StThomasMission.Web.Areas.Families.Controllers
                 TemporaryID = family.TemporaryID,
                 Status = family.Status,
                 MigratedTo = family.MigratedTo,
+                HouseNumber = family.HouseNumber,
+                StreetName = family.StreetName,
+                City = family.City,
+                PostCode = family.PostCode,
+                Email = family.Email,
+                GiftAid = family.GiftAid,
+                ParishIndia = family.ParishIndia,
+                EparchyIndia = family.EparchyIndia,
+                CreatedBy = family.CreatedBy,
+                UpdatedBy = family.UpdatedBy,
                 PreviousFamilyId = family.PreviousFamilyId,
                 PreviousFamily = family.PreviousFamily,
                 Members = members.Select(m => new FamilyMemberViewModel
@@ -393,11 +405,19 @@ namespace StThomasMission.Web.Areas.Families.Controllers
                     FamilyId = m.FamilyId,
                     FirstName = m.FirstName,
                     LastName = m.LastName,
+                    BaptismalName = m.BaptismalName,
                     Relation = m.Relation,
                     DateOfBirth = m.DateOfBirth,
+                    DateOfBaptism = m.DateOfBaptism,
+                    DateOfChrismation = m.DateOfChrismation,
+                    DateOfHolyCommunion = m.DateOfHolyCommunion,
+                    DateOfMarriage = m.DateOfMarriage,
+                    DateOfDeath = m.DateOfDeath,
                     Contact = m.Contact,
                     Email = m.Email,
-                    Role = m.Role
+                    Role = m.Role,
+                    CreatedBy = m.CreatedBy,
+                    UpdatedBy = m.UpdatedBy
                 }).ToList()
             };
 

@@ -6,40 +6,19 @@
     Layout = "_Layout";
 }
 
-<div class="container mt-4">
-    <div class="card shadow-sm">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+<div class="container my-4">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-primary text-white d-flex flex-column flex-md-row justify-content-between align-items-md-center p-3">
             <h3 class="mb-0"><i class="fas fa-users me-2"></i>Families</h3>
-            <div class="d-flex gap-2">
-                <a asp-action="Register" asp-area="Families" class="btn btn-primary btn-sm"><i class="fas fa-plus me-2"></i>Register Family</a>
-                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#importFamiliesModal">
-                    <i class="fas fa-file-import me-2"></i>Import Families
+            <div class="d-flex gap-2 mt-2 mt-md-0">
+                <a asp-action="Register" asp-area="Families" class="btn btn-light btn-sm"><i class="fas fa-plus me-2"></i>Register</a>
+                <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#importFamiliesModal">
+                    <i class="fas fa-file-import me-2"></i>Import
                 </button>
             </div>
         </div>
-        <div class="card-body">
-            <form asp-action="Index" asp-area="Families" method="get" id="filterForm" class="mb-4">
-                <div class="row g-3">
-                    <div class="col-12 col-md-6 col-lg-3 mb-3">
-                        <label asp-for="Filter.SearchString" class="form-label fw-bold">Search</label>
-                        <input asp-for="Filter.SearchString" class="form-control rounded-3" placeholder="Search by name or ward" />
-                    </div>
-                    <div class="col-12 col-md-6 col-lg-3 mb-3">
-                        <label asp-for="Filter.Ward" class="form-label fw-bold">Ward ID</label>
-                        <input asp-for="Filter.Ward" type="number" class="form-control rounded-3" placeholder="Filter by ward ID" min="0" />
-                    </div>
-                    <div class="col-12 col-md-6 col-lg-3 mb-3">
-                        <label asp-for="Filter.Status" class="form-label fw-bold">Status</label>
-                        <select asp-for="Filter.Status" class="form-select rounded-3" asp-items="Html.GetEnumSelectList<StThomasMission.Core.Enums.FamilyStatus>()">
-                            <option value="">All Statuses</option>
-                        </select>
-                    </div>
-                    <div class="col-12 col-md-6 col-lg-3 mb-3 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter me-2"></i>Filter</button>
-                    </div>
-                </div>
-            </form>
-
+        <div class="card-body p-3">
+            <!-- Alerts -->
             @if (TempData["Success"] != null)
             {
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -55,6 +34,41 @@
                 </div>
             }
 
+            <!-- Filters -->
+            <div class="accordion mb-3" id="filterAccordion">
+                <div class="accordion-item border-0">
+                    <h2 class="accordion-header" id="filterHeading">
+                        <button class="accordion-button collapsed bg-transparent" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filterCollapse">
+                            <i class="fas fa-filter me-2"></i>Filter Families
+                        </button>
+                    </h2>
+                    <div id="filterCollapse" class="accordion-collapse collapse" aria-labelledby="filterHeading" data-bs-parent="#filterAccordion">
+                        <div class="accordion-body">
+                            <form asp-action="Index" asp-area="Families" method="get" id="filterForm" class="row g-3">
+                                <div class="col-12 col-md-6 col-lg-4">
+                                    <label asp-for="Filter.SearchString" class="form-label fw-bold">Search</label>
+                                    <input asp-for="Filter.SearchString" class="form-control" placeholder="Search by name or ward" />
+                                </div>
+                                <div class="col-12 col-md-6 col-lg-4">
+                                    <label asp-for="Filter.Ward" class="form-label fw-bold">Ward ID</label>
+                                    <input asp-for="Filter.Ward" type="number" class="form-control" placeholder="Filter by ward ID" min="0" />
+                                </div>
+                                <div class="col-12 col-md-6 col-lg-4">
+                                    <label asp-for="Filter.Status" class="form-label fw-bold">Status</label>
+                                    <select asp-for="Filter.Status" class="form-select" asp-items="Html.GetEnumSelectList<StThomasMission.Core.Enums.FamilyStatus>()">
+                                        <option value="">All Statuses</option>
+                                    </select>
+                                </div>
+                                <div class="col-12 mt-3">
+                                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter me-2"></i>Apply Filters</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Family List -->
             @if (Model.Families.Count == 0)
             {
                 <div class="alert alert-info text-center" role="alert">
@@ -63,7 +77,8 @@
             }
             else
             {
-                <div class="table-responsive">
+                <!-- Desktop Table -->
+                <div class="table-responsive d-none d-md-block">
                     <table class="table table-hover align-middle">
                         <thead class="table-light">
                             <tr>
@@ -75,17 +90,6 @@
                                 </th>
                                 <th>Registration</th>
                                 <th>Status</th>
-                                <th>Migrated To</th>
-                                <th>House Number</th>
-                                <th>Street Name</th>
-                                <th>City</th>
-                                <th>Post Code</th>
-                                <th>Email</th>
-                                <th>Gift Aid</th>
-                                <th>Parish India</th>
-                                <th>Eparchy India</th>
-                                <th>Created By</th>
-                                <th>Updated By</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -101,17 +105,6 @@
                                             @family.Status
                                         </span>
                                     </td>
-                                    <td>@(string.IsNullOrEmpty(family.MigratedTo) ? "N/A" : family.MigratedTo)</td>
-                                    <td>@(string.IsNullOrEmpty(family.HouseNumber) ? "N/A" : family.HouseNumber)</td>
-                                    <td>@(string.IsNullOrEmpty(family.StreetName) ? "N/A" : family.StreetName)</td>
-                                    <td>@(string.IsNullOrEmpty(family.City) ? "N/A" : family.City)</td>
-                                    <td>@(string.IsNullOrEmpty(family.PostCode) ? "N/A" : family.PostCode)</td>
-                                    <td>@(string.IsNullOrEmpty(family.Email) ? "N/A" : family.Email)</td>
-                                    <td>@(family.GiftAid ? "Yes" : "No")</td>
-                                    <td>@(string.IsNullOrEmpty(family.ParishIndia) ? "N/A" : family.ParishIndia)</td>
-                                    <td>@(string.IsNullOrEmpty(family.EparchyIndia) ? "N/A" : family.EparchyIndia)</td>
-                                    <td>@(string.IsNullOrEmpty(family.CreatedBy) ? "N/A" : family.CreatedBy)</td>
-                                    <td>@(string.IsNullOrEmpty(family.UpdatedBy) ? "N/A" : family.UpdatedBy)</td>
                                     <td>
                                         <div class="d-flex flex-wrap gap-2">
                                             <a asp-action="Details" asp-route-id="@family.Id" asp-area="Families" class="btn btn-sm btn-outline-primary">
@@ -123,13 +116,13 @@
                                             @if (!family.IsRegistered)
                                             {
                                                 <a asp-action="ConvertToRegistered" asp-route-familyId="@family.Id" asp-area="Families" class="btn btn-sm btn-outline-success">
-                                                    <i class="fas fa-check me-2"></i>Convert to Registered
+                                                    <i class="fas fa-check me-2"></i>Register
                                                 </a>
                                             }
                                             @if (family.Status != FamilyStatus.Migrated)
                                             {
                                                 <a asp-action="MarkAsMigrated" asp-route-id="@family.Id" asp-area="Families" class="btn btn-sm btn-outline-info">
-                                                    <i class="fas fa-plane me-2"></i>Mark as Migrated
+                                                    <i class="fas fa-plane me-2"></i>Migrate
                                                 </a>
                                             }
                                         </div>
@@ -140,20 +133,86 @@
                     </table>
                 </div>
 
+                <!-- Mobile Cards -->
+                <div class="d-md-none">
+                    @foreach (var family in Model.Families)
+                    {
+                        <div class="card border-0 shadow-sm mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title fw-bold">@family.FamilyName</h6>
+                                <p class="mb-1"><strong>Ward:</strong> @(family.Ward != null ? family.Ward.Name : "N/A")</p>
+                                <p class="mb-1"><strong>Registration:</strong> @(family.IsRegistered ? family.ChurchRegistrationNumber : family.TemporaryID ?? "N/A")</p>
+                                <p class="mb-1">
+                                    <strong>Status:</strong>
+                                    <span class="badge @(family.Status == FamilyStatus.Active ? "bg-success" : family.Status == FamilyStatus.Migrated ? "bg-info" : "bg-secondary")">
+                                        @family.Status
+                                    </span>
+                                </p>
+                                <!-- Collapsible Details -->
+                                <div class="accordion" id="familyAccordion_@family.Id">
+                                    <div class="accordion-item border-0">
+                                        <h2 class="accordion-header" id="heading_@family.Id">
+                                            <button class="accordion-button collapsed p-0 bg-transparent text-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_@family.Id" aria-expanded="false" aria-controls="collapse_@family.Id">
+                                                More Details
+                                            </button>
+                                        </h2>
+                                        <div id="collapse_@family.Id" class="accordion-collapse collapse" aria-labelledby="heading_@family.Id" data-bs-parent="#familyAccordion_@family.Id">
+                                            <div class="accordion-body p-0 pt-2">
+                                                <p class="mb-1"><strong>Migrated To:</strong> @(string.IsNullOrEmpty(family.MigratedTo) ? "N/A" : family.MigratedTo)</p>
+                                                <p class="mb-1"><strong>House Number:</strong> @(string.IsNullOrEmpty(family.HouseNumber) ? "N/A" : family.HouseNumber)</p>
+                                                <p class="mb-1"><strong>Street Name:</strong> @(string.IsNullOrEmpty(family.StreetName) ? "N/A" : family.StreetName)</p>
+                                                <p class="mb-1"><strong>City:</strong> @(string.IsNullOrEmpty(family.City) ? "N/A" : family.City)</p>
+                                                <p class="mb-1"><strong>Post Code:</strong> @(string.IsNullOrEmpty(family.PostCode) ? "N/A" : family.PostCode)</p>
+                                                <p class="mb-1"><strong>Email:</strong> @(string.IsNullOrEmpty(family.Email) ? "N/A" : family.Email)</p>
+                                                <p class="mb-1"><strong>Gift Aid:</strong> @(family.GiftAid ? "Yes" : "No")</p>
+                                                <p class="mb-1"><strong>Parish India:</strong> @(string.IsNullOrEmpty(family.ParishIndia) ? "N/A" : family.ParishIndia)</p>
+                                                <p class="mb-1"><strong>Eparchy India:</strong> @(string.IsNullOrEmpty(family.EparchyIndia) ? "N/A" : family.EparchyIndia)</p>
+                                                <p class="mb-1"><strong>Created By:</strong> @(string.IsNullOrEmpty(family.CreatedBy) ? "N/A" : family.CreatedBy)</p>
+                                                <p class="mb-1"><strong>Updated By:</strong> @(string.IsNullOrEmpty(family.UpdatedBy) ? "N/A" : family.UpdatedBy)</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex flex-wrap gap-2 mt-2">
+                                    <a asp-action="Details" asp-route-id="@family.Id" asp-area="Families" class="btn btn-sm btn-outline-primary w-100">
+                                        <i class="fas fa-info-circle me-2"></i>Details
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@family.Id" asp-area="Families" class="btn btn-sm btn-outline-warning w-100">
+                                        <i class="fas fa-edit me-2"></i>Edit
+                                    </a>
+                                    @if (!family.IsRegistered)
+                                    {
+                                        <a asp-action="ConvertToRegistered" asp-route-familyId="@family.Id" asp-area="Families" class="btn btn-sm btn-outline-success w-100">
+                                            <i class="fas fa-check me-2"></i>Register
+                                        </a>
+                                    }
+                                    @if (family.Status != FamilyStatus.Migrated)
+                                    {
+                                        <a asp-action="MarkAsMigrated" asp-route-id="@family.Id" asp-area="Families" class="btn btn-sm btn-outline-info w-100">
+                                            <i class="fas fa-plane me-2"></i>Migrate
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+            <!-- Pagination -->
+            @if (Model.Families.TotalPages > 1)
+            {
                 <nav aria-label="Page navigation" class="mt-4">
-                    <ul class="pagination justify-content-center">
+                    <ul class="pagination justify-content-center flex-wrap">
                         @if (Model.Families.HasPreviousPage)
                         {
                             <li class="page-item">
-                                <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.Families.PageIndex - 1, pageSize = Model.Families.PageSize, sortOrder = ViewData["CurrentSort"], searchString = Model.Filter.SearchString, ward = Model.Filter.Ward, status = Model.Filter.Status })"><i class="fas fa-chevron-left"></i> Previous</a>
+                                <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.Families.PageIndex - 1, pageSize = Model.Families.PageSize, sortOrder = ViewData["CurrentSort"], searchString = Model.Filter.SearchString, ward = Model.Filter.Ward, status = Model.Filter.Status })"><i class="fas fa-chevron-left"></i> Prev</a>
                             </li>
                         }
-                        @for (int i = Math.Max(1, Model.Families.PageIndex - 2); i <= Math.Min(Model.Families.TotalPages, Model.Families.PageIndex + 2); i++)
-                        {
-                            <li class="page-item @(i == Model.Families.PageIndex ? "active" : "")">
-                                <a class="page-link" href="@Url.Action("Index", new { pageNumber = i, pageSize = Model.Families.PageSize, sortOrder = ViewData["CurrentSort"], searchString = Model.Filter.SearchString, ward = Model.Filter.Ward, status = Model.Filter.Status })">@i</a>
-                            </li>
-                        }
+                        <li class="page-item disabled">
+                            <span class="page-link">Page @Model.Families.PageIndex of @Model.Families.TotalPages</span>
+                        </li>
                         @if (Model.Families.HasNextPage)
                         {
                             <li class="page-item">
@@ -170,6 +229,7 @@
     </div>
 </div>
 
+<!-- Import Modal -->
 <div class="modal fade" id="importFamiliesModal" tabindex="-1" aria-labelledby="importFamiliesModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -184,8 +244,10 @@
                         <input type="file" name="file" id="file" class="form-control" accept=".xlsx,.xls" required />
                         <small class="form-text text-muted">Only .xlsx and .xls files are supported.</small>
                     </div>
-                    <button type="submit" class="btn btn-primary">Import</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary w-100">Import</button>
+                        <button type="button" class="btn btn-secondary w-100" data-bs-dismiss="modal">Cancel</button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -254,6 +316,10 @@
                 if ($(this).valid()) {
                     $submitButton.prop("disabled", true).prepend('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>');
                 }
+            });
+
+            $('.accordion-button').on('touchstart', function (e) {
+                $(this).trigger('click');
             });
         });
     </script>

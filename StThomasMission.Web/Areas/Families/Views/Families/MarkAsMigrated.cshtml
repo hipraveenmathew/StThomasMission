@@ -1,4 +1,5 @@
-﻿@model StThomasMission.Web.Areas.Families.Models.MarkAsMigratedViewModel
+﻿@using StThomasMission.Core.Enums
+@model StThomasMission.Core.Entities.Family
 
 @{
     ViewData["Title"] = "Mark as Migrated";
@@ -13,10 +14,20 @@
             <form asp-action="MarkAsMigrated" asp-area="Families" method="post" id="markAsMigratedForm">
                 <input type="hidden" asp-for="Id" />
                 <input type="hidden" asp-for="FamilyName" />
-                <input type="hidden" asp-for="Ward" />
+                <input type="hidden" asp-for="WardId" />
                 <input type="hidden" asp-for="IsRegistered" />
                 <input type="hidden" asp-for="ChurchRegistrationNumber" />
                 <input type="hidden" asp-for="TemporaryID" />
+                <input type="hidden" asp-for="HouseNumber" />
+                <input type="hidden" asp-for="StreetName" />
+                <input type="hidden" asp-for="City" />
+                <input type="hidden" asp-for="PostCode" />
+                <input type="hidden" asp-for="Email" />
+                <input type="hidden" asp-for="GiftAid" />
+                <input type="hidden" asp-for="ParishIndia" />
+                <input type="hidden" asp-for="EparchyIndia" />
+                <input type="hidden" asp-for="CreatedBy" />
+                <input type="hidden" asp-for="UpdatedBy" />
                 <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
                 <div class="row">
@@ -36,7 +47,6 @@
     </div>
 </div>
 
-<!-- Toast Notification Container -->
 <div class="toast-container position-fixed bottom-0 end-0 p-3">
     <div id="markAsMigratedToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="toast-header">
@@ -52,18 +62,17 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
     <script>
         $(document).ready(function () {
-            // Initialize jQuery Validate
             $("#markAsMigratedForm").validate({
                 rules: {
                     MigratedTo: {
                         required: true,
-                        maxlength: 100
+                        maxlength: 150
                     }
                 },
                 messages: {
                     MigratedTo: {
                         required: "Please enter the migration destination.",
-                        maxlength: "Migration destination cannot exceed 100 characters."
+                        maxlength: "Migration destination cannot exceed 150 characters."
                     }
                 },
                 errorElement: "div",
@@ -76,7 +85,6 @@
                 }
             });
 
-            // Loading spinner for form submission
             $("#markAsMigratedForm").on("submit", function () {
                 var $submitButton = $(this).find('button[type="submit"]');
                 if ($(this).valid()) {
