@@ -10,7 +10,10 @@ namespace StThomasMission.Core.Interfaces
     public interface IAssessmentRepository : IRepository<Assessment>
     {
         Task<IEnumerable<Assessment>> GetAssessmentsByStudentIdAsync(int studentId, AssessmentType? type = null);
-        Task<IEnumerable<Assessment>> GetByGradeAsync(string grade, DateTime? startDate = null, DateTime? endDate = null);
+
+        // --- UPDATED Method Signature ---
+        Task<IEnumerable<Assessment>> GetByGradeIdAsync(int gradeId, DateTime? startDate = null, DateTime? endDate = null);
+
         Task<IEnumerable<Assessment>> GetAsync(Expression<Func<Assessment, bool>> predicate);
     }
 }

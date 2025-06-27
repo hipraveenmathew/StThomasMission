@@ -10,7 +10,7 @@ namespace StThomasMission.Core.Interfaces
     public interface IAttendanceRepository : IRepository<Attendance>
     {
         Task<IEnumerable<Attendance>> GetByStudentIdAsync(int studentId, DateTime? startDate = null, DateTime? endDate = null);
-        Task<IEnumerable<Attendance>> GetByGradeAsync(string grade, DateTime date);
+        Task<IEnumerable<Attendance>> GetByGradeIdAsync(int gradeId, DateTime date);
         IQueryable<Attendance> GetAttendanceQueryable(Expression<Func<Attendance, bool>> predicate);
     }
 }

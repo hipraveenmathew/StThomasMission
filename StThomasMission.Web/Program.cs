@@ -1,68 +1,78 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 using StThomasMission.Core.Entities;
 using StThomasMission.Core.Interfaces;
 using StThomasMission.Infrastructure;
 using StThomasMission.Infrastructure.Data;
-using StThomasMission.Infrastructure.Repositories;
 using StThomasMission.Services;
-using Microsoft.AspNetCore.Mvc.Filters;
-using Serilog;
-using Microsoft.AspNetCore.Mvc;
-using StThomasMission.Data;
 using StThomasMission.Web.Models;
+
+// --- 1. BOOTSTRAPPING & CONFIGURATION ---
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Serilog for structured logging
+// Configure Serilog for structured logging from appsettings.json
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
-    .WriteTo.Console()
-    .WriteTo.File("Logs/log-.txt", rollingInterval: RollingInterval.Day)
     .CreateLogger();
 
 builder.Host.UseSerilog();
 
-// Add services to the container
+// --- 2. SERVICE REGISTRATION (Dependency Injection) ---
+
+// Add MVC Controllers and Views, including a global exception filter
 builder.Services.AddControllersWithViews(options =>
 {
-    options.Filters.Add(typeof(GlobalExceptionFilter));
+    options.Filters.Add<GlobalExceptionFilter>();
 });
+builder.Services.AddRazorPages();
 
-builder.WebHost.ConfigureKestrel(serverOptions =>
-{
-    serverOptions.ListenAnyIP(5002); // Allows binding to your network IP
-});
-
-
-// Add Razor Pages support
-builder.Services.AddRazorPages(); // Added to enable Razor Pages services
-
-// Add DbContext with SQL Server
+// Configure the database context
 builder.Services.AddDbContext<StThomasMissionDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
+        sqlServerOptionsAction: sqlOptions =>
+        {
+            sqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(30),
+                errorNumbersToAdd: null);
+        }));
 
-// Configure Identity
+// Configure ASP.NET Core Identity with strong password requirements for production
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
-    options.SignIn.RequireConfirmedAccount = false;
+    options.SignIn.RequireConfirmedAccount = false; // Set to true if you implement email confirmation
+
+    // Production-ready password policy
     options.Password.RequireDigit = true;
     options.Password.RequiredLength = 8;
-    options.Password.RequireNonAlphanumeric = false;
-    options.Password.RequireUppercase = false;
-    options.Password.RequireLowercase = false;
+    options.Password.RequireNonAlphanumeric = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireLowercase = true;
 })
 .AddEntityFrameworkStores<StThomasMissionDbContext>()
 .AddDefaultTokenProviders();
 
-// Add Authorization
+// Configure application cookie settings
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Account/Login";
+    options.LogoutPath = "/Account/Logout";
+    options.AccessDeniedPath = "/Account/AccessDenied";
+});
+
+// Add Authorization policies if needed in the future
 builder.Services.AddAuthorization();
 
-// Register Repositories and Unit of Work
+#region Register Application Services and Repositories
+// Register the Unit of Work and all repositories/services
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-// Register Services
+// Register all application services
 builder.Services.AddScoped<IFamilyMemberService, FamilyMemberService>();
 builder.Services.AddScoped<ICatechismService, CatechismService>();
 builder.Services.AddScoped<IFamilyService, FamilyService>();
@@ -74,7 +84,7 @@ builder.Services.AddScoped<IImportService, ImportService>();
 builder.Services.AddScoped<IReportingService, ReportingService>();
 builder.Services.AddScoped<IGroupService, GroupService>();
 builder.Services.AddScoped<IWardService, WardService>();
-builder.Services.AddScoped<IMassTimingService, MassTimingService>(); 
+builder.Services.AddScoped<IMassTimingService, MassTimingService>();
 builder.Services.AddScoped<IAnnouncementService, AnnouncementService>();
 builder.Services.AddScoped<IAssessmentService, AssessmentService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
@@ -82,14 +92,18 @@ builder.Services.AddScoped<IExportService, ExportService>();
 builder.Services.AddScoped<IMigrationLogService, MigrationLogService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IGroupActivityService, GroupActivityService>();
+#endregion
 
+// --- 3. BUILD THE APPLICATION ---
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
+// --- 4. CONFIGURE HTTP REQUEST PIPELINE (Middleware) ---
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
@@ -98,71 +112,67 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-app.Use(async (context, next) =>
-{
-    Console.WriteLine($"Path: {context.Request.Path}, User: {context.User.Identity?.Name}");
-    await next();
-});
-
-
+// Authentication must come before Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Seed Roles & Data
+// --- 5. SEED THE DATABASE ---
+
+// Use a scope to get services and seed the database on startup
 using (var scope = app.Services.CreateScope())
 {
     try
     {
-        await SeedRolesAsync(scope.ServiceProvider);
+        // This single call now handles roles, users, and all other essential data
         await SeedData.InitializeAsync(scope.ServiceProvider);
     }
     catch (Exception ex)
     {
-        Log.Error(ex, "An error occurred while seeding the database.");
-        throw;
+        Log.Fatal(ex, "An error occurred while seeding the database. Application will terminate.");
+        // In a containerized environment, you might want the app to fail fast if seeding fails.
+        // For other environments, you might log and continue, depending on how critical seeding is.
+        return;
     }
 }
 
-// Route Configuration
+// --- 6. CONFIGURE ENDPOINTS & ROUTES ---
+
+// Map area-based routes first
 app.MapControllerRoute(
     name: "areas",
     pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
 
+// Map default controller routes
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
+// Map Razor Pages if you are using them for Identity UI or other features
 app.MapRazorPages();
 
+// --- 7. RUN THE APPLICATION ---
 
-
-app.Run();
-
-// Seed Roles Method
-static async Task SeedRolesAsync(IServiceProvider serviceProvider)
+try
 {
-    var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-
-    string[] roles = { "ParishPriest", "ParishAdmin", "HeadTeacher", "Teacher", "Admin", "Parent" };
-
-    foreach (var role in roles)
-    {
-        if (!await roleManager.RoleExistsAsync(role))
-        {
-            var result = await roleManager.CreateAsync(new IdentityRole(role));
-            if (!result.Succeeded)
-            {
-                Log.Error("Failed to create role {Role}: {Errors}", role, string.Join(", ", result.Errors.Select(e => e.Description)));
-            }
-            else
-            {
-                Log.Information("Created role: {Role}", role);
-            }
-        }
-    }
+    Log.Information("Starting web host");
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Host terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
 }
 
-// Global Exception Filter
+
+// --- SUPPORTING CLASSES ---
+
+/// <summary>
+/// A custom filter to catch all unhandled exceptions globally, log them,
+/// and display a user-friendly error page.
+/// </summary>
 public class GlobalExceptionFilter : IExceptionFilter
 {
     private readonly ILogger<GlobalExceptionFilter> _logger;
@@ -174,17 +184,33 @@ public class GlobalExceptionFilter : IExceptionFilter
 
     public void OnException(ExceptionContext context)
     {
-        _logger.LogError(context.Exception, "An unhandled exception occurred.");
-        context.Result = new ViewResult
+        if (!context.ExceptionHandled)
         {
-            ViewName = "Error",
-            ViewData = new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(
-                new Microsoft.AspNetCore.Mvc.ModelBinding.EmptyModelMetadataProvider(),
-                context.ModelState)
+            _logger.LogError(context.Exception, "An unhandled exception occurred in the application.");
+
+            // Create a generic error model to pass to the view
+            var errorModel = new ErrorViewModel
             {
-                Model = new ErrorViewModel { Message = "An unexpected error occurred. Please try again later." }
-            }
-        };
-        context.ExceptionHandled = true;
+                // In production, you might not want to expose the real message.
+                // For dev, this can be useful.
+                Message = context.Exception.Message,
+                // You can add a unique request ID for correlation
+                RequestId = System.Diagnostics.Activity.Current?.Id ?? context.HttpContext.TraceIdentifier
+            };
+
+            var result = new ViewResult
+            {
+                ViewName = "Error", // Points to /Views/Shared/Error.cshtml
+                ViewData = new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(
+                    new Microsoft.AspNetCore.Mvc.ModelBinding.EmptyModelMetadataProvider(),
+                    context.ModelState)
+                {
+                    Model = errorModel
+                }
+            };
+
+            context.Result = result;
+            context.ExceptionHandled = true;
+        }
     }
 }

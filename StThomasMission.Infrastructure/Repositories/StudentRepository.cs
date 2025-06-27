@@ -3,7 +3,7 @@ using StThomasMission.Core.Entities;
 using StThomasMission.Core.Enums;
 using StThomasMission.Core.Interfaces;
 using StThomasMission.Infrastructure.Data;
-using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
@@ -14,12 +14,15 @@ namespace StThomasMission.Infrastructure.Repositories
     {
         public StudentRepository(StThomasMissionDbContext context) : base(context) { }
 
-        public async Task<IEnumerable<Student>> GetByGradeAsync(string grade)
+        // --- UPDATED METHOD ---
+        // Changed to use gradeId instead of a string to match the schema.
+        public async Task<IEnumerable<Student>> GetByGradeIdAsync(int gradeId)
         {
             return await _context.Students
                 .Include(s => s.FamilyMember)
                 .Include(s => s.Group)
-                .Where(s => s.Grade == grade && s.Status != Core.Enums.StudentStatus.Deleted)
+                .Include(s => s.Grade) // Added Include for Grade
+                .Where(s => s.GradeId == gradeId && s.Status != StudentStatus.Deleted)
                 .ToListAsync();
         }
 
@@ -28,7 +31,18 @@ namespace StThomasMission.Infrastructure.Repositories
             return await _context.Students
                 .Include(s => s.FamilyMember)
                 .Include(s => s.Group)
-                .Where(s => s.GroupId == groupId && s.Status != Core.Enums.StudentStatus.Deleted)
+                .Include(s => s.Grade)
+                .Where(s => s.GroupId == groupId && s.Status != StudentStatus.Deleted)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Student>> GetByFamilyIdAsync(int familyId)
+        {
+            return await _context.Students
+                .Include(s => s.FamilyMember)
+                .Include(s => s.Group)
+                .Include(s => s.Grade)
+                .Where(s => s.FamilyMember.FamilyId == familyId && s.Status != StudentStatus.Deleted)
                 .ToListAsync();
         }
 
@@ -37,21 +51,8 @@ namespace StThomasMission.Infrastructure.Repositories
             return await _context.Students
                 .Include(s => s.FamilyMember)
                 .Include(s => s.Group)
+                .Include(s => s.Grade)
                 .Where(predicate)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<Attendance>> GetAttendanceByStudentIdAsync(int studentId)
-        {
-            return await _context.Attendances
-                .Where(a => a.StudentId == studentId)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<Assessment>> GetAssessmentsByStudentIdAsync(int studentId)
-        {
-            return await _context.Assessments
-                .Where(a => a.StudentId == studentId)
                 .ToListAsync();
         }
 
@@ -60,19 +61,7 @@ namespace StThomasMission.Infrastructure.Repositories
             return _context.Students
                 .Include(s => s.FamilyMember)
                 .Include(s => s.Group)
-                .Where(predicate)
-                .AsQueryable();
-        }
-        public async Task<IEnumerable<Student>> GetByFamilyIdAsync(int familyId)
-        {
-            return await _context.Students
-                .Include(s => s.FamilyMember)
-                .Where(s => s.FamilyMember.FamilyId == familyId && s.Status != StudentStatus.Deleted)
-                .ToListAsync();
-        }
-        public IQueryable<Attendance> GetAttendanceQueryable(Expression<Func<Attendance, bool>> predicate)
-        {
-            return _context.Attendances
+                .Include(s => s.Grade)
                 .Where(predicate)
                 .AsQueryable();
         }

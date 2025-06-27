@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\StThomasMission.Core\StThomasMission.Core.csproj" />
+    <ProjectReference Include="..\StThomasMission.Infrastructure\StThomasMission.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

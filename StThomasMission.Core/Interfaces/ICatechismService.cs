@@ -5,18 +5,18 @@ using System.Threading.Tasks;
 
 namespace StThomasMission.Core.Interfaces
 {
-    /// <summary>
-    /// Service interface for managing Catechism-related student operations.
-    /// </summary>
     public interface ICatechismService
     {
-        Task<Student> GetStudentByIdAsync(int studentId);
-        Task<IEnumerable<Student>> GetStudentsByGradeAsync(string grade);
+        Task<Student?> GetStudentByIdAsync(int studentId);
+        Task<IEnumerable<Student>> GetStudentsByGradeIdAsync(int gradeId);
         Task<IEnumerable<Student>> GetStudentsByGroupIdAsync(int groupId);
-        Task AddStudentAsync(int familyMemberId, int academicYear, string grade, int groupId, string? studentOrganisation);
-        Task UpdateStudentAsync(int studentId, string grade, int groupId, string? studentOrganisation, StudentStatus status, string? migratedTo);
-        Task MarkPassFailAsync(int studentId, StudentStatus status); // Use StudentStatus to reflect Pass/Fail outcome
-        Task DeleteStudentAsync(int studentId);
-        Task PromoteStudentsAsync(string grade, int academicYear);
+
+        Task AddStudentAsync(int familyMemberId, int academicYear, int gradeId, int? groupId, string? studentOrganisation, string createdByUserId);
+        Task UpdateStudentAsync(int studentId, int gradeId, int? groupId, string? studentOrganisation, StudentStatus status, string? migratedTo, string updatedByUserId);
+        Task PromoteStudentAsync(int studentId, string updatedByUserId);
+        Task RevertStudentPromotionAsync(int studentId, string updatedByUserId);
+        Task GraduateStudentAsync(int studentId, string updatedByUserId);
+        Task BulkPromoteStudentsByGradeAsync(int gradeId, string updatedByUserId);
+        Task DeleteStudentAsync(int studentId, string deletedByUserId);
     }
 }

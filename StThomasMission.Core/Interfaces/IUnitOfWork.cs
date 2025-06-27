@@ -1,12 +1,15 @@
 ﻿using Microsoft.EntityFrameworkCore.Storage;
 using StThomasMission.Core.Entities;
-using System;
 using System.Threading.Tasks;
 
 namespace StThomasMission.Core.Interfaces
 {
     public interface IUnitOfWork : IDisposable
     {
+        // --- ADDED Repositories ---
+        IGradeRepository Grades { get; }
+        ITeacherAssignmentRepository TeacherAssignments { get; }
+
         IStudentRepository Students { get; }
         IFamilyRepository Families { get; }
         IFamilyMemberRepository FamilyMembers { get; }
@@ -22,10 +25,11 @@ namespace StThomasMission.Core.Interfaces
         IMassTimingRepository MassTimings { get; }
         IAnnouncementRepository Announcements { get; }
         IMigrationLogRepository MigrationLogs { get; }
-        IRepository<AssessmentSummary> AssessmentSummaries { get; } // Added
+        IRepository<AssessmentSummary> AssessmentSummaries { get; }
+
         Task<IDbContextTransaction> BeginTransactionAsync();
         Task CommitTransactionAsync();
         Task RollbackTransactionAsync();
-        Task CompleteAsync();
+        Task<int> CompleteAsync();
     }
 }

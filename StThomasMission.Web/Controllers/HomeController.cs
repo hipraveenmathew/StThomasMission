@@ -1,10 +1,12 @@
-using System.Diagnostics;
-using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
+using OfficeOpenXml;
 using StThomasMission.Core.Entities;
 using StThomasMission.Core.Interfaces;
 using StThomasMission.Services;
 using StThomasMission.Web.Models;
+using System.Diagnostics;
+using System.Globalization;
+using System.Security.Claims;
 
 namespace StThomasMission.Web.Controllers
 {
@@ -109,5 +111,85 @@ namespace StThomasMission.Web.Controllers
             };
             return View(model);
         }
+        public class StudentTempModel
+        {
+            public int Id { get; set; }
+            public string Name { get; set; } = string.Empty;
+            public int RegistrationNumber { get; set; }  // Church Registration Number
+            public string ParentName { get; set; } = string.Empty;
+            public string ParentContact1 { get; set; } = string.Empty;
+            public string? ParentContact2 { get; set; }  // Optional second number
+            public string ParentEmail { get; set; } = string.Empty;
+            public int Fee { get; set; }  // Stored as integer e.g., 20
+        }
+
+        [HttpPost]
+        public IActionResult UploadStudentExcel(IFormFile file)
+        {
+            if (file == null || file.Length <= 0)
+            {
+                TempData["Error"] = "No file selected.";
+                return RedirectToAction("About");
+            }
+
+            var studentList = new List<StudentTempModel>();
+
+            using (var stream = new MemoryStream())
+            {
+                file.CopyTo(stream);
+                using (var package = new ExcelPackage(stream))
+                {
+                    var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+                    if (worksheet == null)
+                    {
+                        TempData["Error"] = "No worksheet found in Excel.";
+                        return RedirectToAction("About");
+                    }
+
+                    int rowCount = worksheet.Dimension.Rows;
+
+                    for (int row = 2; row <= rowCount; row++) // Assuming row 1 is header
+                    {
+                        var phoneCell = worksheet.Cells[row, 5].Text.Trim();
+                        var phones = phoneCell.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                              .Select(p => p.Trim()).ToArray();
+
+                        var student = new StudentTempModel
+                        {
+                            Id = Convert.ToInt32(worksheet.Cells[row, 1].Text.Trim()),
+                            Name = worksheet.Cells[row, 2].Text.Trim(),
+                            RegistrationNumber = Convert.ToInt32(worksheet.Cells[row, 3].Text.Trim()),
+                            ParentName = worksheet.Cells[row, 4].Text.Trim(),
+                            ParentContact1 = phones.Length > 0 ? phones[0] : "",
+                            ParentContact2 = phones.Length > 1 ? phones[1] : null,
+                            ParentEmail = worksheet.Cells[row, 6].Text.Trim(),
+                            Fee = ParseFeeToInt(worksheet.Cells[row, 7].Text.Trim())
+                        };
+
+                        studentList.Add(student);
+                    }
+                }
+            }
+
+            TempData["Success"] = $"{studentList.Count} student records uploaded successfully!";
+            return RedirectToAction("About");
+        }
+
+        private int ParseFeeToInt(string feeText)
+        {
+            if (string.IsNullOrWhiteSpace(feeText))
+                return 0;
+
+            // Remove any currency symbols and unnecessary characters
+            feeText = feeText.Replace("$", "").Replace("£", "").Replace(",", "").Trim();
+
+            if (decimal.TryParse(feeText, out var feeDecimal))
+            {
+                return Convert.ToInt32(Math.Round(feeDecimal));  // Convert 20.00 -> 20
+            }
+
+            return 0;
+        }
+
     }
 }

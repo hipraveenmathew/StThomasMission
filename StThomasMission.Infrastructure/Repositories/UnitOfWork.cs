@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
+﻿using Microsoft.EntityFrameworkCore.Storage;
 using StThomasMission.Core.Entities;
 using StThomasMission.Core.Interfaces;
 using StThomasMission.Infrastructure.Data;
@@ -15,13 +14,18 @@ namespace StThomasMission.Infrastructure
         public UnitOfWork(StThomasMissionDbContext dbContext)
         {
             _dbContext = dbContext;
+
+            // --- ADDED Instantiations ---
+            Grades = new GradeRepository(_dbContext);
+            TeacherAssignments = new TeacherAssignmentRepository(_dbContext);
+
             Students = new StudentRepository(_dbContext);
             Families = new FamilyRepository(_dbContext);
             FamilyMembers = new FamilyMemberRepository(_dbContext);
             Attendances = new AttendanceRepository(_dbContext);
             Assessments = new AssessmentRepository(_dbContext);
             Groups = new GroupRepository(_dbContext);
-            StudentAcademicRecords = new StudentAcademicRecordRepository(_dbContext); 
+            StudentAcademicRecords = new StudentAcademicRecordRepository(_dbContext);
             GroupActivities = new GroupActivityRepository(_dbContext);
             StudentGroupActivities = new StudentGroupActivityRepository(_dbContext);
             MessageLogs = new MessageLogRepository(_dbContext);
@@ -30,8 +34,12 @@ namespace StThomasMission.Infrastructure
             MassTimings = new MassTimingRepository(_dbContext);
             Announcements = new AnnouncementRepository(_dbContext);
             MigrationLogs = new MigrationLogRepository(_dbContext);
-            AssessmentSummaries = new Repository<AssessmentSummary>(_dbContext); // Added
+            AssessmentSummaries = new Repository<AssessmentSummary>(_dbContext);
         }
+
+        // --- ADDED Properties ---
+        public IGradeRepository Grades { get; }
+        public ITeacherAssignmentRepository TeacherAssignments { get; }
 
         public IStudentRepository Students { get; }
         public IFamilyRepository Families { get; }
@@ -41,14 +49,14 @@ namespace StThomasMission.Infrastructure
         public IGroupRepository Groups { get; }
         public IGroupActivityRepository GroupActivities { get; }
         public IStudentGroupActivityRepository StudentGroupActivities { get; }
-        public IStudentAcademicRecordRepository StudentAcademicRecords { get; private set; }
+        public IStudentAcademicRecordRepository StudentAcademicRecords { get; }
         public IMessageLogRepository MessageLogs { get; }
         public IAuditLogRepository AuditLogs { get; }
         public IWardRepository Wards { get; }
         public IMassTimingRepository MassTimings { get; }
         public IAnnouncementRepository Announcements { get; }
         public IMigrationLogRepository MigrationLogs { get; }
-        public IRepository<AssessmentSummary> AssessmentSummaries { get; } // Added
+        public IRepository<AssessmentSummary> AssessmentSummaries { get; }
 
         public async Task<IDbContextTransaction> BeginTransactionAsync()
         {
@@ -65,9 +73,9 @@ namespace StThomasMission.Infrastructure
             await _dbContext.Database.RollbackTransactionAsync();
         }
 
-        public async Task CompleteAsync()
+        public async Task<int> CompleteAsync()
         {
-            await _dbContext.SaveChangesAsync();
+            return await _dbContext.SaveChangesAsync();
         }
 
         public void Dispose()
