@@ -24,6 +24,8 @@ namespace StThomasMission.Core.Entities
 
         [Required]
         public DateTime Date { get; set; } = DateTime.UtcNow;
+        public bool IsDeleted { get; set; }
+
 
         [Required]
         public AssessmentType Type { get; set; } = AssessmentType.ClassAssessment; // Reverted to Type

@@ -1,5 +1,4 @@
-﻿using StThomasMission.Core.Entities;
-using StThomasMission.Core.Enums;
+﻿using StThomasMission.Core.DTOs;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -7,11 +6,14 @@ namespace StThomasMission.Core.Interfaces
 {
     public interface IFamilyMemberService
     {
-        Task AddFamilyMemberAsync(FamilyMember familyMember);
-        Task UpdateFamilyMemberAsync(FamilyMember updatedMember);
-        Task DeleteFamilyMemberAsync(int familyMemberId);
-        Task<FamilyMember> GetFamilyMemberByIdAsync(int familyMemberId);
-        Task<IEnumerable<FamilyMember>> GetFamilyMembersByFamilyIdAsync(int familyId);
-        Task<FamilyMember> GetFamilyMemberByUserIdAsync(string userId);
+        Task<FamilyMemberDto> GetFamilyMemberByIdAsync(int familyMemberId);
+
+        Task<IEnumerable<FamilyMemberDto>> GetMembersByFamilyIdAsync(int familyId);
+
+        Task<FamilyMemberDto> AddMemberToFamilyAsync(CreateFamilyMemberRequest request, string userId);
+
+        Task UpdateFamilyMemberAsync(int familyMemberId, UpdateFamilyMemberRequest request, string userId);
+
+        Task DeleteFamilyMemberAsync(int familyMemberId, string userId);
     }
 }

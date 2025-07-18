@@ -17,6 +17,7 @@ namespace StThomasMission.Core.Entities
 
         [Required]
         public DateTime Date { get; set; } = DateTime.UtcNow;
+        public bool IsDeleted { get; set; }
 
         [Required]
         public int GroupId { get; set; } // Foreign key to Group
@@ -32,6 +33,7 @@ namespace StThomasMission.Core.Entities
         public string CreatedBy { get; set; } = string.Empty;
 
         public string? UpdatedBy { get; set; }
+        public DateTime? UpdatedAt { get; set; }
 
         public ICollection<StudentGroupActivity> Participants { get; set; } = new List<StudentGroupActivity>();
 

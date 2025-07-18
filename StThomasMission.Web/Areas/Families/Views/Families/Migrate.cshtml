@@ -1,0 +1,29 @@
+﻿@model StThomasMission.Web.Areas.Church.Models.MigrateFamilyViewModel
+@{
+    ViewData["Title"] = "Migrate Family";
+}
+
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h4 class="mb-0"><i class="fas fa-plane-departure me-2"></i>Migrate Family: @Model.FamilyName</h4>
+    </div>
+    <div class="card-body">
+        <p>Marking this family as migrated will archive their record. Please enter the destination parish or location.</p>
+        <form asp-action="Migrate">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="FamilyId" />
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+            <div class="mb-3">
+                <label asp-for="MigratedTo" class="form-label"></label>
+                <input asp-for="MigratedTo" class="form-control" placeholder="e.g., St. Mary's Parish, London" />
+                <span asp-validation-for="MigratedTo" class="text-danger"></span>
+            </div>
+
+            <div class="d-flex justify-content-end mt-4">
+                <a asp-action="Details" asp-route-id="@Model.FamilyId" class="btn btn-secondary me-2">Cancel</a>
+                <button type="submit" class="btn btn-info">Confirm Migration</button>
+            </div>
+        </form>
+    </div>
+</div>

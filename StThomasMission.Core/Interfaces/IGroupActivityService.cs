@@ -1,19 +1,16 @@
-﻿using StThomasMission.Core.Entities;
-using StThomasMission.Core.Enums;
-using System;
-using System.Collections.Generic;
+﻿using StThomasMission.Core.DTOs;
 using System.Threading.Tasks;
 
 namespace StThomasMission.Core.Interfaces
 {
     public interface IGroupActivityService
     {
-        Task AddGroupActivityAsync(string name, string description, DateTime date, int groupId, int points);
-        Task UpdateGroupActivityAsync(int groupActivityId, string name, string description, DateTime date, int groupId, int points, ActivityStatus status);
-        Task DeleteGroupActivityAsync(int groupActivityId);
-        Task AddStudentToGroupActivityAsync(int studentId, int groupActivityId, DateTime participationDate, int pointsEarned);
-        Task<IEnumerable<GroupActivity>> GetGroupActivitiesAsync(int? groupId = null, DateTime? startDate = null, DateTime? endDate = null);
-        Task<IEnumerable<StudentGroupActivity>> GetStudentGroupActivitiesAsync(int? groupActivityId = null, int? studentId = null);
-        Task<GroupActivity?> GetGroupActivityByIdAsync(int groupActivityId);
+        Task<GroupActivityDto> CreateGroupActivityAsync(CreateGroupActivityRequest request, string userId);
+
+        Task UpdateGroupActivityAsync(int groupActivityId, UpdateGroupActivityRequest request, string userId);
+
+        Task DeleteGroupActivityAsync(int groupActivityId, string userId);
+
+        Task AssignStudentsToActivityAsync(int groupActivityId, AssignStudentsToActivityRequest request, string userId);
     }
 }

@@ -1,12 +1,13 @@
-﻿using StThomasMission.Core.Entities;
-using StThomasMission.Core.Enums;
+﻿using StThomasMission.Core.DTOs;
+using StThomasMission.Core.Entities;
 using StThomasMission.Core.Interfaces;
+using StThomasMission.Services.Exceptions;
 using System;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
+using System.Linq;
 using System.Threading.Tasks;
 
-namespace StThomasMission.Services
+namespace StThomasMission.Services.Services
 {
     public class FamilyMemberService : IFamilyMemberService
     {
@@ -19,139 +20,110 @@ namespace StThomasMission.Services
             _auditService = auditService;
         }
 
-        public async Task AddFamilyMemberAsync(FamilyMember familyMember)
+        public async Task<FamilyMemberDto> GetFamilyMemberByIdAsync(int familyMemberId)
         {
-            if (familyMember == null)
-                throw new ArgumentNullException(nameof(familyMember));
+            var member = await _unitOfWork.FamilyMembers.GetByIdAsync(familyMemberId);
+            if (member == null)
+            {
+                throw new NotFoundException(nameof(FamilyMember), familyMemberId);
+            }
 
-            // Validate required fields
-            if (string.IsNullOrWhiteSpace(familyMember.FirstName))
-                throw new ArgumentException("First name is required.", nameof(familyMember.FirstName));
-            if (string.IsNullOrWhiteSpace(familyMember.LastName))
-                throw new ArgumentException("Last name is required.", nameof(familyMember.LastName));
-            if (familyMember.DateOfBirth > DateTime.UtcNow)
-                throw new ArgumentException("Date of birth cannot be in the future.", nameof(familyMember.DateOfBirth));
-
-            // Validate contact
-            if (!string.IsNullOrEmpty(familyMember.Contact) && !Regex.IsMatch(familyMember.Contact, @"^\+?\d{10,15}$"))
-                throw new ArgumentException("Invalid phone number.", nameof(familyMember.Contact));
-
-            // Validate email
-            if (!string.IsNullOrEmpty(familyMember.Email) && !Regex.IsMatch(familyMember.Email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
-                throw new ArgumentException("Invalid email address.", nameof(familyMember.Email));
-
-            // Validate role length
-            if (!string.IsNullOrEmpty(familyMember.Role) && familyMember.Role.Length > 50)
-                throw new ArgumentException("Role cannot exceed 50 characters.", nameof(familyMember.Role));
-
-            // Check family exists
-            var family = await _unitOfWork.Families.GetByIdAsync(familyMember.FamilyId);
-            if (family == null)
-                throw new ArgumentException("Family not found.", nameof(familyMember.FamilyId));
-
-            // Ensure CreatedBy is set
-            familyMember.CreatedBy = string.IsNullOrWhiteSpace(familyMember.CreatedBy) ? "System" : familyMember.CreatedBy;
-
-            await _unitOfWork.FamilyMembers.AddAsync(familyMember);
-            await _unitOfWork.CompleteAsync();
-
-            await _auditService.LogActionAsync(
-                familyMember.CreatedBy,
-                "Create",
-                nameof(FamilyMember),
-                familyMember.Id.ToString(),
-                $"Added family member: {familyMember.FullName}"
-            );
+            // Map entity to DTO
+            return new FamilyMemberDto
+            {
+                Id = member.Id,
+                FamilyId = member.FamilyId,
+                FirstName = member.FirstName,
+                LastName = member.LastName,
+                Relation = member.Relation,
+                DateOfBirth = member.DateOfBirth,
+                Contact = member.Contact,
+                Email = member.Email,
+                BaptismalName = member.BaptismalName
+            };
         }
 
-
-        public async Task UpdateFamilyMemberAsync(FamilyMember updatedMember)
+        public async Task<IEnumerable<FamilyMemberDto>> GetMembersByFamilyIdAsync(int familyId)
         {
-            if (updatedMember == null)
-                throw new ArgumentNullException(nameof(updatedMember));
-
-            if (string.IsNullOrWhiteSpace(updatedMember.FirstName))
-                throw new ArgumentException("First name is required.", nameof(updatedMember.FirstName));
-            if (string.IsNullOrWhiteSpace(updatedMember.LastName))
-                throw new ArgumentException("Last name is required.", nameof(updatedMember.LastName));
-            if (updatedMember.DateOfBirth > DateTime.UtcNow)
-                throw new ArgumentException("Date of birth cannot be in the future.", nameof(updatedMember.DateOfBirth));
-            if (!string.IsNullOrEmpty(updatedMember.Contact) && !Regex.IsMatch(updatedMember.Contact, @"^\+?\d{10,15}$"))
-                throw new ArgumentException("Invalid phone number.", nameof(updatedMember.Contact));
-            if (!string.IsNullOrEmpty(updatedMember.Email) && !Regex.IsMatch(updatedMember.Email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
-                throw new ArgumentException("Invalid email address.", nameof(updatedMember.Email));
-
-            var existingMember = await GetFamilyMemberByIdAsync(updatedMember.Id);
-            if (existingMember == null)
-                throw new ArgumentException("Family member not found.", nameof(updatedMember.Id));
-
-            // Update fields
-            existingMember.FirstName = updatedMember.FirstName;
-            existingMember.LastName = updatedMember.LastName;
-            existingMember.BaptismalName = updatedMember.BaptismalName;
-            existingMember.Relation = updatedMember.Relation;
-            existingMember.DateOfBirth = updatedMember.DateOfBirth;
-            existingMember.DateOfDeath = updatedMember.DateOfDeath;
-            existingMember.DateOfBaptism = updatedMember.DateOfBaptism;
-            existingMember.DateOfChrismation = updatedMember.DateOfChrismation;
-            existingMember.DateOfHolyCommunion = updatedMember.DateOfHolyCommunion;
-            existingMember.DateOfMarriage = updatedMember.DateOfMarriage;
-            existingMember.Contact = updatedMember.Contact;
-            existingMember.Email = updatedMember.Email;
-            existingMember.Role = updatedMember.Role;
-            existingMember.UpdatedBy = updatedMember.UpdatedBy ?? "System";
-
-            await _unitOfWork.FamilyMembers.UpdateAsync(existingMember);
-            await _unitOfWork.CompleteAsync();
-
-            await _auditService.LogActionAsync(
-                existingMember.UpdatedBy,
-                "Update",
-                nameof(FamilyMember),
-                existingMember.Id.ToString(),
-                $"Updated family member: {existingMember.FirstName} {existingMember.LastName}");
-        }
-
-
-        public async Task DeleteFamilyMemberAsync(int familyMemberId)
-        {
-            var familyMember = await GetFamilyMemberByIdAsync(familyMemberId);
-
-            var student = await _unitOfWork.Students.GetAsync(s => s.FamilyMemberId == familyMemberId);
-            if (student.Any())
-                throw new InvalidOperationException("Cannot delete family member with associated student.");
-
-            await _unitOfWork.FamilyMembers.DeleteAsync(familyMemberId);
-            await _unitOfWork.CompleteAsync();
-
-            await _auditService.LogActionAsync("System", "Delete", nameof(FamilyMember), familyMemberId.ToString(), $"Deleted family member: {familyMember.FirstName} {familyMember.LastName}");
-        }
-
-        public async Task<FamilyMember> GetFamilyMemberByIdAsync(int familyMemberId)
-        {
-            var familyMember = await _unitOfWork.FamilyMembers.GetByIdAsync(familyMemberId);
-            if (familyMember == null)
-                throw new ArgumentException("Family member not found.", nameof(familyMemberId));
-            return familyMember;
-        }
-
-        public async Task<IEnumerable<FamilyMember>> GetFamilyMembersByFamilyIdAsync(int familyId)
-        {
-            // Use IUnitOfWork directly instead of IFamilyService
-            var family = await _unitOfWork.Families.GetByIdAsync(familyId);
-            if (family == null)
-                throw new ArgumentException("Family not found.", nameof(familyId));
-
             return await _unitOfWork.FamilyMembers.GetByFamilyIdAsync(familyId);
         }
 
-        public async Task<FamilyMember> GetFamilyMemberByUserIdAsync(string userId)
+        public async Task<FamilyMemberDto> AddMemberToFamilyAsync(CreateFamilyMemberRequest request, string userId)
         {
-            var familyMembers = await _unitOfWork.FamilyMembers.GetAsync(fm => fm.UserId == userId);
-            var familyMember = familyMembers.FirstOrDefault();
-            if (familyMember == null)
-                throw new ArgumentException("Family member not found for the given user.", nameof(userId));
-            return familyMember;
+            // Ensure the family exists
+            if (await _unitOfWork.Families.GetByIdAsync(request.FamilyId) == null)
+            {
+                throw new NotFoundException(nameof(Family), request.FamilyId);
+            }
+
+            var familyMember = new FamilyMember
+            {
+                FamilyId = request.FamilyId,
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                Relation = request.Relation,
+                DateOfBirth = request.DateOfBirth,
+                Contact = request.Contact,
+                Email = request.Email,
+                BaptismalName = request.BaptismalName,
+                CreatedBy = userId
+            };
+
+            var newMember = await _unitOfWork.FamilyMembers.AddAsync(familyMember);
+            await _unitOfWork.CompleteAsync();
+
+            await _auditService.LogActionAsync(userId, "Create", nameof(FamilyMember), newMember.Id.ToString(), $"Added member '{newMember.FullName}' to family ID {newMember.FamilyId}.");
+
+            return await GetFamilyMemberByIdAsync(newMember.Id);
+        }
+
+        public async Task UpdateFamilyMemberAsync(int familyMemberId, UpdateFamilyMemberRequest request, string userId)
+        {
+            var member = await _unitOfWork.FamilyMembers.GetByIdAsync(familyMemberId);
+            if (member == null)
+            {
+                throw new NotFoundException(nameof(FamilyMember), familyMemberId);
+            }
+
+            member.FirstName = request.FirstName;
+            member.LastName = request.LastName;
+            member.Relation = request.Relation;
+            member.DateOfBirth = request.DateOfBirth;
+            member.Contact = request.Contact;
+            member.Email = request.Email;
+            member.BaptismalName = request.BaptismalName;
+            member.UpdatedBy = userId;
+            member.UpdatedAt = DateTime.UtcNow;
+
+            await _unitOfWork.FamilyMembers.UpdateAsync(member);
+            await _unitOfWork.CompleteAsync();
+
+            await _auditService.LogActionAsync(userId, "Update", nameof(FamilyMember), member.Id.ToString(), $"Updated details for member '{member.FullName}'.");
+        }
+
+        public async Task DeleteFamilyMemberAsync(int familyMemberId, string userId)
+        {
+            var member = await _unitOfWork.FamilyMembers.GetByIdAsync(familyMemberId);
+            if (member == null)
+            {
+                throw new NotFoundException(nameof(FamilyMember), familyMemberId);
+            }
+
+            // Business Rule: Cannot delete a family member if they have an active student profile.
+            var student = await _unitOfWork.Students.GetStudentByFamilyMemberId(familyMemberId);
+            if (student != null)
+            {
+                throw new InvalidOperationException("Cannot delete a family member who has an associated student profile. Please migrate or delete the student first.");
+            }
+
+            member.IsDeleted = true;
+            member.UpdatedBy = userId;
+            member.UpdatedAt = DateTime.UtcNow;
+
+            await _unitOfWork.FamilyMembers.UpdateAsync(member);
+            await _unitOfWork.CompleteAsync();
+
+            await _auditService.LogActionAsync(userId, "Delete", nameof(FamilyMember), member.Id.ToString(), $"Soft-deleted member '{member.FullName}'.");
         }
     }
 }

@@ -19,7 +19,7 @@
                 <div class="col-12">
                     <h4 class="mb-3">Our History</h4>
                     <p>
-                        Founded in [Year], St. Thomas Mission has grown from a small parish to a cornerstone of the community. Over the years, we have expanded our programs to include catechism classes, community events, and outreach initiatives, all rooted in our commitment to faith and fellowship.
+                        Founded in 2005, St. Thomas Mission has grown from a small parish to a cornerstone of the Wythenshawe community. Over the years, we have expanded our programs to include catechism classes, community events, and outreach initiatives, all rooted in our commitment to faith and fellowship.
                     </p>
                 </div>
                 <div class="col-12">
@@ -30,63 +30,9 @@
                 </div>
             </div>
 
-            <div class="mt-4">
-    <h5 class="mb-3">Upload Student Details (Excel)</h5>
-    <form asp-action="UploadStudentExcel" asp-controller="Home" method="post" enctype="multipart/form-data" class="border p-3 rounded bg-light">
-        <div class="mb-3">
-            <label for="file" class="form-label">Choose Excel File (.xlsx)</label>
-            <input class="form-control" type="file" name="file" id="file" accept=".xlsx" required />
-        </div>
-        <button type="submit" class="btn btn-success">
-            <i class="fas fa-upload me-2"></i>Upload and Process
-        </button>
-    </form>
-</div>
-
-
-
             <div class="d-flex justify-content-end mt-4">
                 <a href="@Url.Action("Index", "Home")" class="btn btn-secondary"><i class="fas fa-arrow-left me-2"></i>Back to Home</a>
             </div>
         </div>
     </div>
 </div>
-
-<!-- Toast Notification Container -->
-<div class="toast-container position-fixed bottom-0 end-0 p-3">
-    <div id="aboutToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="toast-header">
-            <strong class="me-auto">About Page Status</strong>
-            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-        <div class="toast-body"></div>
-    </div>
-</div>
-
-@section Scripts {
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
-    <script>
-        $(document).ready(function () {
-            // Handle TempData feedback with toast notifications
-        @if (TempData["Success"] != null)
-        {
-            <text>
-                    var toast = new bootstrap.Toast(document.getElementById('aboutToast'));
-                    $("#aboutToast .toast-body").text("@TempData["Success"]");
-                    $("#aboutToast .toast-header").removeClass("bg-danger").addClass("bg-success");
-                    toast.show();
-            </text>
-        }
-        @if (TempData["Error"] != null)
-        {
-            <text>
-                    var toast = new bootstrap.Toast(document.getElementById('aboutToast'));
-                    $("#aboutToast .toast-body").text("@TempData["Error"]");
-                    $("#aboutToast .toast-header").removeClass("bg-success").addClass("bg-danger");
-                    toast.show();
-            </text>
-        }
-        });
-    </script>
-}

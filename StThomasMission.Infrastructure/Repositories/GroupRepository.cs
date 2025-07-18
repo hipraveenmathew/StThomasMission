@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using StThomasMission.Core.DTOs;
 using StThomasMission.Core.Entities;
-using StThomasMission.Core.Enums;
 using StThomasMission.Core.Interfaces;
 using StThomasMission.Infrastructure.Data;
 using System.Collections.Generic;
@@ -11,25 +11,37 @@ namespace StThomasMission.Infrastructure.Repositories
 {
     public class GroupRepository : Repository<Group>, IGroupRepository
     {
-        private readonly StThomasMissionDbContext _context;
+        public GroupRepository(StThomasMissionDbContext context) : base(context) { }
 
-        public GroupRepository(StThomasMissionDbContext context) : base(context)
+        public async Task<GroupDetailDto?> GetByNameAsync(string name)
         {
-            _context = context;
+            // The global query filter on Group handles IsDeleted status automatically.
+            return await _dbSet
+                .AsNoTracking()
+                .Where(g => g.Name == name)
+                .Select(g => new GroupDetailDto
+                {
+                    Id = g.Id,
+                    Name = g.Name,
+                    Description = g.Description,
+                    // Efficiently count related students without loading them
+                    StudentCount = g.Students.Count()
+                })
+                .FirstOrDefaultAsync();
         }
 
-        public async Task<Group?> GetByNameAsync(string name)
+        public async Task<IEnumerable<GroupDetailDto>> GetAllWithDetailsAsync()
         {
-            return await _context.Groups
+            return await _dbSet
                 .AsNoTracking()
-                .FirstOrDefaultAsync(g => g.Name == name);
-        }
-
-        public async Task<IEnumerable<Group>> GetAllActiveAsync()
-        {
-            return await _context.Groups
-                .AsNoTracking()
-                .Where(g => g.Students.Any(s => s.Status != StudentStatus.Deleted))
+                .OrderBy(g => g.Name)
+                .Select(g => new GroupDetailDto
+                {
+                    Id = g.Id,
+                    Name = g.Name,
+                    Description = g.Description,
+                    StudentCount = g.Students.Count()
+                })
                 .ToListAsync();
         }
     }

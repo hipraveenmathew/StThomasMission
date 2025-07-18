@@ -1,467 +1,266 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using StThomasMission.Core.Entities;
-using StThomasMission.Core.Enums;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using StThomasMission.Core.Constants;
+using StThomasMission.Core.DTOs;
 using StThomasMission.Core.Interfaces;
-using StThomasMission.Infrastructure;
-using StThomasMission.Services;
+using StThomasMission.Services.Exceptions;
+using StThomasMission.Web.Areas.Church.Models;
 using StThomasMission.Web.Areas.Families.Models;
-using StThomasMission.Web.Models;
 using System;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
-namespace StThomasMission.Web.Areas.Families.Controllers
+namespace StThomasMission.Web.Areas.Church.Controllers
 {
-    [Area("Families")]
-    [Authorize(Roles = "ParishAdmin,ParishPriest")]
+    [Area("Church")]
+    [Authorize(Roles = $"{UserRoles.ParishAdmin},{UserRoles.ParishPriest}")]
     public class FamiliesController : Controller
     {
         private readonly IFamilyService _familyService;
-        private readonly IFamilyMemberService _familyMemberService;
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IWardService _wardService;
+        private readonly ILogger<FamiliesController> _logger;
 
-        public FamiliesController(IFamilyService familyService, IUnitOfWork unitOfWork, IFamilyMemberService familyMemberService)
+        public FamiliesController(IFamilyService familyService, IWardService wardService, ILogger<FamiliesController> logger)
         {
             _familyService = familyService;
-            _unitOfWork = unitOfWork;
-            _familyMemberService = familyMemberService;
+            _wardService = wardService;
+            _logger = logger;
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index(FamilyFilterViewModel filter, string sortOrder, int pageNumber = 1, int pageSize = 10)
+        public async Task<IActionResult> Index(FamilyFilterViewModel filter, string? sortOrder, int pageNumber = 1, int pageSize = 15)
         {
-            ViewData["CurrentSort"] = sortOrder;
-            ViewData["NameSortParm"] = string.IsNullOrEmpty(sortOrder) ? "name_desc" : "";
-            ViewData["WardSortParm"] = sortOrder == "ward" ? "ward_desc" : "ward";
+            var pagedFamilies = await _familyService.SearchFamiliesPaginatedAsync(pageNumber, pageSize, filter.SearchTerm, filter.WardId, filter.IsRegistered);
 
-            // Build the query with server-side filtering
-            var query = _familyService.GetFamiliesQueryable(
-                searchString: filter.SearchString,
-                ward: filter.Ward,
-                status: filter.Status
-            );
-
-            // Apply sorting
-            query = sortOrder switch
+            var model = new FamilyIndexViewModel
             {
-                "name_desc" => query.OrderByDescending(f => f.FamilyName),
-                "ward" => query.OrderBy(f => f.Ward.Name),
-                "ward_desc" => query.OrderByDescending(f => f.Ward.Name),
-                _ => query.OrderBy(f => f.FamilyName),
-            };
-
-            // Pagination
-            int totalItems = await query.CountAsync();
-            var pagedFamilies = await query.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
-
-            var model = new PaginatedList<Family>(pagedFamilies, totalItems, pageNumber, pageSize);
-            return View(new FamilyIndexViewModel
-            {
+                PagedFamilies = pagedFamilies,
                 Filter = filter,
-                Families = model
-            });
-        }
-
-        [HttpGet]
-        public IActionResult Register()
-        {
-            return View(new FamilyViewModel());
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Register(FamilyViewModel model)
-        {
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
-
-            try
-            {
-                string? churchRegNumber = model.IsRegistered
-                    ? (model.ChurchRegistrationNumber ?? await GenerateUniqueChurchRegistrationNumber())
-                    : null;
-                string? tempId = !model.IsRegistered
-                    ? (model.TemporaryID ?? await GenerateUniqueTemporaryId())
-                    : null;
-
-                var family = new Family
-                {
-                    FamilyName = model.FamilyName,
-                    WardId = int.Parse(model.Ward),
-                    IsRegistered = model.IsRegistered,
-                    ChurchRegistrationNumber = churchRegNumber,
-                    TemporaryID = tempId,
-                    CreatedBy = User.Identity?.Name ?? "System",
-                    CreatedDate = DateTime.UtcNow
-                };
-
-                await _familyService.RegisterFamilyAsync(family);
-                return RedirectToAction(nameof(Success), new { familyId = family.Id });
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError(string.Empty, $"Failed to register family: {ex.Message}");
-                return View(model);
-            }
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> Success(int familyId)
-        {
-            var family = await _familyService.GetFamilyByIdAsync(familyId);
-            if (family == null)
-            {
-                return NotFound("Family not found.");
-            }
-
-            var model = new FamilyViewModel
-            {
-                Id = family.Id,
-                FamilyName = family.FamilyName,
-                Ward = family.WardId.ToString(),
-                IsRegistered = family.IsRegistered,
-                ChurchRegistrationNumber = family.ChurchRegistrationNumber,
-                TemporaryID = family.TemporaryID,
-                Status = family.Status,
-                MigratedTo = family.MigratedTo
+                CurrentSort = sortOrder,
+                AvailableWards = await GetWardsSelectListAsync()
             };
-
             return View(model);
         }
 
         [HttpGet]
-        public IActionResult AddMember(int familyId)
+        public async Task<IActionResult> Details(int id)
         {
-            return View(new FamilyMemberViewModel { FamilyId = familyId });
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddMember(FamilyMemberViewModel model)
-        {
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
-
             try
             {
-                var familyMember = new FamilyMember
+                var familyDto = await _familyService.GetFamilyDetailByIdAsync(id);
+                var model = new FamilyDetailsViewModel
                 {
-                    FamilyId = model.FamilyId,
-                    FirstName = model.FirstName,
-                    LastName = model.LastName,
-                    Relation = model.Relation,
-                    DateOfBirth = model.DateOfBirth,
-                    Contact = model.Contact,
-                    Email = model.Email,
-                    Role = model.Role,
-                    CreatedBy = User.Identity?.Name ?? "System"
+                    Family = familyDto
                 };
-
-                await _familyService.AddFamilyMemberAsync(familyMember);
-                return RedirectToAction(nameof(Details), new { id = model.FamilyId });
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError(string.Empty, $"Failed to add family member: {ex.Message}");
                 return View(model);
+            }
+            catch (NotFoundException)
+            {
+                return NotFound();
             }
         }
 
         [HttpGet]
-        public IActionResult EnrollStudent(int familyMemberId)
+        public async Task<IActionResult> Register()
         {
-            return View(new StudentEnrollmentViewModel
+            var model = new FamilyFormViewModel
             {
-                FamilyMemberId = familyMemberId,
-                AcademicYear = DateTime.Now.Year
-            });
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> EnrollStudent(StudentEnrollmentViewModel model)
-        {
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
-
-            try
-            {
-                await _familyService.EnrollStudentAsync(
-                    model.FamilyMemberId,
-                    model.Grade,
-                    model.AcademicYear,
-                    model.Group,
-                    model.StudentOrganisation);
-                return RedirectToAction(nameof(Index));
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError(string.Empty, $"Failed to enroll student: {ex.Message}");
-                return View(model);
-            }
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> ConvertToRegistered(int familyId)
-        {
-            var family = await _familyService.GetFamilyByIdAsync(familyId);
-            if (family == null)
-            {
-                return NotFound("Family not found.");
-            }
-
-            try
-            {
-                await _familyService.ConvertTemporaryIdToChurchIdAsync(familyId);
-                return RedirectToAction(nameof(Success), new { familyId = familyId });
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError(string.Empty, $"Failed to convert family: {ex.Message}");
-                return View();
-            }
-            
-        }
-
-        //[HttpPost]
-        //[ValidateAntiForgeryToken]
-        //public async Task<IActionResult> ConvertToRegistered(ConvertToRegisteredViewModel model)
-        //{
-        //    if (!ModelState.IsValid)
-        //    {
-        //        return View(model);
-        //    }
-
-        //    try
-        //    {
-        //        await _familyService.ConvertTemporaryIdToChurchIdAsync(model.FamilyId);
-        //        return RedirectToAction(nameof(Success), new { familyId = model.FamilyId });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        ModelState.AddModelError(string.Empty, $"Failed to convert family: {ex.Message}");
-        //        return View(model);
-        //    }
-        //}
-
-        [HttpGet]
-        public async Task<IActionResult> MarkAsMigrated(int id)
-        {
-            var family = await _familyService.GetFamilyByIdAsync(id);
-            if (family == null)
-            {
-                return NotFound("Family not found.");
-            }           
-
-            return View(family);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> MarkAsMigrated(Family model)
-        {
-            if (string.IsNullOrWhiteSpace(model.MigratedTo))
-            {
-                return View(model);
-            }
-
-            try
-            {
-                model.Status = FamilyStatus.Migrated;
-               
-
-                await _familyService.UpdateFamilyAsync(model);
-                return RedirectToAction(nameof(Index));
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError(string.Empty, $"Failed to mark family as migrated: {ex.Message}");
-                return View(model);
-            }
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> Edit(int id)
-        {
-            var family = await _familyService.GetFamilyByIdAsync(id);
-            if (family == null)
-            {
-                return NotFound("Family not found.");
-            }
-
-            var model = new FamilyViewModel
-            {
-                Id = family.Id,
-                FamilyName = family.FamilyName,
-                Ward = family.WardId.ToString(),
-                IsRegistered = family.IsRegistered,
-                ChurchRegistrationNumber = family.ChurchRegistrationNumber,
-                TemporaryID = family.TemporaryID,
-                Status = family.Status,
-                MigratedTo = family.MigratedTo,
-                HouseNumber = family.HouseNumber,
-                StreetName = family.StreetName,
-                City = family.City,
-                PostCode = family.PostCode,
-                Email = family.Email,
-                GiftAid = family.GiftAid,
-                ParishIndia = family.ParishIndia,
-                EparchyIndia = family.EparchyIndia,
-                CreatedBy = family.CreatedBy,
-                UpdatedBy = family.UpdatedBy
+                AvailableWards = await GetWardsSelectListAsync()
             };
-
             return View(model);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(FamilyViewModel model)
+        public async Task<IActionResult> Register(FamilyFormViewModel model)
         {
             if (!ModelState.IsValid)
             {
+                model.AvailableWards = await GetWardsSelectListAsync();
                 return View(model);
             }
-
             try
             {
-                var family = new Family
+                var request = new RegisterFamilyRequest
                 {
-                    Id = model.Id,
                     FamilyName = model.FamilyName,
-                    WardId = int.Parse(model.Ward),
-                    IsRegistered = model.IsRegistered,
-                    ChurchRegistrationNumber = model.ChurchRegistrationNumber,
-                    TemporaryID = model.TemporaryID,
-                    Status = model.Status,
-                    MigratedTo = model.MigratedTo,
+                    WardId = model.WardId,
                     HouseNumber = model.HouseNumber,
                     StreetName = model.StreetName,
                     City = model.City,
                     PostCode = model.PostCode,
                     Email = model.Email,
-                    GiftAid = model.GiftAid,
-                    ParishIndia = model.ParishIndia,
-                    EparchyIndia = model.EparchyIndia,
-                    CreatedBy = model.CreatedBy,
-                    UpdatedBy = User.Identity?.Name ?? "System",
-                    UpdatedDate = DateTime.UtcNow
+                    GiftAid = model.GiftAid
                 };
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+                var newFamily = await _familyService.RegisterFamilyAsync(request, userId);
 
-                await _familyService.UpdateFamilyAsync(family);
-                return RedirectToAction(nameof(Index));
+                TempData["Success"] = "Family registered successfully. You can now add family members.";
+                return RedirectToAction(nameof(Details), new { id = newFamily.Id });
             }
             catch (Exception ex)
             {
-                ModelState.AddModelError(string.Empty, $"Failed to update family: {ex.Message}");
+                _logger.LogError(ex, "Error registering new family.");
+                ModelState.AddModelError("", "An unexpected error occurred while registering the family.");
+                model.AvailableWards = await GetWardsSelectListAsync();
                 return View(model);
             }
         }
 
+        // Add these actions to your FamiliesController
 
         [HttpGet]
-        public async Task<IActionResult> Details(int id)
+        public async Task<IActionResult> Edit(int id)
         {
-            var family = await _familyService.GetFamilyByIdAsync(id);
-            if (family == null)
+            try
             {
-                return NotFound("Family not found.");
-            }
-
-            var members = await _familyService.GetFamilyMembersByFamilyIdAsync(id);
-            var model = new FamilyDetailsViewModel
-            {
-                Id = family.Id,
-                FamilyName = family.FamilyName,
-                Ward = family.WardId.ToString(),
-                IsRegistered = family.IsRegistered,
-                ChurchRegistrationNumber = family.ChurchRegistrationNumber,
-                TemporaryID = family.TemporaryID,
-                Status = family.Status,
-                MigratedTo = family.MigratedTo,
-                HouseNumber = family.HouseNumber,
-                StreetName = family.StreetName,
-                City = family.City,
-                PostCode = family.PostCode,
-                Email = family.Email,
-                GiftAid = family.GiftAid,
-                ParishIndia = family.ParishIndia,
-                EparchyIndia = family.EparchyIndia,
-                CreatedBy = family.CreatedBy,
-                UpdatedBy = family.UpdatedBy,
-                PreviousFamilyId = family.PreviousFamilyId,
-                PreviousFamily = family.PreviousFamily,
-                Members = members.Select(m => new FamilyMemberViewModel
+                var dto = await _familyService.GetFamilyDetailByIdAsync(id);
+                var model = new FamilyFormViewModel
                 {
-                    Id = m.Id,
-                    FamilyId = m.FamilyId,
-                    FirstName = m.FirstName,
-                    LastName = m.LastName,
-                    BaptismalName = m.BaptismalName,
-                    Relation = m.Relation,
-                    DateOfBirth = m.DateOfBirth,
-                    DateOfBaptism = m.DateOfBaptism,
-                    DateOfChrismation = m.DateOfChrismation,
-                    DateOfHolyCommunion = m.DateOfHolyCommunion,
-                    DateOfMarriage = m.DateOfMarriage,
-                    DateOfDeath = m.DateOfDeath,
-                    Contact = m.Contact,
-                    Email = m.Email,
-                    Role = m.Role,
-                    CreatedBy = m.CreatedBy,
-                    UpdatedBy = m.UpdatedBy
-                }).ToList()
-            };
-
-            return View(model);
-        }
-
-        private async Task<string> GenerateUniqueChurchRegistrationNumber()
-        {
-            
-            string number = await _familyService.NewChurchIdAsync();            
-            return number;
-        }
-
-        private async Task<string> GenerateUniqueTemporaryId()
-        {
-            string id;
-            do
+                    Id = dto.Id,
+                    FamilyName = dto.FamilyName,
+                    WardId = dto.WardId, // Assuming WardId is on the detail DTO
+                    HouseNumber = dto.HouseNumber,
+                    StreetName = dto.StreetName,
+                    City = dto.City,
+                    PostCode = dto.PostCode,
+                    Email = dto.Email,
+                    GiftAid = dto.GiftAid,
+                    AvailableWards = await GetWardsSelectListAsync(dto.WardId)
+                };
+                return View(model);
+            }
+            catch (NotFoundException)
             {
-                id = $"TMP-{new Random().Next(1000, 9999)}";
-            } while (await _familyService.GetByTemporaryIdAsync(id) != null);
-            return id;
+                return NotFound();
+            }
         }
+
         [HttpPost]
-        public async Task<IActionResult> ImportFamilies(IFormFile file)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, FamilyFormViewModel model)
         {
-            if (file == null || file.Length == 0)
+            if (id != model.Id) return BadRequest();
+
+            if (!ModelState.IsValid)
             {
-                TempData["Error"] = "Please upload a valid Excel file.";
-                return RedirectToAction("Index");
+                model.AvailableWards = await GetWardsSelectListAsync(model.WardId);
+                return View(model);
             }
 
             try
             {
-                using var stream = file.OpenReadStream();
-                var importService = new FamilyImportService(_familyService, _unitOfWork, _familyMemberService);
-                await importService.ImportFamiliesFromExcelAsync(stream);
-                TempData["Success"] = "Families imported successfully.";
+                var request = new UpdateFamilyDetailsRequest
+                {
+                    FamilyName = model.FamilyName,
+                    WardId = model.WardId,
+                    HouseNumber = model.HouseNumber,
+                    StreetName = model.StreetName,
+                    City = model.City,
+                    PostCode = model.PostCode,
+                    Email = model.Email,
+                    GiftAid = model.GiftAid
+                };
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+                await _familyService.UpdateFamilyDetailsAsync(id, request, userId);
+
+                TempData["Success"] = "Family details updated successfully.";
+                return RedirectToAction(nameof(Details), new { id = id });
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"Failed to import families: {ex.Message}";
+                _logger.LogError(ex, "Error updating family {FamilyId}", id);
+                ModelState.AddModelError("", "An unexpected error occurred while updating the family.");
+                model.AvailableWards = await GetWardsSelectListAsync(model.WardId);
+                return View(model);
             }
+        }
 
-            return RedirectToAction("Index");
+        [HttpGet]
+        public async Task<IActionResult> Delete(int id)
+        {
+            try
+            {
+                var family = await _familyService.GetFamilyDetailByIdAsync(id);
+                return View(family);
+            }
+            catch (NotFoundException)
+            {
+                return NotFound();
+            }
+        }
+
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+                await _familyService.DeleteFamilyAsync(id, userId);
+                TempData["Success"] = "Family has been deleted successfully.";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting family {FamilyId}", id);
+                TempData["Error"] = ex.Message;
+                return RedirectToAction(nameof(Details), new { id = id });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Migrate(int id)
+        {
+            try
+            {
+                var family = await _familyService.GetFamilyDetailByIdAsync(id);
+                var model = new MigrateFamilyViewModel { FamilyId = family.Id, FamilyName = family.FamilyName };
+                return View(model);
+            }
+            catch (NotFoundException)
+            {
+                return NotFound();
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Migrate(MigrateFamilyViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+            try
+            {
+                var request = new MigrateFamilyRequest { MigratedTo = model.MigratedTo };
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+                await _familyService.MigrateFamilyAsync(model.FamilyId, request, userId);
+
+                TempData["Success"] = "Family has been marked as migrated.";
+                return RedirectToAction(nameof(Details), new { id = model.FamilyId });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error migrating family {FamilyId}", model.FamilyId);
+                TempData["Error"] = ex.Message;
+                return RedirectToAction(nameof(Details), new { id = model.FamilyId });
+            }
+        }
+
+        // Update the GetWardsSelectListAsync helper to handle a selected value
+        private async Task<SelectList> GetWardsSelectListAsync(int? selectedWardId = null)
+        {
+            var wards = await _wardService.GetAllWardsAsync();
+            return new SelectList(wards, "Id", "Name", selectedWardId);
+        }
+        private async Task<SelectList> GetWardsSelectListAsync()
+        {
+            var wards = await _wardService.GetAllWardsAsync();
+            return new SelectList(wards, "Id", "Name");
         }
     }
 }

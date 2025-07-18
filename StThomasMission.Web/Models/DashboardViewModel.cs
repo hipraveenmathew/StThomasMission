@@ -1,19 +1,21 @@
-﻿using StThomasMission.Core.Entities;
+﻿using StThomasMission.Core.DTOs;
 using System.Collections.Generic;
 
-namespace StThomasMission.Web.Models
+namespace StThomasMission.Web.Areas.Admin.Models
 {
     public class DashboardViewModel
     {
-        public PaginatedList<MessageLog> RecentAnnouncements { get; set; }
-        public PaginatedList<GroupActivity> UpcomingEvents { get; set; }
-        public PaginatedList<Student> StudentProgress { get; set; }
+        // Stats
+        public int TotalStudents { get; set; }
+        public int ActiveStudents { get; set; }
+        public int GraduatedStudents { get; set; }
+        public int TotalFamilies { get; set; }
+        public int RegisteredFamilies { get; set; }
+        public int TotalWards { get; set; }
+        public int TotalGroups { get; set; }
 
-        public DashboardViewModel()
-        {
-            RecentAnnouncements = new PaginatedList<MessageLog>(new List<MessageLog>(), 0, 1, 5);
-            UpcomingEvents = new PaginatedList<GroupActivity>(new List<GroupActivity>(), 0, 1, 5);
-            StudentProgress = new PaginatedList<Student>(new List<Student>(), 0, 1, 5);
-        }
+        // "Top 5" Lists
+        public List<AnnouncementSummaryDto> RecentAnnouncements { get; set; } = new();
+        public List<GroupActivityDto> UpcomingEvents { get; set; } = new();
     }
 }

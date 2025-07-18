@@ -1,100 +1,23 @@
-﻿@model StThomasMission.Core.Entities.Announcement
-
+﻿@model StThomasMission.Web.Areas.Admin.Models.AnnouncementFormViewModel
 @{
-    ViewData["Title"] = "Add Announcement";
+    ViewData["Title"] = "Create Announcement";
 }
 
-<div class="container mt-4">
-    <div class="card shadow-sm">
-        <div class="card-header bg-primary text-white">
-            <h2 class="mb-0"><i class="fas fa-plus me-2"></i>Add Announcement</h2>
-        </div>
-        <div class="card-body">
-            <form asp-action="Create" method="post" id="createAnnouncementForm">
-                <div class="row">
-                    <div class="col-12 mb-3">
-                        <label asp-for="Title" class="form-label fw-bold"></label>
-                        <input asp-for="Title" class="form-control" maxlength="200" placeholder="Enter announcement title" required />
-                        <span asp-validation-for="Title" class="text-danger"></span>
-                    </div>
-                    <div class="col-12 mb-3">
-                        <label asp-for="Description" class="form-label fw-bold"></label>
-                        <textarea asp-for="Description" class="form-control" rows="5" maxlength="2000" placeholder="Enter announcement details" required></textarea>
-                        <span asp-validation-for="Description" class="text-danger"></span>
-                    </div>
-                    <div class="col-12 col-md-6 mb-3">
-                        <label asp-for="PostedDate" class="form-label fw-bold"></label>
-                        <input asp-for="PostedDate" class="form-control" type="date" value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
-                        <span asp-validation-for="PostedDate" class="text-danger"></span>
-                    </div>
-                    <div class="col-12 col-md-6 mb-3">
-                        <label asp-for="IsActive" class="form-label fw-bold"></label>
-                        <div class="form-check">
-                            <input asp-for="IsActive" type="checkbox" class="form-check-input" checked />
-                            <label class="form-check-label" for="IsActive">Is Active</label>
-                        </div>
-                        <span asp-validation-for="IsActive" class="text-danger"></span>
-                    </div>
-                </div>
-                <div class="d-flex justify-content-end mt-4">
-                    <a asp-action="Index" asp-area="Admin" class="btn btn-secondary me-2"><i class="fas fa-times me-2"></i>Cancel</a>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Create</button>
-                </div>
-            </form>
-        </div>
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h4 class="mb-0">Create New Announcement</h4>
+    </div>
+    <div class="card-body">
+        <form asp-action="Create">
+            <partial name="_AnnouncementForm" model="Model" />
+            <div class="d-flex justify-content-end mt-4">
+                <a asp-action="Index" class="btn btn-secondary me-2">Cancel</a>
+                <button type="submit" class="btn btn-primary">Create Announcement</button>
+            </div>
+        </form>
     </div>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate-unobtrusive/3.2.12/jquery.validate.unobtrusive.min.js"></script>
-    <script>
-        $(document).ready(function () {
-            // Initialize jQuery Validate
-            $("#createAnnouncementForm").validate({
-                rules: {
-                    Title: {
-                        required: true,
-                        maxlength: 200
-                    },
-                    Description: {
-                        required: true,
-                        maxlength: 2000
-                    },
-                    PostedDate: {
-                        required: true,
-                        date: true
-                    }
-                },
-                messages: {
-                    Title: {
-                        required: "Please enter the title.",
-                        maxlength: "Title cannot exceed 200 characters."
-                    },
-                    Description: {
-                        required: "Please enter the description.",
-                        maxlength: "Description cannot exceed 2000 characters."
-                    },
-                    PostedDate: "Please enter a valid date."
-                },
-                errorElement: "div",
-                errorClass: "text-danger",
-                highlight: function (element) {
-                    $(element).addClass("is-invalid");
-                },
-                unhighlight: function (element) {
-                    $(element).removeClass("is-invalid");
-                }
-            });
-
-            // Loading spinner for form submission
-            $("#createAnnouncementForm").on("submit", function () {
-                var $submitButton = $(this).find('button[type="submit"]');
-                if ($(this).valid()) {
-                    $submitButton.prop("disabled", true).prepend('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>');
-                }
-            });
-        });
-    </script>
 }

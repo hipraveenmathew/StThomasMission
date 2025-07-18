@@ -1,35 +1,38 @@
-﻿using Microsoft.EntityFrameworkCore.Storage;
-using StThomasMission.Core.Entities;
+﻿using StThomasMission.Core.Entities;
+using System;
 using System.Threading.Tasks;
 
 namespace StThomasMission.Core.Interfaces
 {
     public interface IUnitOfWork : IDisposable
     {
-        // --- ADDED Repositories ---
-        IGradeRepository Grades { get; }
-        ITeacherAssignmentRepository TeacherAssignments { get; }
-
-        IStudentRepository Students { get; }
+        IAnnouncementRepository Announcements { get; }
+        IAssessmentRepository Assessments { get; }
+        IAttendanceRepository Attendances { get; }
+        IAuditLogRepository AuditLogs { get; }
         IFamilyRepository Families { get; }
         IFamilyMemberRepository FamilyMembers { get; }
-        IAttendanceRepository Attendances { get; }
-        IAssessmentRepository Assessments { get; }
+        IGradeRepository Grades { get; }
         IGroupRepository Groups { get; }
         IGroupActivityRepository GroupActivities { get; }
-        IStudentGroupActivityRepository StudentGroupActivities { get; }
-        IStudentAcademicRecordRepository StudentAcademicRecords { get; }
-        IMessageLogRepository MessageLogs { get; }
-        IAuditLogRepository AuditLogs { get; }
-        IWardRepository Wards { get; }
         IMassTimingRepository MassTimings { get; }
-        IAnnouncementRepository Announcements { get; }
+        IMessageLogRepository MessageLogs { get; }
         IMigrationLogRepository MigrationLogs { get; }
+        IStudentRepository Students { get; }
+        IStudentAcademicRecordRepository StudentAcademicRecords { get; }
+        IStudentGroupActivityRepository StudentGroupActivities { get; }
+        ITeacherAssignmentRepository TeacherAssignments { get; }
+        IWardRepository Wards { get; }
+        ICountStorageRepository CountStorage { get; }
+
+
+        // Using generic repository for entities without custom methods
         IRepository<AssessmentSummary> AssessmentSummaries { get; }
 
-        Task<IDbContextTransaction> BeginTransactionAsync();
-        Task CommitTransactionAsync();
-        Task RollbackTransactionAsync();
+        /// <summary>
+        /// Saves all changes made in this context to the database.
+        /// </summary>
+        /// <returns>The number of state entries written to the database.</returns>
         Task<int> CompleteAsync();
     }
 }

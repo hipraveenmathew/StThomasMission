@@ -1,26 +1,33 @@
-﻿using StThomasMission.Core.Entities;
-using System;
+﻿using StThomasMission.Core.DTOs;
+using StThomasMission.Core.DTOs.Reporting;
+using StThomasMission.Core.Entities;
+using StThomasMission.Core.Enums;
 using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace StThomasMission.Core.Interfaces
 {
     public interface IStudentRepository : IRepository<Student>
     {
-        // --- UPDATED Method Signature ---
-        Task<IEnumerable<Student>> GetByGradeIdAsync(int gradeId);
+        Task<StudentDetailDto?> GetStudentDetailAsync(int studentId);
+        Task<IEnumerable<Student>> GetByIdsAsync(IEnumerable<int> ids);
 
-        // --- Other methods remain ---
-        Task<IEnumerable<Student>> GetByGroupIdAsync(int groupId);
-        Task<IEnumerable<Student>> GetByFamilyIdAsync(int familyId);
-        Task<IEnumerable<Student>> GetAsync(Expression<Func<Student, bool>> predicate);
-        IQueryable<Student> GetQueryable(Expression<Func<Student, bool>> predicate);
+        Task<IEnumerable<StudentSummaryDto>> GetByGradeIdAsync(int gradeId);
+        Task<StudentSummaryDto?> GetStudentByFamilyMemberId(int familyMemberId);
 
-        // --- REMOVED Methods ---
-        // The following methods belong in their respective repositories (IAttendanceRepository, IAssessmentRepository)
-        // Task<IEnumerable<Attendance>> GetAttendanceByStudentIdAsync(int studentId);
-        // Task<IEnumerable<Assessment>> GetAssessmentsByStudentIdAsync(int studentId);
+        Task<IEnumerable<StudentSummaryDto>> GetByGroupIdAsync(int groupId);
+
+        Task<IEnumerable<StudentSummaryDto>> GetByFamilyIdAsync(int familyId);
+        Task<IEnumerable<RecipientContactInfo>> GetParentContactsByGroupIdAsync(int groupId);
+
+        Task<IPaginatedList<StudentSummaryDto>> SearchStudentsPaginatedAsync(
+            int pageNumber,
+            int pageSize,
+            string? searchTerm = null,
+            int? gradeId = null,
+            int? groupId = null,
+            StudentStatus? status = null);
+        Task<StudentReportDto?> GetStudentReportDataAsync(int studentId);
+        Task<ClassReportDto?> GetClassReportDataAsync(int gradeId, int academicYear);
     }
 }

@@ -1,106 +1,104 @@
-﻿using StThomasMission.Core.Entities;
-using StThomasMission.Core.Enums;
+﻿using StThomasMission.Core.DTOs;
+using StThomasMission.Core.Entities;
 using StThomasMission.Core.Interfaces;
+using StThomasMission.Services.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace StThomasMission.Services
+namespace StThomasMission.Services.Services
 {
     public class AttendanceService : IAttendanceService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IStudentService _studentService;
-        private readonly IGroupService _groupService;
         private readonly IAuditService _auditService;
 
-        public AttendanceService(IUnitOfWork unitOfWork, IStudentService studentService, IGroupService groupService, IAuditService auditService)
+        public AttendanceService(IUnitOfWork unitOfWork, IAuditService auditService)
         {
             _unitOfWork = unitOfWork;
-            _studentService = studentService;
-            _groupService = groupService;
             _auditService = auditService;
         }
 
-        public async Task AddAttendanceAsync(int studentId, DateTime date, string description, AttendanceStatus status)
+        public async Task<IEnumerable<ClassAttendanceRecordDto>> GetAttendanceForGradeOnDateAsync(int gradeId, DateTime date)
         {
-            if (date > DateTime.UtcNow)
-                throw new ArgumentException("Attendance date cannot be in the future.", nameof(date));
-            if (string.IsNullOrEmpty(description))
-                throw new ArgumentException("Description is required.", nameof(description));
-
-            await _studentService.GetStudentByIdAsync(studentId);
-
-            var existingAttendance = (await _unitOfWork.Attendances.GetByStudentIdAsync(studentId))
-                .FirstOrDefault(a => a.Date.Date == date.Date);
-            if (existingAttendance != null)
-                throw new InvalidOperationException("Attendance for this student and date already exists.");
-
-            var attendance = new Attendance
-            {
-                StudentId = studentId,
-                Date = date.Date,
-                Description = description,
-                Status = status
-            };
-
-            await _unitOfWork.Attendances.AddAsync(attendance);
-            await _unitOfWork.CompleteAsync();
-
-            await _auditService.LogActionAsync("System", "Create", nameof(Attendance), attendance.Id.ToString(), $"Added attendance for student {studentId} on {date:yyyy-MM-dd}");
+            return await _unitOfWork.Attendances.GetAttendanceForGradeOnDateAsync(gradeId, date);
         }
 
-        public async Task UpdateAttendanceAsync(int attendanceId, AttendanceStatus status, string description)
+        public async Task MarkClassAttendanceAsync(MarkClassAttendanceRequest request, string userId)
         {
-            var attendance = await GetAttendanceByIdAsync(attendanceId);
+            // 1. Validate the request
+            if (request.Records == null || !request.Records.Any())
+            {
+                throw new ArgumentException("At least one attendance record is required.");
+            }
+            if (string.IsNullOrWhiteSpace(request.Description))
+            {
+                request.Description = "Catechism Class";
+            }
 
-            if (string.IsNullOrEmpty(description))
-                throw new ArgumentException("Description is required.", nameof(description));
+            // 2. Check for existing attendance for any student in the list on this date to prevent duplicates
+            var studentIds = request.Records.Select(r => r.StudentId).ToList();
+            var existing = await _unitOfWork.Attendances.GetAttendanceForGradeOnDateAsync(request.GradeId, request.Date);
+            if (existing.Any())
+            {
+                throw new InvalidOperationException($"Attendance has already been marked for this class on {request.Date:yyyy-MM-dd}. Please edit the existing records.");
+            }
 
-            attendance.Status = status;
-            attendance.Description = description;
+            // 3. Create and add all attendance records
+            foreach (var record in request.Records)
+            {
+                var attendance = new Attendance
+                {
+                    StudentId = record.StudentId,
+                    Date = request.Date.Date,
+                    Description = request.Description,
+                    Status = record.Status,
+                    Remarks = record.Remarks,
+                    CreatedBy = userId,
+                    CreatedDate = DateTime.UtcNow
+                };
+                await _unitOfWork.Attendances.AddAsync(attendance);
+            }
+
+            // 4. Save all changes in a single transaction
+            await _unitOfWork.CompleteAsync();
+
+            await _auditService.LogActionAsync(userId, "BulkCreate", nameof(Attendance), request.GradeId.ToString(), $"Marked attendance for grade ID {request.GradeId} on {request.Date:yyyy-MM-dd}");
+        }
+
+        public async Task UpdateAttendanceAsync(int attendanceId, UpdateAttendanceRequest request, string userId)
+        {
+            var attendance = await _unitOfWork.Attendances.GetByIdAsync(attendanceId);
+            if (attendance == null)
+            {
+                throw new NotFoundException(nameof(Attendance), attendanceId);
+            }
+
+            attendance.Status = request.Status;
+            attendance.Description = request.Description;
+            attendance.Remarks = request.Remarks;
+            // Note: We don't update CreatedBy or CreatedAt. Those are fixed.
 
             await _unitOfWork.Attendances.UpdateAsync(attendance);
             await _unitOfWork.CompleteAsync();
 
-            await _auditService.LogActionAsync("System", "Update", nameof(Attendance), attendanceId.ToString(), $"Updated attendance for student {attendance.StudentId}");
+            await _auditService.LogActionAsync(userId, "Update", nameof(Attendance), attendanceId.ToString(), $"Updated attendance for student ID {attendance.StudentId}");
         }
 
-        public async Task DeleteAttendanceAsync(int attendanceId)
-        {
-            var attendance = await GetAttendanceByIdAsync(attendanceId);
-
-            await _unitOfWork.Attendances.DeleteAsync(attendanceId);
-            await _unitOfWork.CompleteAsync();
-
-            await _auditService.LogActionAsync("System", "Delete", nameof(Attendance), attendanceId.ToString(), $"Deleted attendance for student {attendance.StudentId}");
-        }
-
-        public async Task<IEnumerable<Attendance>> GetAttendanceByStudentAsync(int studentId, DateTime? startDate = null, DateTime? endDate = null)
-        {
-            await _studentService.GetStudentByIdAsync(studentId);
-            return await _unitOfWork.Attendances.GetByStudentIdAsync(studentId, startDate, endDate);
-        }
-
-        public async Task<IEnumerable<Attendance>> GetAttendanceByGradeAsync(string grade, DateTime date)
-        {
-            if (!Regex.IsMatch(grade, @"^Year \d{1,2}$"))
-                throw new ArgumentException("Grade must be in format 'Year X'.", nameof(grade));
-            if (date > DateTime.UtcNow)
-                throw new ArgumentException("Attendance date cannot be in the future.", nameof(date));
-
-            return await _unitOfWork.Attendances.GetByGradeAsync(grade, date);
-        }
-
-        private async Task<Attendance> GetAttendanceByIdAsync(int attendanceId)
+        public async Task DeleteAttendanceAsync(int attendanceId, string userId)
         {
             var attendance = await _unitOfWork.Attendances.GetByIdAsync(attendanceId);
             if (attendance == null)
-                throw new ArgumentException("Attendance record not found.", nameof(attendanceId));
-            return attendance;
-        }
+            {
+                throw new NotFoundException(nameof(Attendance), attendanceId);
+            }
 
+            // This is now a hard delete as per the repository change
+            await _unitOfWork.Attendances.DeleteAsync(attendanceId);
+            await _unitOfWork.CompleteAsync();
+
+            await _auditService.LogActionAsync(userId, "Delete", nameof(Attendance), attendanceId.ToString(), $"Deleted attendance record for student ID {attendance.StudentId}");
+        }
     }
 }

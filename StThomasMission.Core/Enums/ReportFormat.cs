@@ -2,10 +2,14 @@
 
 namespace StThomasMission.Core.Enums
 {
+    /// <summary>
+    /// Defines the available formats for exporting reports.
+    /// </summary>
     public enum ReportFormat
     {
         [Display(Name = "PDF")]
-        Pdf,
+        PDF,
+
         [Display(Name = "Excel")]
         Excel
     }

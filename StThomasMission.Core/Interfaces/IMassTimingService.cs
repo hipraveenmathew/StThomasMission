@@ -1,5 +1,4 @@
-﻿using StThomasMission.Core.Entities;
-using StThomasMission.Core.Enums;
+﻿using StThomasMission.Core.DTOs;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -8,10 +7,16 @@ namespace StThomasMission.Core.Interfaces
 {
     public interface IMassTimingService
     {
-        Task AddMassTimingAsync(string day, TimeSpan time, string location, MassType type, DateTime weekStartDate);
-        Task UpdateMassTimingAsync(int massTimingId, string day, TimeSpan time, string location, MassType type, DateTime weekStartDate);
-        Task DeleteMassTimingAsync(int massTimingId);
-        Task<IEnumerable<MassTiming>> GetMassTimingsAsync(DateTime? weekStartDate = null);
-        Task<MassTiming?> GetMassTimingByIdAsync(int massTimingId);
+        Task<MassTimingDto> GetMassTimingByIdAsync(int massTimingId);
+
+        Task<IEnumerable<MassTimingDto>> GetMassesForWeekAsync(DateTime weekStartDate);
+
+        Task<IEnumerable<MassTimingDto>> GetCurrentAndUpcomingMassesAsync();
+
+        Task<MassTimingDto> AddMassTimingAsync(CreateMassTimingRequest request, string userId);
+
+        Task UpdateMassTimingAsync(int massTimingId, UpdateMassTimingRequest request, string userId);
+
+        Task DeleteMassTimingAsync(int massTimingId, string userId);
     }
 }

@@ -1,8 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using StThomasMission.Core.DTOs;
 using StThomasMission.Core.Entities;
 using StThomasMission.Core.Enums;
 using StThomasMission.Core.Interfaces;
 using StThomasMission.Infrastructure.Data;
+using StThomasMission.Infrastructure.Shared;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,34 +14,81 @@ namespace StThomasMission.Infrastructure.Repositories
 {
     public class GroupActivityRepository : Repository<GroupActivity>, IGroupActivityRepository
     {
-        private readonly StThomasMissionDbContext _context;
+        public GroupActivityRepository(StThomasMissionDbContext context) : base(context) { }
 
-        public GroupActivityRepository(StThomasMissionDbContext context) : base(context)
+        public async Task<IEnumerable<GroupActivityDto>> GetByGroupIdAsync(int groupId, DateTime? startDate = null, DateTime? endDate = null)
         {
-            _context = context;
-        }
-
-        public async Task<IEnumerable<GroupActivity>> GetByGroupIdAsync(int groupId, DateTime? startDate = null, DateTime? endDate = null)
-        {
-            var query = _context.GroupActivities
+            var query = _dbSet
                 .AsNoTracking()
-                .Where(ga => ga.GroupId == groupId && ga.Status != ActivityStatus.Inactive);
+                .Where(ga => ga.GroupId == groupId);
 
             if (startDate.HasValue)
-                query = query.Where(ga => ga.Date >= startDate.Value);
+            {
+                query = query.Where(ga => ga.Date.Date >= startDate.Value.Date);
+            }
 
             if (endDate.HasValue)
-                query = query.Where(ga => ga.Date <= endDate.Value);
+            {
+                query = query.Where(ga => ga.Date.Date <= endDate.Value.Date);
+            }
 
-            return await query.ToListAsync();
+            return await query
+                .Select(ga => new GroupActivityDto
+                {
+                    Id = ga.Id,
+                    Name = ga.Name,
+                    Description = ga.Description,
+                    Date = ga.Date,
+                    GroupId = ga.GroupId,
+                    GroupName = ga.Group.Name, // Projecting the name
+                    Points = ga.Points,
+                    Status = ga.Status
+                })
+                .OrderByDescending(ga => ga.Date)
+                .ToListAsync();
+        }
+        // Add this new method to the GroupActivityRepository class
+
+        public async Task<List<GroupActivityDto>> GetUpcomingActivitiesAsync(DateTime fromDate, int take)
+        {
+            return await _dbSet
+                .AsNoTracking()
+                .Where(ga => ga.Date >= fromDate.Date)
+                .OrderBy(ga => ga.Date)
+                .Take(take)
+                .Select(ga => new GroupActivityDto
+                {
+                    Id = ga.Id,
+                    Name = ga.Name,
+                    Date = ga.Date,
+                    GroupName = ga.Group.Name,
+                    Points = ga.Points
+                })
+                .ToListAsync();
         }
 
-        public async Task<IEnumerable<GroupActivity>> GetByStatusAsync(ActivityStatus status)
+        public async Task<IPaginatedList<GroupActivityDto>> GetActivitiesByStatusPaginatedAsync(int pageNumber, int pageSize, ActivityStatus status)
         {
-            return await _context.GroupActivities
+            var query = _dbSet
                 .AsNoTracking()
-                .Where(ga => ga.Status == status)
-                .ToListAsync();
+                .Where(ga => ga.Status == status);
+
+            var dtoQuery = query.Select(ga => new GroupActivityDto
+            {
+                Id = ga.Id,
+                Name = ga.Name,
+                Description = ga.Description,
+                Date = ga.Date,
+                GroupId = ga.GroupId,
+                GroupName = ga.Group.Name,
+                Points = ga.Points,
+                Status = ga.Status
+            });
+
+            return await PaginatedList<GroupActivityDto>.CreateAsync(
+                dtoQuery.OrderByDescending(ga => ga.Date),
+                pageNumber,
+                pageSize);
         }
     }
 }

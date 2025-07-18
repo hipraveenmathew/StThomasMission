@@ -1,66 +1,86 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using StThomasMission.Core.Entities;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using StThomasMission.Core.Constants;
+using StThomasMission.Core.DTOs;
 using StThomasMission.Core.Interfaces;
+using StThomasMission.Services.Exceptions;
 using StThomasMission.Web.Areas.Admin.Models;
+using System;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace StThomasMission.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = UserRoles.Admin)]
     public class UsersController : Controller
     {
         private readonly IUserService _userService;
-        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IWardService _wardService;
+        private readonly ILogger<UsersController> _logger;
 
-        public UsersController(IUserService userService, UserManager<ApplicationUser> userManager)
+        public UsersController(IUserService userService, IWardService wardService, ILogger<UsersController> logger)
         {
             _userService = userService;
-            _userManager = userManager;
+            _wardService = wardService;
+            _logger = logger;
         }
 
         [HttpGet]
-        public IActionResult Index()
+        public async Task<IActionResult> Index(string? searchTerm, int pageNumber = 1, int pageSize = 15)
         {
-            var users = _userManager.Users.Select(u => new UserViewModel
+            var pagedUsers = await _userService.SearchUsersPaginatedAsync(pageNumber, pageSize, searchTerm);
+            var model = new UserIndexViewModel
             {
-                Id = u.Id,
-                Email = u.Email,
-                FullName = u.FullName,
-                WardId = u.WardId,
-                IsActive = u.IsActive
-            }).ToList();
-
-            return View(users);
+                PagedUsers = pagedUsers,
+                SearchTerm = searchTerm
+            };
+            return View(model);
         }
 
         [HttpGet]
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            return View(new UserViewModel());
+            var model = new UserFormViewModel
+            {
+                AvailableWards = await GetWardsSelectList()
+            };
+            return View(model);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(UserViewModel model)
+        public async Task<IActionResult> Create(UserFormViewModel model)
         {
             if (!ModelState.IsValid)
             {
+                model.AvailableWards = await GetWardsSelectList();
                 return View(model);
             }
 
             try
             {
-                await _userService.CreateUserAsync(model.Email, model.FullName, model.WardId, model.Password, model.Role);
+                var request = new CreateUserRequest
+                {
+                    Email = model.Email,
+                    Password = model.Password,
+                    FullName = model.FullName,
+                    WardId = model.WardId,
+                    Role = model.Role
+                };
+                var performedByUserId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+                await _userService.CreateUserAsync(request, performedByUserId);
+
                 TempData["Success"] = "User created successfully.";
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
-                ModelState.AddModelError(string.Empty, $"Failed to create user: {ex.Message}");
+                _logger.LogError(ex, "Error creating user.");
+                ModelState.AddModelError(string.Empty, ex.Message);
+                model.AvailableWards = await GetWardsSelectList();
                 return View(model);
             }
         }
@@ -68,44 +88,85 @@ namespace StThomasMission.Web.Areas.Admin.Controllers
         [HttpGet]
         public async Task<IActionResult> Edit(string id)
         {
-            var user = await _userService.GetUserByIdAsync(id);
-            if (user == null)
+            try
             {
-                return NotFound("User not found.");
+                var userDto = await _userService.GetUserByIdAsync(id);
+                var model = new UserFormViewModel
+                {
+                    Id = userDto.Id,
+                    Email = userDto.Email,
+                    FullName = userDto.FullName,
+                    WardId = userDto.WardId ?? 0,
+                    Designation = userDto.Designation,
+                    Role = userDto.Role,
+                    AvailableWards = await GetWardsSelectList()
+                };
+                return View(model);
             }
-
-            var model = new UserViewModel
+            catch (NotFoundException)
             {
-                Id = user.Id,
-                Email = user.Email,
-                FullName = user.FullName,
-                WardId = user.WardId,
-                IsActive = user.IsActive
-            };
-
-            return View(model);
+                return NotFound();
+            }
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(UserViewModel model)
+        public async Task<IActionResult> Edit(UserFormViewModel model)
         {
             if (!ModelState.IsValid)
             {
+                model.AvailableWards = await GetWardsSelectList();
                 return View(model);
             }
 
             try
             {
-                await _userService.UpdateUserAsync(model.Id, model.FullName, model.WardId, model.Designation);
+                var request = new UpdateUserRequest
+                {
+                    FullName = model.FullName,
+                    WardId = model.WardId,
+                    Designation = model.Designation
+                };
+                var performedByUserId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+                await _userService.UpdateUserAsync(model.Id, request, performedByUserId);
+
                 TempData["Success"] = "User updated successfully.";
                 return RedirectToAction(nameof(Index));
             }
+            catch (NotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
             catch (Exception ex)
             {
-                ModelState.AddModelError(string.Empty, $"Failed to update user: {ex.Message}");
+                _logger.LogError(ex, "Error updating user {UserId}", model.Id);
+                ModelState.AddModelError(string.Empty, ex.Message);
+                model.AvailableWards = await GetWardsSelectList();
                 return View(model);
             }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Deactivate(string id)
+        {
+            try
+            {
+                var performedByUserId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+                await _userService.DeactivateUserAsync(id, performedByUserId);
+                TempData["Success"] = "User has been deactivated.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Error deactivating user: {ex.Message}";
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        private async Task<SelectList> GetWardsSelectList()
+        {
+            var wards = await _wardService.GetAllWardsAsync();
+            return new SelectList(wards, "Id", "Name");
         }
     }
 }

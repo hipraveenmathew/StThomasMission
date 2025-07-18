@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using StThomasMission.Core.DTOs; // Assuming DTOs are in this namespace
 using StThomasMission.Core.Entities;
 using StThomasMission.Core.Interfaces;
 using StThomasMission.Infrastructure.Data;
@@ -18,19 +19,35 @@ namespace StThomasMission.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<IEnumerable<Announcement>> GetActiveAnnouncementsAsync(DateTime? startDate = null, DateTime? endDate = null)
+        /// <summary>
+        /// Retrieves a list of all active announcements.
+        /// </summary>
+        /// <returns>A collection of announcement summary DTOs.</returns>
+        // Replace the existing GetActiveAnnouncementsAsync method with this new version
+
+        public async Task<IEnumerable<AnnouncementSummaryDto>> GetActiveAnnouncementsAsync()
         {
-            var query = _context.Announcements
+            var query = _dbSet
                 .AsNoTracking()
-                .Where(a => a.IsActive && !a.IsDeleted);
+                .Where(a => a.IsActive);
 
-            if (startDate.HasValue)
-                query = query.Where(a => a.PostedDate >= startDate.Value);
+            var dtoQuery = query.Select(a => new AnnouncementSummaryDto
+            {
+                Id = a.Id,
+                Title = a.Title,
+                Description = a.Description,
+                PostedDate = a.PostedDate,
+                IsActive = a.IsActive,
+                // Join with the Users table to get the full name
+                AuthorName = _context.Users
+                                     .Where(u => u.Id == a.CreatedBy)
+                                     .Select(u => u.FullName)
+                                     .FirstOrDefault() ?? "System"
+            });
 
-            if (endDate.HasValue)
-                query = query.Where(a => a.PostedDate <= endDate.Value);
-
-            return await query.ToListAsync();
+            return await dtoQuery
+                .OrderByDescending(a => a.PostedDate)
+                .ToListAsync();
         }
     }
 }

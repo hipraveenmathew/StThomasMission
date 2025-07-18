@@ -1,8 +1,12 @@
-﻿using System.ComponentModel.DataAnnotations;
-using StThomasMission.Core.Enums;
+﻿using StThomasMission.Core.Enums;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace StThomasMission.Core.Entities
 {
+    /// <summary>
+    /// Represents an individual member belonging to a family.
+    /// </summary>
     public class FamilyMember
     {
         public int Id { get; set; }
@@ -11,7 +15,7 @@ namespace StThomasMission.Core.Entities
         public int FamilyId { get; set; }
         public Family Family { get; set; } = null!;
 
-        public string? UserId { get; set; }
+        public string? UserId { get; set; } // Link to an ApplicationUser account
         public ApplicationUser? User { get; set; }
 
         [Required(ErrorMessage = "First name is required.")]
@@ -30,6 +34,7 @@ namespace StThomasMission.Core.Entities
 
         [Required]
         public DateTime DateOfBirth { get; set; }
+        public DateTime? DateOfDeath { get; set; }
 
         [Phone(ErrorMessage = "Invalid phone number.")]
         [StringLength(20, ErrorMessage = "Contact number cannot exceed 20 characters.")]
@@ -39,26 +44,27 @@ namespace StThomasMission.Core.Entities
         [StringLength(150, ErrorMessage = "Email cannot exceed 150 characters.")]
         public string? Email { get; set; }
 
-        [StringLength(50, ErrorMessage = "Role cannot exceed 50 characters.")]
-        public string? Role { get; set; }
+        public bool IsDeleted { get; set; }
 
-        public DateTime? DateOfBaptism { get; set; }
-        public DateTime? DateOfChrismation { get; set; }
-        public DateTime? DateOfHolyCommunion { get; set; }
-        public DateTime? DateOfDeath { get; set; }
-
-        public DateTime? DateOfMarriage { get; set; }
-
-        public Student? StudentProfile { get; set; }
+        // --- Auditing Fields ---
+        [Required]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime? UpdatedAt { get; set; }
 
         [Required]
+        [StringLength(450)]
         public string CreatedBy { get; set; } = string.Empty;
 
+        [StringLength(450)]
         public string? UpdatedBy { get; set; }
 
         [Timestamp]
         public byte[] RowVersion { get; set; } = null!;
 
+        [NotMapped] // This property is computed and not stored in the database.
         public string FullName => $"{FirstName} {LastName}";
+
+        // --- Navigation Properties ---
+        public Student? StudentProfile { get; set; }
     }
 }

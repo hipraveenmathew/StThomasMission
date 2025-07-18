@@ -1,100 +1,67 @@
-﻿@model IEnumerable<StThomasMission.Web.Areas.Admin.Models.BackupViewModel>
-
+﻿@model StThomasMission.Web.Areas.Admin.Models.BackupIndexViewModel
 @{
-    ViewData["Title"] = "Backups";
+    ViewData["Title"] = "Database Backups";
 }
 
-<div class="container mt-4">
-    <div class="card shadow-sm">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h3 class="mb-0"><i class="fas fa-database me-2"></i>Backups</h3>
-            <button id="createBackupBtn" class="btn btn-primary"><i class="fas fa-plus me-2"></i>Create Backup</button>
-        </div>
-        <div class="card-body">
-            @if (!Model.Any())
-            {
-                <div class="alert alert-info text-center" role="alert">
-                    No backups available.
-                </div>
-            }
-            else
-            {
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>File Name</th>
-                                <th>Created At</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var backup in Model)
-                            {
-                                <tr>
-                                    <td>@backup.FileName</td>
-                                    <td>@backup.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
-                                    <td>
-                                        <a asp-action="Download" asp-route-fileName="@backup.FileName" class="btn btn-sm btn-primary"><i class="fas fa-download me-2"></i>Download</a>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
-        </div>
+<div class="card shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h4 class="mb-0"><i class="fas fa-database me-2"></i>Database Backups</h4>
+        <form asp-action="Create" method="post" id="createBackupForm">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Create New Backup
+            </button>
+        </form>
     </div>
-</div>
+    <div class="card-body">
+        <partial name="_StatusMessage" />
 
-<!-- Toast Notification Container -->
-<div class="toast-container position-fixed bottom-0 end-0 p-3">
-    <div id="backupToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="toast-header">
-            <strong class="me-auto">Backup Status</strong>
-            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-        <div class="toast-body"></div>
+        @if (!Model.Backups.Any())
+        {
+            <div class="alert alert-info text-center" role="alert">
+                No backups are available. Click "Create New Backup" to start.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>File Name</th>
+                            <th>File Size</th>
+                            <th>Date Created (UTC)</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var backup in Model.Backups)
+                        {
+                            <tr>
+                                <td><i class="fas fa-file-archive me-2 text-primary"></i>@backup.FileName</td>
+                                <td>@backup.FileSizeInKB KB</td>
+                                <td>@backup.CreatedAt.ToString("g")</td>
+                                <td class="text-end">
+                                    <a asp-action="Download" asp-route-fileName="@backup.FileName" class="btn btn-sm btn-success">
+                                        <i class="fas fa-download me-2"></i>Download
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
     </div>
 </div>
 
 @section Scripts {
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script>
         $(document).ready(function () {
-            $("#createBackupBtn").click(function () {
-                var $button = $(this);
-                $button.prop("disabled", true).prepend('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>');
-
-                $.ajax({
-                    url: '@Url.Action("Create", "Backup", new { area = "Admin" })',
-                    type: 'POST',
-                    headers: {
-                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
-                    },
-                    success: function (data) {
-                        $button.find('.spinner-border').remove();
-                        $button.prop("disabled", false);
-
-                        var toast = new bootstrap.Toast(document.getElementById('backupToast'));
-                        $("#backupToast .toast-body").text(data.message);
-                        $("#backupToast .toast-header").removeClass("bg-danger bg-success").addClass(data.success ? "bg-success" : "bg-danger");
-                        toast.show();
-
-                        if (data.success) {
-                            setTimeout(function () { location.reload(); }, 2000);
-                        }
-                    },
-                    error: function () {
-                        $button.find('.spinner-border').remove();
-                        $button.prop("disabled", false);
-
-                        var toast = new bootstrap.Toast(document.getElementById('backupToast'));
-                        $("#backupToast .toast-body").text("An error occurred while creating the backup.");
-                        $("#backupToast .toast-header").removeClass("bg-success").addClass("bg-danger");
-                        toast.show();
-                    }
-                });
+            // Add a loading spinner to the button on form submission to provide user feedback.
+            $("#createBackupForm").on("submit", function () {
+                var $button = $(this).find('button[type="submit"]');
+                $button.prop("disabled", true).html('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Creating...');
             });
         });
     </script>

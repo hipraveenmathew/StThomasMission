@@ -1,6 +1,6 @@
 ﻿namespace StThomasMission.Core.Enums
 {
-    public static class UserRole
+    public static class UserRoles
     {
         public const string ParishPriest = "ParishPriest";
         public const string ParishAdmin = "ParishAdmin";

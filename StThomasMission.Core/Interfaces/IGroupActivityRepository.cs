@@ -1,4 +1,5 @@
-﻿using StThomasMission.Core.Entities;
+﻿using StThomasMission.Core.DTOs;
+using StThomasMission.Core.Entities;
 using StThomasMission.Core.Enums;
 using System;
 using System.Collections.Generic;
@@ -8,7 +9,10 @@ namespace StThomasMission.Core.Interfaces
 {
     public interface IGroupActivityRepository : IRepository<GroupActivity>
     {
-        Task<IEnumerable<GroupActivity>> GetByGroupIdAsync(int groupId, DateTime? startDate = null, DateTime? endDate = null);
-        Task<IEnumerable<GroupActivity>> GetByStatusAsync(ActivityStatus status);
+        Task<IEnumerable<GroupActivityDto>> GetByGroupIdAsync(int groupId, DateTime? startDate = null, DateTime? endDate = null);
+
+        Task<IPaginatedList<GroupActivityDto>> GetActivitiesByStatusPaginatedAsync(int pageNumber, int pageSize, ActivityStatus status);
+        Task<List<GroupActivityDto>> GetUpcomingActivitiesAsync(DateTime fromDate, int take);
+
     }
 }

@@ -1,13 +1,14 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using StThomasMission.Core.DTOs;
 using StThomasMission.Core.Entities;
 using StThomasMission.Core.Enums;
 using StThomasMission.Core.Interfaces;
+using StThomasMission.Services.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace StThomasMission.Services
+namespace StThomasMission.Services.Services
 {
     public class CatechismService : ICatechismService
     {
@@ -20,153 +21,123 @@ namespace StThomasMission.Services
             _auditService = auditService;
         }
 
-        public async Task<Student?> GetStudentByIdAsync(int studentId)
+        public async Task<StudentDetailDto> EnrollStudentAsync(EnrollStudentRequest request, string userId)
         {
-            return await _unitOfWork.Students.GetByIdAsync(studentId);
-        }
-
-        public async Task<IEnumerable<Student>> GetStudentsByGradeIdAsync(int gradeId)
-        {
-            return await _unitOfWork.Students.GetByGradeIdAsync(gradeId);
-        }
-
-        public async Task<IEnumerable<Student>> GetStudentsByGroupIdAsync(int groupId)
-        {
-            return await _unitOfWork.Students.GetByGroupIdAsync(groupId);
-        }
-
-        public async Task AddStudentAsync(int familyMemberId, int academicYear, int gradeId, int? groupId, string? studentOrganisation, string createdByUserId)
-        {
-            var familyMember = await _unitOfWork.FamilyMembers.GetByIdAsync(familyMemberId);
-            if (familyMember == null) throw new ArgumentException("Family member not found.", nameof(familyMemberId));
-
-            if (await _unitOfWork.Grades.GetByIdAsync(gradeId) == null) throw new ArgumentException("Invalid Grade ID.", nameof(gradeId));
-            if (groupId.HasValue && await _unitOfWork.Groups.GetByIdAsync(groupId.Value) == null) throw new ArgumentException("Invalid Group ID.", nameof(groupId));
-
-            var existingStudent = await _unitOfWork.Students.GetAsync(s => s.FamilyMemberId == familyMemberId && s.Status != StudentStatus.Graduated && s.Status != StudentStatus.Migrated);
-            if (existingStudent.Any()) throw new InvalidOperationException("This person is already an active student.");
+            if (await _unitOfWork.FamilyMembers.GetByIdAsync(request.FamilyMemberId) == null)
+            {
+                throw new NotFoundException(nameof(FamilyMember), request.FamilyMemberId);
+            }
 
             var student = new Student
             {
-                FamilyMemberId = familyMemberId,
-                AcademicYear = academicYear,
-                GradeId = gradeId,
-                GroupId = groupId,
-                StudentOrganisation = studentOrganisation,
+                FamilyMemberId = request.FamilyMemberId,
+                AcademicYear = request.AcademicYear,
+                GradeId = request.GradeId,
+                GroupId = request.GroupId,
+                StudentOrganisation = request.StudentOrganisation,
                 Status = StudentStatus.Active,
-                CreatedBy = createdByUserId
+                CreatedBy = userId
             };
 
-            await _unitOfWork.Students.AddAsync(student);
+            var newStudent = await _unitOfWork.Students.AddAsync(student);
             await _unitOfWork.CompleteAsync();
 
-            await _auditService.LogActionAsync(createdByUserId, "Create", nameof(Student), student.Id.ToString(), $"Enrolled student {familyMember.FullName} into grade {gradeId}.");
+            await _auditService.LogActionAsync(userId, "Enroll", nameof(Student), newStudent.Id.ToString(), $"Enrolled student into grade ID {request.GradeId}.");
+
+            return (await _unitOfWork.Students.GetStudentDetailAsync(newStudent.Id))!;
         }
 
-        public async Task UpdateStudentAsync(int studentId, int gradeId, int? groupId, string? studentOrganisation, StudentStatus status, string? migratedTo, string updatedByUserId)
+        public async Task UpdateStudentDetailsAsync(int studentId, UpdateStudentRequest request, string userId)
         {
-            var student = await GetStudentByIdAsync(studentId);
-            if (student == null) throw new ArgumentException("Student not found.", nameof(studentId));
+            var student = await _unitOfWork.Students.GetByIdAsync(studentId);
+            if (student == null) throw new NotFoundException(nameof(Student), studentId);
 
-            if (await _unitOfWork.Grades.GetByIdAsync(gradeId) == null) throw new ArgumentException("Invalid Grade ID.", nameof(gradeId));
-            if (groupId.HasValue && await _unitOfWork.Groups.GetByIdAsync(groupId.Value) == null) throw new ArgumentException("Invalid Group ID.", nameof(groupId));
+            student.GradeId = request.GradeId;
+            student.GroupId = request.GroupId;
+            student.StudentOrganisation = request.StudentOrganisation;
+            student.Status = request.Status;
+            student.MigratedTo = request.Status == StudentStatus.Migrated ? request.MigratedTo : null;
+            student.UpdatedBy = userId;
+            student.UpdatedAt = DateTime.UtcNow;
 
-            student.GradeId = gradeId;
-            student.GroupId = groupId;
-            student.StudentOrganisation = studentOrganisation;
-            student.Status = status;
-            student.MigratedTo = status == StudentStatus.Migrated ? migratedTo : null;
-            student.UpdatedDate = DateTime.UtcNow;
-            student.UpdatedBy = updatedByUserId;
-
-            _unitOfWork.Students.Update(student);
+            await _unitOfWork.Students.UpdateAsync(student);
             await _unitOfWork.CompleteAsync();
 
-            await _auditService.LogActionAsync(updatedByUserId, "Update", nameof(Student), studentId.ToString(), $"Updated student details.");
+            await _auditService.LogActionAsync(userId, "Update", nameof(Student), studentId.ToString(), "Updated student details.");
         }
 
-        public async Task PromoteStudentAsync(int studentId, string updatedByUserId)
+        public async Task MarkStudentsAsPassedOrFailAsync(int gradeId, IEnumerable<StudentPassFailRequest> results, string userId)
         {
-            var student = await _unitOfWork.Students.GetQueryable(s => s.Id == studentId).Include(s => s.Grade).FirstOrDefaultAsync();
-            if (student == null) throw new ArgumentException("Student not found.", nameof(studentId));
-            if (student.Status != StudentStatus.Active) throw new InvalidOperationException("Only active students can be promoted.");
-
-            var nextGrade = await _unitOfWork.Grades.GetQueryable(g => g.Order == student.Grade.Order + 1).FirstOrDefaultAsync();
-            if (nextGrade == null)
+            var academicYear = DateTime.UtcNow.Year;
+            foreach (var result in results)
             {
-                // This is the highest grade, so graduate the student
-                await GraduateStudentAsync(studentId, updatedByUserId);
-                return;
+                var record = await _unitOfWork.StudentAcademicRecords.GetByStudentAndYearAsync(result.StudentId, academicYear);
+
+                if (record != null)
+                {
+                    // This logic would be in the repository for an update, but for a service, we get the entity then update it.
+                    var entityToUpdate = await _unitOfWork.StudentAcademicRecords.GetByIdAsync(record.Id);
+                    if (entityToUpdate == null) continue;
+
+                    entityToUpdate.Passed = result.HasPassed;
+                    entityToUpdate.Remarks = result.Remarks;
+                    await _unitOfWork.StudentAcademicRecords.UpdateAsync(entityToUpdate);
+                }
+                else
+                {
+                    var newRecord = new StudentAcademicRecord
+                    {
+                        StudentId = result.StudentId,
+                        GradeId = gradeId,
+                        AcademicYear = academicYear,
+                        Passed = result.HasPassed,
+                        Remarks = result.Remarks,
+                        CreatedBy = userId
+                    };
+                    await _unitOfWork.StudentAcademicRecords.AddAsync(newRecord);
+                }
+            }
+            await _unitOfWork.CompleteAsync();
+            await _auditService.LogActionAsync(userId, "MarkPassFail", nameof(StudentAcademicRecord), gradeId.ToString(), $"Marked Pass/Fail status for students in grade ID {gradeId}.");
+        }
+
+        // This is the corrected version of the method
+        public async Task PromoteStudentsInGradeAsync(int gradeId, string userId)
+        {
+            int currentYear = DateTime.UtcNow.Year;
+            var studentsToPromote = await _unitOfWork.StudentAcademicRecords.GetRecordsByGradeAndYearAsync(gradeId, currentYear);
+            var passedStudentIds = studentsToPromote.Where(s => s.Passed).Select(s => s.StudentId).ToList();
+
+            if (!passedStudentIds.Any()) return; // No students to promote
+
+            // Corrected Line: Use the new, specific repository method
+            var students = await _unitOfWork.Students.GetByIdsAsync(passedStudentIds);
+            var grades = await _unitOfWork.Grades.GetGradesInOrderAsync();
+
+            var currentGrade = grades.FirstOrDefault(g => g.Id == gradeId);
+            if (currentGrade == null) throw new NotFoundException("Current Grade", gradeId);
+
+            var nextGrade = grades.FirstOrDefault(g => g.Order == currentGrade.Order + 1);
+
+            foreach (var student in students)
+            {
+                if (nextGrade == null) // This is the final grade
+                {
+                    student.Status = StudentStatus.Graduated;
+                }
+                else
+                {
+                    student.GradeId = nextGrade.Id;
+                    student.AcademicYear = currentYear + 1;
+                }
+                student.UpdatedBy = userId;
+                student.UpdatedAt = DateTime.UtcNow;
+                await _unitOfWork.Students.UpdateAsync(student);
             }
 
-            student.GradeId = nextGrade.Id;
-            student.AcademicYear = DateTime.UtcNow.Year; // Set to the current academic year on promotion
-            student.UpdatedBy = updatedByUserId;
-            student.UpdatedDate = DateTime.UtcNow;
-
-            _unitOfWork.Students.Update(student);
             await _unitOfWork.CompleteAsync();
 
-            await _auditService.LogActionAsync(updatedByUserId, "Promote", nameof(Student), studentId.ToString(), $"Promoted student to grade {nextGrade.Name}.");
-        }
-
-        public async Task RevertStudentPromotionAsync(int studentId, string updatedByUserId)
-        {
-            var student = await _unitOfWork.Students.GetQueryable(s => s.Id == studentId).Include(s => s.Grade).FirstOrDefaultAsync();
-            if (student == null) throw new ArgumentException("Student not found.", nameof(studentId));
-
-            var previousGrade = await _unitOfWork.Grades.GetQueryable(g => g.Order == student.Grade.Order - 1).FirstOrDefaultAsync();
-            if (previousGrade == null) throw new InvalidOperationException("Cannot revert promotion for a student in the lowest grade.");
-
-            student.GradeId = previousGrade.Id;
-            student.AcademicYear -= 1; // Revert academic year
-            student.UpdatedBy = updatedByUserId;
-            student.UpdatedDate = DateTime.UtcNow;
-
-            _unitOfWork.Students.Update(student);
-            await _unitOfWork.CompleteAsync();
-
-            await _auditService.LogActionAsync(updatedByUserId, "Revert Promotion", nameof(Student), studentId.ToString(), $"Reverted student promotion to grade {previousGrade.Name}.");
-        }
-
-        public async Task GraduateStudentAsync(int studentId, string updatedByUserId)
-        {
-            var student = await GetStudentByIdAsync(studentId);
-            if (student == null) throw new ArgumentException("Student not found.", nameof(studentId));
-
-            student.Status = StudentStatus.Graduated;
-            student.UpdatedBy = updatedByUserId;
-            student.UpdatedDate = DateTime.UtcNow;
-
-            _unitOfWork.Students.Update(student);
-            await _unitOfWork.CompleteAsync();
-
-            await _auditService.LogActionAsync(updatedByUserId, "Graduate", nameof(Student), studentId.ToString(), $"Graduated student.");
-        }
-
-        public async Task BulkPromoteStudentsByGradeAsync(int gradeId, string updatedByUserId)
-        {
-            var studentsToPromote = await _unitOfWork.Students.GetByGradeIdAsync(gradeId);
-
-            foreach (var student in studentsToPromote.Where(s => s.Status == StudentStatus.Active))
-            {
-                await PromoteStudentAsync(student.Id, updatedByUserId);
-            }
-        }
-
-        public async Task DeleteStudentAsync(int studentId, string deletedByUserId)
-        {
-            var student = await GetStudentByIdAsync(studentId);
-            if (student == null) return; // Already gone or never existed
-
-            student.Status = StudentStatus.Deleted;
-            student.UpdatedDate = DateTime.UtcNow;
-            student.UpdatedBy = deletedByUserId;
-
-            _unitOfWork.Students.Update(student);
-            await _unitOfWork.CompleteAsync();
-
-            await _auditService.LogActionAsync(deletedByUserId, "Delete", nameof(Student), studentId.ToString(), "Soft-deleted student.");
+            await _auditService.LogActionAsync(userId, "Promote", nameof(Student), gradeId.ToString(), $"Promoted {passedStudentIds.Count} students from grade ID {gradeId}.");
         }
     }
 }

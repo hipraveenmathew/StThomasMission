@@ -1,12 +1,9 @@
-﻿using StThomasMission.Core.Entities;
-using System.Collections.Generic;
+﻿using StThomasMission.Core.DTOs;
 
-namespace StThomasMission.Web.Areas.Families.Models
+namespace StThomasMission.Web.Areas.Church.Models
 {
-    public class FamilyDetailsViewModel : FamilyViewModel
+    public class FamilyDetailsViewModel
     {
-        public int? PreviousFamilyId { get; set; }
-        public Family? PreviousFamily { get; set; }
-        public List<FamilyMemberViewModel> Members { get; set; } = new List<FamilyMemberViewModel>();
+        public FamilyDetailDto Family { get; set; } = null!;
     }
 }

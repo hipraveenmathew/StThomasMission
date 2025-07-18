@@ -1,9 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using StThomasMission.Core.Constants;
 using StThomasMission.Core.Interfaces;
 using StThomasMission.Web.Areas.Admin.Models;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -11,45 +12,53 @@ using System.Threading.Tasks;
 namespace StThomasMission.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = UserRoles.Admin)]
     public class BackupController : Controller
     {
         private readonly IBackupService _backupService;
+        private readonly ILogger<BackupController> _logger;
 
-        public BackupController(IBackupService backupService)
+        public BackupController(IBackupService backupService, ILogger<BackupController> logger)
         {
             _backupService = backupService;
+            _logger = logger;
         }
 
         [HttpGet]
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            // List available backups (simulated; in a real app, you might list files in the backup directory)
-            var backups = Directory.GetFiles("Backups", "*.zip")
-                .Select(f => new BackupViewModel
-                {
-                    FileName = Path.GetFileName(f),
-                    CreatedAt = System.IO.File.GetCreationTime(f)
-                })
-                .OrderByDescending(b => b.CreatedAt)
-                .ToList();
+            var backupDtos = await _backupService.GetBackupListAsync();
 
-            return View(backups);
+            var model = new BackupIndexViewModel
+            {
+                Backups = backupDtos.Select(b => new BackupViewModel
+                {
+                    FileName = b.FileName,
+                    FileSizeInKB = (long)Math.Ceiling(b.FileSize / 1024.0),
+                    CreatedAt = b.CreatedDate
+                }).ToList()
+            };
+
+            return View(model);
         }
 
+        // Only the Create action needs to be changed in your BackupController.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create()
         {
             try
             {
+                _logger.LogInformation("Backup creation initiated by user {User}.", User.Identity?.Name);
                 string backupPath = await _backupService.CreateBackupAsync();
-                return Json(new { success = true, message = $"Backup created successfully at {Path.GetFileName(backupPath)}" });
+                TempData["Success"] = $"Backup '{Path.GetFileName(backupPath)}' created successfully.";
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = $"Failed to create backup: {ex.Message}" });
+                _logger.LogError(ex, "Backup creation failed.");
+                TempData["Error"] = $"Failed to create backup: {ex.Message}";
             }
+            return RedirectToAction(nameof(Index));
         }
 
         [HttpGet]
@@ -57,23 +66,30 @@ namespace StThomasMission.Web.Areas.Admin.Controllers
         {
             if (string.IsNullOrEmpty(fileName))
             {
-                return BadRequest("Backup file name is required.");
+                return BadRequest("A file name must be provided.");
             }
 
             try
             {
-                var backupStream = await _backupService.GetBackupFileAsync(fileName);
-                if (backupStream == null)
-                {
-                    return NotFound("Backup file not found.");
-                }
+                // Corrected: Changed GetBackupFileAsync to GetBackupStreamAsync
+                var backupStream = await _backupService.GetBackupStreamAsync(fileName);
+                _logger.LogInformation("User {User} downloaded backup file {FileName}.", User.Identity?.Name, fileName);
 
                 return File(backupStream, "application/zip", fileName);
             }
+            catch (FileNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "User {User} attempted to download non-existent backup file {FileName}.", User.Identity?.Name, fileName);
+                TempData["Error"] = $"Backup file not found: {fileName}";
+                return RedirectToAction(nameof(Index));
+            }
             catch (Exception ex)
             {
-                return BadRequest($"Failed to download backup: {ex.Message}");
+                _logger.LogError(ex, "Error downloading backup file {FileName}.", fileName);
+                TempData["Error"] = "An unexpected error occurred while downloading the backup.";
+                return RedirectToAction(nameof(Index));
             }
         }
+
     }
 }

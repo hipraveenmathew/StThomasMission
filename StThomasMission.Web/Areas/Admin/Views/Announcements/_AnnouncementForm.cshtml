@@ -1,0 +1,28 @@
+﻿@model StThomasMission.Web.Areas.Admin.Models.AnnouncementFormViewModel
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+<input type="hidden" asp-for="Id" />
+
+<div class="row">
+    <div class="col-12 mb-3">
+        <label asp-for="Title" class="form-label fw-bold"></label>
+        <input asp-for="Title" class="form-control" placeholder="Enter announcement title" />
+        <span asp-validation-for="Title" class="text-danger"></span>
+    </div>
+    <div class="col-12 mb-3">
+        <label asp-for="Description" class="form-label fw-bold"></label>
+        <textarea asp-for="Description" class="form-control" rows="5" placeholder="Enter announcement details"></textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+    <div class="col-12 col-md-6 mb-3">
+        <label asp-for="PostedDate" class="form-label fw-bold"></label>
+        <input asp-for="PostedDate" class="form-control" type="date" />
+        <span asp-validation-for="PostedDate" class="text-danger"></span>
+    </div>
+    <div class="col-12 col-md-6 mb-3 d-flex align-items-end">
+        <div class="form-check">
+            <input asp-for="IsActive" type="checkbox" class="form-check-input" />
+            <label asp-for="IsActive" class="form-check-label"></label>
+        </div>
+    </div>
+</div>

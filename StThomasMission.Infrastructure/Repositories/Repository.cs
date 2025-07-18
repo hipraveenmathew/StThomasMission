@@ -1,49 +1,50 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using StThomasMission.Core.Interfaces;
 using StThomasMission.Infrastructure.Data;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace StThomasMission.Infrastructure.Repositories
 {
+    /// <summary>
+    /// A generic repository providing base CRUD functionality for any entity.
+    /// </summary>
+    /// <typeparam name="T">The entity type.</typeparam>
     public class Repository<T> : IRepository<T> where T : class
     {
         protected readonly StThomasMissionDbContext _context;
-        private readonly DbSet<T> _dbSet;
+        protected readonly DbSet<T> _dbSet;
 
         public Repository(StThomasMissionDbContext context)
         {
             _context = context;
-            _dbSet = _context.Set<T>();
+            _dbSet = context.Set<T>();
         }
 
-        public async Task<T?> GetByIdAsync(int id)
+        public virtual async Task<T?> GetByIdAsync(int id)
         {
             return await _dbSet.FindAsync(id);
         }
 
-        public async Task<IEnumerable<T>> GetAllAsync()
+        public async Task<IEnumerable<T>> ListAllAsync()
         {
-            return await _dbSet.ToListAsync();
+            // Use AsNoTracking for read-only queries to improve performance.
+            return await _dbSet.AsNoTracking().ToListAsync();
         }
 
-        public async Task<IEnumerable<T>> GetAsync(Expression<Func<T, bool>> predicate)
-        {
-            return await _dbSet.Where(predicate).ToListAsync();
-        }
-
-        public async Task AddAsync(T entity)
+        public async Task<T> AddAsync(T entity)
         {
             await _dbSet.AddAsync(entity);
+            // The Unit of Work will be responsible for calling SaveChangesAsync.
+            return entity;
         }
 
         public Task UpdateAsync(T entity)
         {
-            // In EF Core, Update is synchronous as it only marks the entity state.
-            // The actual database operation happens during SaveChangesAsync (in UnitOfWork.CompleteAsync).
+            // This method is synchronous because it only changes the entity's state in the DbContext.
+            // The actual I/O operation happens when SaveChangesAsync is called by the Unit of Work.
+            // Using Update is versatile as it works for both tracked and detached entities.
             _dbSet.Update(entity);
             return Task.CompletedTask;
         }
@@ -54,7 +55,22 @@ namespace StThomasMission.Infrastructure.Repositories
             if (entity != null)
             {
                 _dbSet.Remove(entity);
+                // The Unit of Work will call SaveChangesAsync.
             }
+        }
+        public async Task<int> CountAsync()
+        {
+            return await _dbSet.CountAsync();
+        }
+
+        public async Task<int> CountAsync(Expression<Func<T, bool>> predicate)
+        {
+            return await _dbSet.CountAsync(predicate);
+        }
+
+        public async Task<bool> AnyAsync(Expression<Func<T, bool>> predicate)
+        {
+            return await _dbSet.AnyAsync(predicate);
         }
     }
 }

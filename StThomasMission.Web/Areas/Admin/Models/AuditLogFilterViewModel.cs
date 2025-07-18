@@ -1,12 +1,22 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace StThomasMission.Web.Areas.Admin.Models
 {
     public class AuditLogFilterViewModel
     {
-        public string SearchString { get; set; } = string.Empty;
-        public string EntityName { get; set; } = string.Empty;
+        [Display(Name = "User ID")]
+        public string? UserId { get; set; }
+
+        [Display(Name = "Entity Name")]
+        public string? EntityName { get; set; }
+
+        [Display(Name = "Start Date")]
+        [DataType(DataType.Date)]
         public DateTime? StartDate { get; set; }
+
+        [Display(Name = "End Date")]
+        [DataType(DataType.Date)]
         public DateTime? EndDate { get; set; }
     }
 }

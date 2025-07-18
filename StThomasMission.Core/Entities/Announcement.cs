@@ -2,6 +2,9 @@
 
 namespace StThomasMission.Core.Entities
 {
+    /// <summary>
+    /// Represents a parish-wide announcement.
+    /// </summary>
     public class Announcement
     {
         public int Id { get; set; }
@@ -11,29 +14,36 @@ namespace StThomasMission.Core.Entities
         public string Title { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Description is required.")]
-        [StringLength(2000, ErrorMessage = "Description cannot exceed 2000 characters.")]
         public string Description { get; set; } = string.Empty;
 
+        /// <summary>
+        /// The date the announcement is published.
+        /// </summary>
         [Required]
         public DateTime PostedDate { get; set; }
-
-        public bool IsActive { get; set; } = true;
-
         [Required]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public string AuthorName { get; set; } = string.Empty;
 
-        public DateTime? UpdatedAt { get; set; }
+        /// <summary>
+        /// Controls if the announcement is currently visible to users. Managed by an admin.
+        /// </summary>
+        public bool IsActive { get; set; } = true;
 
         public bool IsDeleted { get; set; }
 
+        // --- Auditing Fields ---
         [Required]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime? UpdatedAt { get; set; }
+
+        [Required]
+        [StringLength(450)]
         public string CreatedBy { get; set; } = string.Empty;
 
+        [StringLength(450)]
         public string? UpdatedBy { get; set; }
 
         [Timestamp]
-        public byte[] RowVersion { get; set; } = null!; // Optimistic concurrency
-
-        // Suggested index: PostedDate
+        public byte[] RowVersion { get; set; } = null!;
     }
 }

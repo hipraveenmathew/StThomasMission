@@ -1,19 +1,20 @@
-﻿using StThomasMission.Core.Entities;
-using StThomasMission.Core.Enums;
-using System;
-using System.Linq;
-using System.Linq.Expressions;
+﻿using StThomasMission.Core.DTOs;
+using StThomasMission.Core.Entities;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace StThomasMission.Core.Interfaces
 {
     public interface IFamilyRepository : IRepository<Family>
     {
-        Task<Family?> GetByChurchRegistrationNumberAsync(string churchRegistrationNumber);
-        Task<Family?> GetByTemporaryIdAsync(string temporaryId);
-        Task<IEnumerable<Family>> GetByWardAsync(int wardId);
-        Task<IEnumerable<Family>> GetByStatusAsync(FamilyStatus status);
-        IQueryable<Family> GetQueryable(Expression<Func<Family, bool>> predicate);
-        IQueryable<Family> GetAllQueryable();
+        Task<FamilyDetailDto?> GetByChurchRegistrationNumberAsync(string churchRegistrationNumber);
+
+        Task<IEnumerable<FamilySummaryDto>> GetByWardAsync(int wardId);
+        Task<IEnumerable<RecipientContactInfo>> GetFamilyContactsByWardAsync(int wardId);
+        Task<FamilyDetailDto?> GetFamilyDetailByIdAsync(int familyId);
+        Task<IEnumerable<FamilyRegistryDto>> GetAllFamilyRegistrationsAsync();
+
+
+        Task<IPaginatedList<FamilySummaryDto>> SearchFamiliesPaginatedAsync(int pageNumber, int pageSize, string? searchTerm = null, int? wardId = null, bool? isRegistered = null);
     }
 }

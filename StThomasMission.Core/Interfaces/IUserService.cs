@@ -1,15 +1,28 @@
-﻿using StThomasMission.Core.Entities;
-using System.Collections.Generic;
+﻿using StThomasMission.Core.DTOs;
 using System.Threading.Tasks;
 
 namespace StThomasMission.Core.Interfaces
 {
     public interface IUserService
     {
-        Task CreateUserAsync(string email, string fullName, int wardId, string password, string role);
-        Task UpdateUserAsync(string userId, string fullName, int wardId, string? designation);
-        Task AssignRoleAsync(string userId, string role);
-        Task<IEnumerable<ApplicationUser>> GetUsersByRoleAsync(string role);
-        Task<ApplicationUser?> GetUserByIdAsync(string userId);
+        Task<UserDto> GetUserByIdAsync(string userId);
+
+        Task<IPaginatedList<UserDto>> SearchUsersPaginatedAsync(
+            int pageNumber,
+            int pageSize,
+            string? searchTerm = null,
+            string? role = null);
+
+        Task<UserDto> CreateUserAsync(CreateUserRequest request, string performedByUserId);
+
+        Task UpdateUserAsync(string userId, UpdateUserRequest request, string performedByUserId);
+        Task<List<string>> GetAllRolesAsync();
+        Task ReactivateUserAsync(string userId, string performedByUserId);
+
+
+        Task UpdateUserRoleAsync(string userId, string newRole, string performedByUserId);
+
+
+        Task DeactivateUserAsync(string userId, string performedByUserId);
     }
 }

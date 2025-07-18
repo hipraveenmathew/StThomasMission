@@ -1,300 +1,126 @@
-﻿using OfficeOpenXml;
+﻿using Microsoft.Extensions.Logging;
+using OfficeOpenXml;
+using StThomasMission.Core.DTOs;
 using StThomasMission.Core.Entities;
-using StThomasMission.Core.Enums;
 using StThomasMission.Core.Interfaces;
-using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text.RegularExpressions;
+using System.Linq;
 using System.Threading.Tasks;
 
-namespace StThomasMission.Services
+namespace StThomasMission.Services.Services
 {
     public class ImportService : IImportService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IFamilyService _familyService;
-        private readonly IFamilyMemberService _familyMemberService;
-        private readonly IStudentService _studentService;
-        private readonly IWardService _wardService;
+        private readonly ILogger<ImportService> _logger;
 
-        public ImportService(IUnitOfWork unitOfWork, IFamilyService familyService, IFamilyMemberService familyMemberService, IStudentService studentService, IWardService wardService)
+        public ImportService(IUnitOfWork unitOfWork, ILogger<ImportService> logger)
         {
             _unitOfWork = unitOfWork;
-            _familyService = familyService;
-            _familyMemberService = familyMemberService;
-            _studentService = studentService;
-            _wardService = wardService;
+            _logger = logger;
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
         }
 
-        public async Task ImportFamiliesAndStudentsAsync(Stream fileStream, ImportType fileType)
+        public async Task<ImportResultDto> ImportDataAsync(Stream fileStream, string userId)
         {
-            if (fileStream == null)
-                throw new ArgumentNullException(nameof(fileStream));
-            if (fileType != ImportType.Excel)
-                throw new ArgumentException("Only Excel files are supported.", nameof(fileType));
+            var result = new ImportResultDto();
+            var newFamilies = new List<Family>();
 
-            var errors = new List<string>();
+            // 1. Pre-fetch existing data into memory once to avoid N+1 queries.
+            var allWards = (await _unitOfWork.Wards.GetAllWithDetailsAsync())
+                .ToDictionary(w => w.Name, w => w.Id, System.StringComparer.OrdinalIgnoreCase);
+
+            // Corrected: Use the efficient repository method that returns a lightweight DTO.
+            var allExistingRegistrations = await _unitOfWork.Families.GetAllFamilyRegistrationsAsync();
+            var familiesByRegNo = allExistingRegistrations
+                .Where(f => !string.IsNullOrEmpty(f.ChurchRegistrationNumber))
+                .ToDictionary(f => f.ChurchRegistrationNumber!, f => f.Id);
+
             using var package = new ExcelPackage(fileStream);
             var worksheet = package.Workbook.Worksheets.FirstOrDefault();
-            if (worksheet == null || worksheet.Dimension == null)
-                throw new InvalidOperationException("Excel file is empty or invalid.");
+            if (worksheet == null) throw new System.InvalidOperationException("Excel file is empty or invalid.");
 
-            var rowCount = worksheet.Dimension.Rows;
-            if (rowCount < 2)
-                throw new InvalidOperationException("Excel file contains no data rows.");
+            result.TotalRows = worksheet.Dimension.Rows - 1;
 
-            using var transaction = await _unitOfWork.BeginTransactionAsync();
-
-            try
+            // 2. Parse and validate all rows in memory before touching the database.
+            for (int row = 2; row <= worksheet.Dimension.Rows; row++)
             {
-                for (int row = 2; row <= rowCount; row++)
+                try
                 {
-                    try
+                    string familyName = worksheet.Cells[row, 1].Text?.Trim();
+                    string wardName = worksheet.Cells[row, 2].Text?.Trim();
+                    string regNo = worksheet.Cells[row, 3].Text?.Trim();
+                    string memberName = worksheet.Cells[row, 4].Text?.Trim();
+
+                    // Basic validation
+                    if (string.IsNullOrEmpty(familyName) || string.IsNullOrEmpty(wardName) || string.IsNullOrEmpty(memberName))
                     {
-                        string familyName = worksheet.Cells[row, 1].Text?.Trim();
-                        if (string.IsNullOrEmpty(familyName))
+                        result.AddFailedRow(row, "FamilyName, WardName, and MemberName are required.");
+                        continue;
+                    }
+                    if (!allWards.TryGetValue(wardName, out var wardId))
+                    {
+                        result.AddFailedRow(row, $"Ward '{wardName}' does not exist.");
+                        continue;
+                    }
+
+                    // Find or create the family entity in our in-memory list
+                    var family = newFamilies.FirstOrDefault(f => f.FamilyName == familyName && f.WardId == wardId);
+                    if (family == null)
+                    {
+                        if (!string.IsNullOrEmpty(regNo) && familiesByRegNo.ContainsKey(regNo))
                         {
-                            errors.Add($"Row {row}: Family name is required.");
+                            result.AddFailedRow(row, $"Family with registration number '{regNo}' already exists.");
                             continue;
                         }
 
-                        if (!int.TryParse(worksheet.Cells[row, 2].Text, out int wardId))
+                        family = new Family
                         {
-                            errors.Add($"Row {row}: Invalid ward ID.");
-                            continue;
-                        }
-
-                        bool isRegistered = bool.TryParse(worksheet.Cells[row, 3].Text, out bool reg) && reg;
-                        string? churchRegistrationNumber = isRegistered ? worksheet.Cells[row, 4].Text?.Trim() : null;
-                        string? temporaryId = !isRegistered ? worksheet.Cells[row, 5].Text?.Trim() : null;
-
-                        if (isRegistered && string.IsNullOrEmpty(churchRegistrationNumber))
-                        {
-                            errors.Add($"Row {row}: Church Registration Number is required for registered families.");
-                            continue;
-                        }
-                        if (isRegistered && !Regex.IsMatch(churchRegistrationNumber, @"^10802\d{4}$"))
-                        {
-                            errors.Add($"Row {row}: Church Registration Number must be in format '10802XXXX'.");
-                            continue;
-                        }
-                        if (!isRegistered && string.IsNullOrEmpty(temporaryId))
-                        {
-                            errors.Add($"Row {row}: Temporary ID is required for unregistered families.");
-                            continue;
-                        }
-                        if (!isRegistered && !Regex.IsMatch(temporaryId, @"^TMP-\d{4}$"))
-                        {
-                            errors.Add($"Row {row}: Temporary ID must be in format 'TMP-XXXX'.");
-                            continue;
-                        }
-
-                        Family family = null;
-                        if (isRegistered)
-                        {
-                            family = await _unitOfWork.Families.GetByChurchRegistrationNumberAsync(churchRegistrationNumber);
-                        }
-                        else
-                        {
-                            var families = await _unitOfWork.Families.GetAsync(f => f.TemporaryID == temporaryId && f.Status != FamilyStatus.Deleted);
-                            family = families.FirstOrDefault();
-                        }
-
-                        if (family == null)
-                        {
-                            family = new Family
-                            {
-                                FamilyName = familyName,
-                                WardId = wardId,
-                                IsRegistered = isRegistered,
-                                ChurchRegistrationNumber = churchRegistrationNumber,
-                                TemporaryID = temporaryId,
-                                Status = FamilyStatus.Active,
-                                CreatedBy = "System",
-                                CreatedDate = DateTime.UtcNow
-                            };
-                            await _familyService.RegisterFamilyAsync(family);
-                        }
-
-                        string firstName = worksheet.Cells[row, 6].Text?.Trim();
-                        if (string.IsNullOrEmpty(firstName))
-                        {
-                            errors.Add($"Row {row}: First name is required.");
-                            continue;
-                        }
-
-                        string lastName = worksheet.Cells[row, 7].Text?.Trim();
-                        if (string.IsNullOrEmpty(lastName))
-                        {
-                            errors.Add($"Row {row}: Last name is required.");
-                            continue;
-                        }
-
-                        if (!DateTime.TryParse(worksheet.Cells[row, 8].Text, out DateTime dob) || dob > DateTime.UtcNow)
-                        {
-                            errors.Add($"Row {row}: Invalid or future date of birth.");
-                            continue;
-                        }
-
-                        string? contact = worksheet.Cells[row, 9].Text?.Trim();
-                        if (!string.IsNullOrEmpty(contact) && !Regex.IsMatch(contact, @"^+?\d{10,15}$"))
-                        {
-                            errors.Add($"Row {row}: Invalid phone number.");
-                            continue;
-                        }
-
-                        string? email = worksheet.Cells[row, 10].Text?.Trim();
-                        if (!string.IsNullOrEmpty(email) && !Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+.[^@\s]+$"))
-                        {
-                            errors.Add($"Row {row}: Invalid email address.");
-                            continue;
-                        }
-
-                        string? role = worksheet.Cells[row, 11].Text?.Trim();
-                        FamilyMemberRole relation = role switch
-                        {
-                            "Parent" => FamilyMemberRole.Parent,
-                            "Child" => FamilyMemberRole.Child,
-                            "Guardian" => FamilyMemberRole.Guardian,
-                            _ => FamilyMemberRole.Other
+                            FamilyName = familyName,
+                            WardId = wardId,
+                            IsRegistered = !string.IsNullOrEmpty(regNo),
+                            ChurchRegistrationNumber = string.IsNullOrEmpty(regNo) ? null : regNo,
+                            TemporaryID = string.IsNullOrEmpty(regNo) ? $"TMP-IMPORT-{newFamilies.Count + 1:D4}" : null,
+                            CreatedBy = userId
                         };
-
-                        var familyMember = new FamilyMember
-                        {
-                            FamilyId = family.Id,
-                            FirstName = firstName,
-                            LastName = lastName,
-                            Relation = relation,
-                            DateOfBirth = dob,
-                            Contact = contact,
-                            Email = email,
-                            Role = role,
-                            CreatedBy = "System"
-                        };
-
-                        await _familyMemberService.AddFamilyMemberAsync(familyMember);
-
-                        var addedMember = (await _familyMemberService.GetFamilyMembersByFamilyIdAsync(family.Id))
-                            .FirstOrDefault(m => m.FirstName == firstName && m.LastName == lastName);
-                        if (addedMember == null)
-                        {
-                            errors.Add($"Row {row}: Failed to add family member.");
-                             continue;
-                        }
-
-                        string grade = worksheet.Cells[row, 12].Text?.Trim();
-                        if (!string.IsNullOrEmpty(grade))
-                        {
-                            if (!Regex.IsMatch(grade, @"^Year \d{1,2}$"))
-                            {
-                                errors.Add($"Row {row}: Grade must be in format 'Year X'.");
-                                continue;
-                            }
-
-                            if (!int.TryParse(worksheet.Cells[row, 13].Text, out int academicYear) || academicYear < 2000 || academicYear > DateTime.UtcNow.Year)
-                            {
-                                errors.Add($"Row {row}: Invalid academic year.");
-                                continue;
-                            }
-
-                            if (!int.TryParse(worksheet.Cells[row, 14].Text, out int groupId))
-                            {
-                                errors.Add($"Row {row}: Invalid group ID.");
-                                continue;
-                            }
-
-                            await _studentService.EnrollStudentAsync(
-                                addedMember.Id,
-                                grade,
-                                academicYear,
-                                groupId,
-                                null
-                            );
-                        }
+                        newFamilies.Add(family);
                     }
-                    catch (Exception ex)
+
+                    // Add the family member to the in-memory family object
+                    family.FamilyMembers.Add(new FamilyMember
                     {
-                        errors.Add($"Row {row}: Error processing row - {ex.Message}");
-                    }
+                        FirstName = memberName,
+                        LastName = familyName,
+                        Relation = Core.Enums.FamilyMemberRole.Other,
+                        DateOfBirth = new System.DateTime(2000, 1, 1),
+                        CreatedBy = userId
+                    });
                 }
-
-                if (errors.Any())
+                catch (System.Exception ex)
                 {
-                    await transaction.RollbackAsync();
-                    throw new InvalidOperationException($"Import failed with {errors.Count} errors:\n{string.Join("\n", errors)}");
+                    _logger.LogError(ex, "Error processing Excel row {RowNumber}", row);
+                    result.AddFailedRow(row, ex.Message);
                 }
-
-                await transaction.CommitAsync();
             }
-            catch
+
+            // 3. If any rows failed validation, abort the entire transaction.
+            if (result.FailedRows.Any())
             {
-                await transaction.RollbackAsync();
-                throw;
+                return result;
             }
-        }
 
-        public async Task ImportWardsAsync(Stream fileStream, ImportType fileType)
-        {
-            if (fileStream == null)
-                throw new ArgumentNullException(nameof(fileStream));
-            if (fileType != ImportType.Excel)
-                throw new ArgumentException("Only Excel files are supported.", nameof(fileType));
-
-            var errors = new List<string>();
-            using var package = new ExcelPackage(fileStream);
-            var worksheet = package.Workbook.Worksheets.FirstOrDefault();
-            if (worksheet == null || worksheet.Dimension == null)
-                throw new InvalidOperationException("Excel file is empty or invalid.");
-
-            var rowCount = worksheet.Dimension.Rows;
-            if (rowCount < 2)
-                throw new InvalidOperationException("Excel file contains no data rows.");
-
-            using var transaction = await _unitOfWork.BeginTransactionAsync();
-
-            try
+            // 4. If all rows are valid, save everything in a single transaction.
+            if (newFamilies.Any())
             {
-                for (int row = 2; row <= rowCount; row++)
+                foreach (var family in newFamilies)
                 {
-                    try
-                    {
-                        string name = worksheet.Cells[row, 1].Text?.Trim();
-                        if (string.IsNullOrEmpty(name))
-                        {
-                            errors.Add($"Row {row}: Ward name is required.");
-                            continue;
-                        }
-
-                        var existingWard = await _unitOfWork.Wards.GetByNameAsync(name);
-                        if (existingWard != null)
-                        {
-                            errors.Add($"Row {row}: Ward '{name}' already exists.");
-                            continue;
-                        }
-
-                        await _wardService.CreateWardAsync(name);
-                    }
-                    catch (Exception ex)
-                    {
-                        errors.Add($"Row {row}: Error processing row - {ex.Message}");
-                    }
+                    await _unitOfWork.Families.AddAsync(family);
                 }
-
-                if (errors.Any())
-                {
-                    await transaction.RollbackAsync();
-                    throw new InvalidOperationException($"Import failed with {errors.Count} errors:\n{string.Join("\n", errors)}");
-                }
-
-                await transaction.CommitAsync();
+                result.SuccessfullyImported = await _unitOfWork.CompleteAsync();
             }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
+
+            return result;
         }
     }
 }

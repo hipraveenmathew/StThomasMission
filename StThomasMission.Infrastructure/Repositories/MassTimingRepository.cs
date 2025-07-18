@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using StThomasMission.Core.DTOs;
 using StThomasMission.Core.Entities;
-using StThomasMission.Core.Enums;
 using StThomasMission.Core.Interfaces;
 using StThomasMission.Infrastructure.Data;
 using System;
@@ -12,26 +12,47 @@ namespace StThomasMission.Infrastructure.Repositories
 {
     public class MassTimingRepository : Repository<MassTiming>, IMassTimingRepository
     {
-        private readonly StThomasMissionDbContext _context;
+        public MassTimingRepository(StThomasMissionDbContext context) : base(context) { }
 
-        public MassTimingRepository(StThomasMissionDbContext context) : base(context)
+        public async Task<IEnumerable<MassTimingDto>> GetByWeekStartDateAsync(DateTime weekStartDate)
         {
-            _context = context;
-        }
-
-        public async Task<IEnumerable<MassTiming>> GetByWeekStartDateAsync(DateTime weekStartDate)
-        {
-            return await _context.MassTimings
+            // The global query filter handles the IsDeleted status.
+            return await _dbSet
                 .AsNoTracking()
-                .Where(mt =>  !mt.IsDeleted)
+                .Where(mt => mt.WeekStartDate.Date == weekStartDate.Date)
+                .Select(mt => new MassTimingDto
+                {
+                    Id = mt.Id,
+                    Day = mt.Day,
+                    Time = mt.Time,
+                    Location = mt.Location,
+                    Type = mt.Type
+                })
+                .OrderBy(mt => mt.Time)
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<MassTiming>> GetByTypeAsync(MassType type)
+        public async Task<IEnumerable<MassTimingDto>> GetCurrentAndUpcomingMassesAsync()
         {
-            return await _context.MassTimings
+            // Calculate the start of the current week (assuming Monday).
+            var today = DateTime.UtcNow.Date;
+            int daysUntilMonday = ((int)DayOfWeek.Monday - (int)today.DayOfWeek + 7) % 7;
+            var startOfCurrentWeek = today.AddDays(-daysUntilMonday);
+
+            return await _dbSet
                 .AsNoTracking()
-                .Where(mt => mt.Type == type && !mt.IsDeleted)
+                .Where(mt => mt.WeekStartDate.Date >= startOfCurrentWeek)
+                 .Select(mt => new MassTimingDto
+                 {
+                     Id = mt.Id,
+                     Day = mt.Day,
+                     Time = mt.Time,
+                     Location = mt.Location,
+                     Type = mt.Type,
+                     WeekStartDate = mt.WeekStartDate // Include for sorting
+                 })
+                .OrderBy(mt => mt.WeekStartDate)
+                .ThenBy(mt => mt.Time)
                 .ToListAsync();
         }
     }

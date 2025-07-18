@@ -1,0 +1,28 @@
+﻿@model StThomasMission.Core.DTOs.FamilyDetailDto
+@{
+    ViewData["Title"] = "Delete Family";
+}
+
+<div class="card shadow-sm border-danger">
+    <div class="card-header bg-danger text-white">
+        <h4 class="mb-0">Confirm Deletion</h4>
+    </div>
+    <div class="card-body">
+        <p class="fs-5">Are you sure you want to delete the "<strong>@Model.FamilyName</strong>" family?</p>
+        <p class="text-muted">This action cannot be undone. The family and all its members will be marked as deleted.</p>
+        <dl class="row mt-4">
+            <dt class="col-sm-3">Ward</dt>
+            <dd class="col-sm-9">@Model.WardName</dd>
+            <dt class="col-sm-3">Members</dt>
+            <dd class="col-sm-9">@Model.Members.Count</dd>
+        </dl>
+        <form asp-action="Delete">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.Id" />
+            <div class="d-flex justify-content-end mt-4">
+                <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary me-2">Cancel</a>
+                <button type="submit" class="btn btn-danger">Yes, Delete This Family</button>
+            </div>
+        </form>
+    </div>
+</div>

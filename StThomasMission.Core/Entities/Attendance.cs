@@ -27,6 +27,13 @@ namespace StThomasMission.Core.Entities
         [StringLength(50)]
         public string? RecordedBy { get; set; }
 
-        // Suggested index: (StudentId, Date)
+        [Required]
+        public string CreatedBy { get; set; } = string.Empty;
+
+        public string? UpdatedBy { get; set; }
+
+        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+
+        public DateTime? UpdatedDate { get; set; }
     }
 }

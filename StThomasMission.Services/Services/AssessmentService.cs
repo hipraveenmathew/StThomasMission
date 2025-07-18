@@ -1,113 +1,132 @@
-﻿using StThomasMission.Core.Entities;
-using StThomasMission.Core.Enums;
+﻿using StThomasMission.Core.DTOs;
+using StThomasMission.Core.Entities;
 using StThomasMission.Core.Interfaces;
+using StThomasMission.Services.Exceptions;
 using System;
-using System.Text.RegularExpressions;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace StThomasMission.Services
+namespace StThomasMission.Services.Services
 {
     public class AssessmentService : IAssessmentService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IStudentService _studentService;
         private readonly IAuditService _auditService;
 
-        public AssessmentService(IUnitOfWork unitOfWork, IStudentService studentService, IAuditService auditService)
+        public AssessmentService(IUnitOfWork unitOfWork, IAuditService auditService)
         {
             _unitOfWork = unitOfWork;
-            _studentService = studentService;
             _auditService = auditService;
         }
 
-        public async Task AddAssessmentAsync(int studentId, string name, double marks, double totalMarks, DateTime date, AssessmentType type)
+        public async Task<AssessmentDto> GetAssessmentByIdAsync(int assessmentId)
         {
-            if (string.IsNullOrEmpty(name))
-                throw new ArgumentException("Assessment name is required.", nameof(name));
-            if (date > DateTime.UtcNow)
-                throw new ArgumentException("Assessment date cannot be in the future.", nameof(date));
-            if (marks < 0 || marks > totalMarks)
-                throw new ArgumentException("Marks must be between 0 and total marks.", nameof(marks));
-            if (totalMarks <= 0)
-                throw new ArgumentException("Total marks must be positive.", nameof(totalMarks));
+            var assessment = await _unitOfWork.Assessments.GetByIdAsync(assessmentId);
+            if (assessment == null)
+            {
+                throw new NotFoundException(nameof(Assessment), assessmentId);
+            }
 
-            await _studentService.GetStudentByIdAsync(studentId);
+            // Map to DTO
+            return new AssessmentDto
+            {
+                Id = assessment.Id,
+                StudentId = assessment.StudentId,
+                Name = assessment.Name,
+                Date = assessment.Date,
+                Type = assessment.Type,
+                Marks = assessment.Marks,
+                TotalMarks = assessment.TotalMarks,
+                Percentage = assessment.Percentage,
+                Remarks = assessment.Remarks
+            };
+        }
+
+        public async Task<IEnumerable<AssessmentDto>> GetAssessmentsByStudentIdAsync(int studentId)
+        {
+            // Verify student exists before proceeding
+            var student = await _unitOfWork.Students.GetByIdAsync(studentId);
+            if (student == null)
+            {
+                throw new NotFoundException(nameof(Student), studentId);
+            }
+            return await _unitOfWork.Assessments.GetAssessmentsByStudentIdAsync(studentId);
+        }
+
+        public async Task<IEnumerable<AssessmentGradeViewDto>> GetAssessmentsByGradeAsync(int gradeId)
+        {
+            return await _unitOfWork.Assessments.GetAssessmentsByGradeAsync(gradeId);
+        }
+
+        public async Task<AssessmentDto> CreateAssessmentAsync(CreateAssessmentRequest request, string userId)
+        {
+            // Ensure the student exists
+            var student = await _unitOfWork.Students.GetByIdAsync(request.StudentId);
+            if (student == null)
+            {
+                throw new NotFoundException(nameof(Student), request.StudentId);
+            }
 
             var assessment = new Assessment
             {
-                StudentId = studentId,
-                Name = name,
-                Marks = marks,
-                TotalMarks = totalMarks,
-                Date = date,
-                Type = type,
-                CreatedBy = "System",
+                StudentId = request.StudentId,
+                Name = request.Name,
+                Marks = request.Marks,
+                TotalMarks = request.TotalMarks,
+                Date = request.Date,
+                Type = request.Type,
+                Remarks = request.Remarks,
+                CreatedBy = userId,
                 CreatedDate = DateTime.UtcNow
             };
 
-            await _unitOfWork.Assessments.AddAsync(assessment);
+            var newAssessment = await _unitOfWork.Assessments.AddAsync(assessment);
             await _unitOfWork.CompleteAsync();
 
-            await _auditService.LogActionAsync("System", "Create", nameof(Assessment), assessment.Id.ToString(), $"Added assessment: {name} for student {studentId}");
+            await _auditService.LogActionAsync(userId, "Create", nameof(Assessment), newAssessment.Id.ToString(), $"Added assessment '{newAssessment.Name}' for student ID {newAssessment.StudentId}");
+
+            return await GetAssessmentByIdAsync(newAssessment.Id);
         }
 
-        public async Task UpdateAssessmentAsync(int assessmentId, string name, double marks, double totalMarks, DateTime date, AssessmentType type)
+        public async Task UpdateAssessmentAsync(int assessmentId, UpdateAssessmentRequest request, string userId)
         {
-            var assessment = await GetAssessmentByIdAsync(assessmentId);
+            var assessment = await _unitOfWork.Assessments.GetByIdAsync(assessmentId);
+            if (assessment == null)
+            {
+                throw new NotFoundException(nameof(Assessment), assessmentId);
+            }
 
-            if (string.IsNullOrEmpty(name))
-                throw new ArgumentException("Assessment name is required.", nameof(name));
-            if (date > DateTime.UtcNow)
-                throw new ArgumentException("Assessment date cannot be in the future.", nameof(date));
-            if (marks < 0 || marks > totalMarks)
-                throw new ArgumentException("Marks must be between 0 and total marks.", nameof(marks));
-            if (totalMarks <= 0)
-                throw new ArgumentException("Total marks must be positive.", nameof(totalMarks));
-
-            assessment.Name = name;
-            assessment.Marks = marks;
-            assessment.TotalMarks = totalMarks;
-            assessment.Date = date;
-            assessment.Type = type;
-            assessment.UpdatedBy = "System";
+            assessment.Name = request.Name;
+            assessment.Marks = request.Marks;
+            assessment.TotalMarks = request.TotalMarks;
+            assessment.Date = request.Date;
+            assessment.Type = request.Type;
+            assessment.Remarks = request.Remarks;
+            assessment.UpdatedBy = userId;
             assessment.UpdatedDate = DateTime.UtcNow;
 
             await _unitOfWork.Assessments.UpdateAsync(assessment);
             await _unitOfWork.CompleteAsync();
 
-            await _auditService.LogActionAsync("System", "Update", nameof(Assessment), assessmentId.ToString(), $"Updated assessment: {name}");
+            await _auditService.LogActionAsync(userId, "Update", nameof(Assessment), assessmentId.ToString(), $"Updated assessment '{assessment.Name}'");
         }
 
-        public async Task DeleteAssessmentAsync(int assessmentId)
-        {
-            var assessment = await GetAssessmentByIdAsync(assessmentId);
-
-            await _unitOfWork.Assessments.DeleteAsync(assessmentId);
-            await _unitOfWork.CompleteAsync();
-
-            await _auditService.LogActionAsync("System", "Delete", nameof(Assessment), assessmentId.ToString(), $"Deleted assessment: {assessment.Name}");
-        }
-
-        public async Task<IEnumerable<Assessment>> GetAssessmentsByStudentAsync(int studentId, AssessmentType? type = null)
-        {
-            await _studentService.GetStudentByIdAsync(studentId);
-            return await _unitOfWork.Assessments.GetAssessmentsByStudentIdAsync(studentId, type);
-        }
-
-        public async Task<IEnumerable<Assessment>> GetAssessmentsByGradeAsync(string grade, DateTime? startDate = null, DateTime? endDate = null)
-        {
-            if (!Regex.IsMatch(grade, @"^Year \d{1,2}$"))
-                throw new ArgumentException("Grade must be in format 'Year X'.", nameof(grade));
-
-            return await _unitOfWork.Assessments.GetByGradeAsync(grade, startDate, endDate);
-        }
-
-        private async Task<Assessment> GetAssessmentByIdAsync(int assessmentId)
+        public async Task DeleteAssessmentAsync(int assessmentId, string userId)
         {
             var assessment = await _unitOfWork.Assessments.GetByIdAsync(assessmentId);
             if (assessment == null)
-                throw new ArgumentException("Assessment not found.", nameof(assessmentId));
-            return assessment;
+            {
+                throw new NotFoundException(nameof(Assessment), assessmentId);
+            }
+
+            assessment.IsDeleted = true;
+            assessment.UpdatedBy = userId;
+            assessment.UpdatedDate = DateTime.UtcNow;
+
+            await _unitOfWork.Assessments.UpdateAsync(assessment);
+            await _unitOfWork.CompleteAsync();
+
+            await _auditService.LogActionAsync(userId, "Delete", nameof(Assessment), assessmentId.ToString(), $"Soft-deleted assessment: '{assessment.Name}'");
         }
     }
 }

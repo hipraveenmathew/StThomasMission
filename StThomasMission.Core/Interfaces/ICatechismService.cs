@@ -1,5 +1,4 @@
-﻿using StThomasMission.Core.Entities;
-using StThomasMission.Core.Enums;
+﻿using StThomasMission.Core.DTOs;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -7,16 +6,12 @@ namespace StThomasMission.Core.Interfaces
 {
     public interface ICatechismService
     {
-        Task<Student?> GetStudentByIdAsync(int studentId);
-        Task<IEnumerable<Student>> GetStudentsByGradeIdAsync(int gradeId);
-        Task<IEnumerable<Student>> GetStudentsByGroupIdAsync(int groupId);
+        Task<StudentDetailDto> EnrollStudentAsync(EnrollStudentRequest request, string userId);
 
-        Task AddStudentAsync(int familyMemberId, int academicYear, int gradeId, int? groupId, string? studentOrganisation, string createdByUserId);
-        Task UpdateStudentAsync(int studentId, int gradeId, int? groupId, string? studentOrganisation, StudentStatus status, string? migratedTo, string updatedByUserId);
-        Task PromoteStudentAsync(int studentId, string updatedByUserId);
-        Task RevertStudentPromotionAsync(int studentId, string updatedByUserId);
-        Task GraduateStudentAsync(int studentId, string updatedByUserId);
-        Task BulkPromoteStudentsByGradeAsync(int gradeId, string updatedByUserId);
-        Task DeleteStudentAsync(int studentId, string deletedByUserId);
+        Task UpdateStudentDetailsAsync(int studentId, UpdateStudentRequest request, string userId);
+
+        Task MarkStudentsAsPassedOrFailAsync(int gradeId, IEnumerable<StudentPassFailRequest> results, string userId);
+
+        Task PromoteStudentsInGradeAsync(int gradeId, string userId);
     }
 }

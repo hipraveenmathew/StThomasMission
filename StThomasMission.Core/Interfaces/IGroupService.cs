@@ -1,4 +1,4 @@
-﻿using StThomasMission.Core.Entities;
+﻿using StThomasMission.Core.DTOs;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -6,10 +6,14 @@ namespace StThomasMission.Core.Interfaces
 {
     public interface IGroupService
     {
-        Task AddGroupAsync(string name, string? description);
-        Task UpdateGroupAsync(int groupId, string name, string? description);
-        Task DeleteGroupAsync(int groupId);
-        Task<Group?> GetGroupByIdAsync(int groupId);
-        Task<IEnumerable<Group>> GetAllGroupsAsync();
+        Task<GroupDetailDto> GetGroupByIdAsync(int groupId);
+
+        Task<IEnumerable<GroupDetailDto>> GetAllGroupsAsync();
+
+        Task<GroupDetailDto> CreateGroupAsync(CreateGroupRequest request, string userId);
+
+        Task UpdateGroupAsync(int groupId, UpdateGroupRequest request, string userId);
+
+        Task DeleteGroupAsync(int groupId, string userId);
     }
 }

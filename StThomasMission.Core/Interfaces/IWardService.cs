@@ -1,4 +1,4 @@
-﻿using StThomasMission.Core.Entities;
+﻿using StThomasMission.Core.DTOs;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -6,10 +6,14 @@ namespace StThomasMission.Core.Interfaces
 {
     public interface IWardService
     {
-        Task<Ward> CreateWardAsync(string name);
-        Task UpdateWardAsync(int wardId, string name);
-        Task DeleteWardAsync(int wardId);
-        Task<Ward?> GetWardByIdAsync(int wardId);
-        Task<IEnumerable<Ward>> GetAllWardsAsync();
+        Task<WardDetailDto> GetWardByIdAsync(int wardId);
+
+        Task<IEnumerable<WardDetailDto>> GetAllWardsAsync();
+
+        Task<WardDetailDto> CreateWardAsync(CreateWardRequest request, string userId);
+
+        Task UpdateWardAsync(int wardId, UpdateWardRequest request, string userId);
+
+        Task DeleteWardAsync(int wardId, string userId);
     }
 }

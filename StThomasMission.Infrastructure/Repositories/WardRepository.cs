@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using StThomasMission.Core.DTOs;
 using StThomasMission.Core.Entities;
-using StThomasMission.Core.Enums;
 using StThomasMission.Core.Interfaces;
 using StThomasMission.Infrastructure.Data;
 using System.Collections.Generic;
@@ -11,25 +11,35 @@ namespace StThomasMission.Infrastructure.Repositories
 {
     public class WardRepository : Repository<Ward>, IWardRepository
     {
-        private readonly StThomasMissionDbContext _context;
+        public WardRepository(StThomasMissionDbContext context) : base(context) { }
 
-        public WardRepository(StThomasMissionDbContext context) : base(context)
+        public async Task<WardDetailDto?> GetByNameAsync(string name)
         {
-            _context = context;
+            // The global query filter handles the IsDeleted status.
+            return await _dbSet
+                .AsNoTracking()
+                .Where(w => w.Name == name)
+                .Select(w => new WardDetailDto
+                {
+                    Id = w.Id,
+                    Name = w.Name,
+                    // Efficiently count related families without loading them.
+                    FamilyCount = w.Families.Count()
+                })
+                .FirstOrDefaultAsync();
         }
 
-        public async Task<Ward?> GetByNameAsync(string name)
+        public async Task<IEnumerable<WardDetailDto>> GetAllWithDetailsAsync()
         {
-            return await _context.Wards
+            return await _dbSet
                 .AsNoTracking()
-                .FirstOrDefaultAsync(w => w.Name == name && !w.IsDeleted);
-        }
-
-        public async Task<IEnumerable<Ward>> GetActiveWardsAsync()
-        {
-            return await _context.Wards
-                .AsNoTracking()
-                .Where(w => w.Families.Any(f => f.Status != FamilyStatus.Deleted) && !w.IsDeleted)
+                .OrderBy(w => w.Name)
+                .Select(w => new WardDetailDto
+                {
+                    Id = w.Id,
+                    Name = w.Name,
+                    FamilyCount = w.Families.Count()
+                })
                 .ToListAsync();
         }
     }

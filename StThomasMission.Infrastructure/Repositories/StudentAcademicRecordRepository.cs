@@ -1,9 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using StThomasMission.Core.DTOs;
 using StThomasMission.Core.Entities;
 using StThomasMission.Core.Interfaces;
 using StThomasMission.Infrastructure.Data;
-using System;
-using System.Linq.Expressions;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace StThomasMission.Infrastructure.Repositories
@@ -12,23 +13,54 @@ namespace StThomasMission.Infrastructure.Repositories
     {
         public StudentAcademicRecordRepository(StThomasMissionDbContext context) : base(context) { }
 
-        public async Task<StudentAcademicRecord?> GetByStudentAndYearAsync(int studentId, int academicYear)
+        public async Task<StudentAcademicRecordDto?> GetByStudentAndYearAsync(int studentId, int academicYear)
         {
-            return await _context.StudentAcademicRecords
-                .FirstOrDefaultAsync(r => r.StudentId == studentId && r.AcademicYear == academicYear);
+            return await _dbSet
+                .AsNoTracking()
+                .Where(r => r.StudentId == studentId && r.AcademicYear == academicYear)
+                .Select(r => new StudentAcademicRecordDto
+                {
+                    Id = r.Id,
+                    AcademicYear = r.AcademicYear,
+                    GradeName = r.Grade.Name,
+                    Passed = r.Passed,
+                    Remarks = r.Remarks
+                })
+                .FirstOrDefaultAsync();
         }
 
-        public async Task<IEnumerable<StudentAcademicRecord>> GetByStudentIdAsync(int studentId)
+        public async Task<IEnumerable<StudentAcademicRecordDto>> GetByStudentIdAsync(int studentId)
         {
-            return await _context.StudentAcademicRecords
+            return await _dbSet
+                .AsNoTracking()
                 .Where(r => r.StudentId == studentId)
+                .Select(r => new StudentAcademicRecordDto
+                {
+                    Id = r.Id,
+                    AcademicYear = r.AcademicYear,
+                    GradeName = r.Grade.Name,
+                    Passed = r.Passed,
+                    Remarks = r.Remarks
+                })
+                .OrderBy(r => r.AcademicYear)
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<StudentAcademicRecord>> GetAsync(Expression<Func<StudentAcademicRecord, bool>> predicate)
+        public async Task<IEnumerable<ClassAcademicSummaryDto>> GetRecordsByGradeAndYearAsync(int gradeId, int academicYear)
         {
-            return await _context.StudentAcademicRecords
-                .Where(predicate)
+            return await _dbSet
+                .AsNoTracking()
+                .Where(r => r.GradeId == gradeId && r.AcademicYear == academicYear)
+                .Select(r => new ClassAcademicSummaryDto
+                {
+                    StudentId = r.StudentId,
+                    StudentFullName = r.Student.FamilyMember.FullName,
+                    AcademicYear = r.AcademicYear,
+                    GradeName = r.Grade.Name,
+                    Passed = r.Passed,
+                    Remarks = r.Remarks
+                })
+                .OrderBy(r => r.StudentFullName)
                 .ToListAsync();
         }
     }

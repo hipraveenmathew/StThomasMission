@@ -3,31 +3,60 @@
     ViewData["Title"] = "Import Data";
 }
 
-<div class="card">
+<div class="card shadow-sm">
     <div class="card-header">
-        <h3 class="mb-0">Import Data</h3>
+        <h4 class="mb-0"><i class="fas fa-file-import me-2"></i>Data Import</h4>
     </div>
     <div class="card-body">
-        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
-        {
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                @Model.SuccessMessage
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        }
+        <partial name="_StatusMessage" />
 
-        <form asp-action="Upload" method="post" enctype="multipart/form-data">
+        <div class="alert alert-info">
+            <h5 class="alert-heading">Instructions</h5>
+            <p>This tool is for a one-time bulk import of family and member data.</p>
+            <ul>
+                <li>The file must be a `.xlsx` Excel file.</li>
+                <li>Each row in the Excel sheet represents one family member.</li>
+                <li>Members of the same family should have the exact same `FamilyName` and `WardName`.</li>
+                <li>Download the template to see the required column structure.</li>
+            </ul>
+            <a asp-action="DownloadTemplate" class="btn btn-sm btn-secondary"><i class="fas fa-file-excel me-2"></i>Download Template</a>
+        </div>
+
+        <form asp-action="Index" method="post" enctype="multipart/form-data" class="mt-4">
+            @Html.AntiForgeryToken()
             <div class="mb-3">
-                <label asp-for="File" class="form-label">Upload Excel File</label>
-                <input asp-for="File" type="file" class="form-control" accept=".xlsx,.xls" />
+                <label asp-for="File" class="form-label fw-bold"></label>
+                <input asp-for="File" type="file" class="form-control" accept=".xlsx" />
                 <span asp-validation-for="File" class="text-danger"></span>
             </div>
-            <button type="submit" class="btn btn-modern">Import</button>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-upload me-2"></i>Upload and Validate</button>
         </form>
+
+        @if (Model.Result != null && !Model.Result.Success)
+        {
+            <div class="mt-4">
+                <h5 class="text-danger">Import Failed</h5>
+                <p>The following errors were found in the uploaded file. No data has been saved. Please correct these issues and try again.</p>
+                <div class="table-responsive" style="max-height: 400px;">
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Row Number</th>
+                                <th>Error Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var error in Model.Result.FailedRows)
+                            {
+                                <tr>
+                                    <td>@error.RowNumber</td>
+                                    <td>@error.ErrorMessage</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
     </div>
 </div>
-
-@section Scripts {
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
-}

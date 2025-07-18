@@ -1,9 +1,10 @@
-﻿using StThomasMission.Core.Entities;
+﻿using StThomasMission.Web.Areas.Catechism.Models;
+using System.Collections.Generic;
 
 namespace StThomasMission.Web.Models
 {
     public class EventsViewModel
     {
-        public IEnumerable<Announcement> Announcements { get; set; }
+        public List<AnnouncementViewModel> Announcements { get; set; } = new List<AnnouncementViewModel>();
     }
 }

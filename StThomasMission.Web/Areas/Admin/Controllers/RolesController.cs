@@ -1,61 +1,41 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using StThomasMission.Core.Entities;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using StThomasMission.Core.Constants;
+using StThomasMission.Core.Interfaces;
+using StThomasMission.Services.Exceptions;
 using StThomasMission.Web.Areas.Admin.Models;
+using System;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace StThomasMission.Web.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = UserRoles.Admin)]
     public class RolesController : Controller
     {
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly IUserService _userService;
+        private readonly ILogger<RolesController> _logger;
 
-        public RolesController(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
+        public RolesController(IUserService userService, ILogger<RolesController> logger)
         {
-            _userManager = userManager;
-            _roleManager = roleManager;
+            _userService = userService;
+            _logger = logger;
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? searchTerm, int pageNumber = 1, int pageSize = 15)
         {
-            var users = _userManager.Users.ToList();
+            var pagedUsers = await _userService.SearchUsersPaginatedAsync(pageNumber, pageSize, searchTerm);
+            var allRoles = await _userService.GetAllRolesAsync();
+
             var model = new UserRoleIndexViewModel
             {
-                Users = users.Select(u => new UserRoleViewModel
-                {
-                    UserId = u.Id,
-                    Email = u.Email,
-                    FullName = u.FullName,
-                    Roles = _userManager.GetRolesAsync(u).Result.ToList(),
-                    AvailableRoles = _roleManager.Roles.Select(r => r.Name).ToList()
-                }).ToList()
-            };
-
-            return View(model);
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> AssignRole(string userId)
-        {
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return NotFound("User not found.");
-            }
-
-            var model = new AssignRoleViewModel
-            {
-                UserId = user.Id,
-                Email = user.Email,
-                FullName = user.FullName,
-                AvailableRoles = _roleManager.Roles.Select(r => r.Name).ToList(),
-                CurrentRoles = await _userManager.GetRolesAsync(user)
+                PagedUsers = pagedUsers,
+                RolesForDropdown = new SelectList(allRoles),
+                SearchTerm = searchTerm
             };
 
             return View(model);
@@ -63,101 +43,28 @@ namespace StThomasMission.Web.Areas.Admin.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AssignRole(AssignRoleViewModel model)
+        public async Task<IActionResult> UpdateUserRole(string userId, string role)
         {
-            var user = await _userManager.FindByIdAsync(model.UserId);
-            if (user == null)
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(role))
             {
-                return NotFound("User not found.");
-            }
-
-            if (string.IsNullOrEmpty(model.SelectedRole))
-            {
-                ModelState.AddModelError("SelectedRole", "Please select a role to assign.");
-            }
-            else
-            {
-                var roleExists = await _roleManager.RoleExistsAsync(model.SelectedRole);
-                if (!roleExists)
-                {
-                    ModelState.AddModelError("SelectedRole", "Selected role does not exist.");
-                }
-                else
-                {
-                    var currentRoles = await _userManager.GetRolesAsync(user);
-                    if (!currentRoles.Contains(model.SelectedRole))
-                    {
-                        var result = await _userManager.AddToRoleAsync(user, model.SelectedRole);
-                        if (!result.Succeeded)
-                        {
-                            foreach (var error in result.Errors)
-                            {
-                                ModelState.AddModelError(string.Empty, error.Description);
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (!ModelState.IsValid)
-            {
-                model.Email = user.Email;
-                model.FullName = user.FullName;
-                model.AvailableRoles = _roleManager.Roles.Select(r => r.Name).ToList();
-                model.CurrentRoles = await _userManager.GetRolesAsync(user);
-                return View(model);
-            }
-
-            return RedirectToAction(nameof(Index));
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> RemoveRole(string userId, string role)
-        {
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return NotFound("User not found.");
-            }
-
-            var result = await _userManager.RemoveFromRoleAsync(user, role);
-            if (!result.Succeeded)
-            {
-                TempData["Error"] = $"Failed to remove role {role}: {string.Join(", ", result.Errors.Select(e => e.Description))}";
-            }
-            else
-            {
-                TempData["Success"] = $"Role {role} removed successfully.";
-            }
-
-            return RedirectToAction(nameof(Index));
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateRole(string roleName)
-        {
-            if (string.IsNullOrWhiteSpace(roleName))
-            {
-                TempData["Error"] = "Role name is required.";
+                TempData["Error"] = "User ID and Role must be provided.";
                 return RedirectToAction(nameof(Index));
             }
 
-            if (await _roleManager.RoleExistsAsync(roleName))
+            try
             {
-                TempData["Error"] = $"Role '{roleName}' already exists.";
-                return RedirectToAction(nameof(Index));
+                var performedByUserId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+                await _userService.UpdateUserRoleAsync(userId, role, performedByUserId);
+                TempData["Success"] = "User role updated successfully.";
             }
-
-            var result = await _roleManager.CreateAsync(new IdentityRole(roleName));
-            if (!result.Succeeded)
+            catch (NotFoundException ex)
             {
-                TempData["Error"] = $"Failed to create role: {string.Join(", ", result.Errors.Select(e => e.Description))}";
+                TempData["Error"] = ex.Message;
             }
-            else
+            catch (Exception ex)
             {
-                TempData["Success"] = $"Role '{roleName}' created successfully.";
+                _logger.LogError(ex, "Error updating user role for UserId {UserId}", userId);
+                TempData["Error"] = "An unexpected error occurred while updating the role.";
             }
 
             return RedirectToAction(nameof(Index));

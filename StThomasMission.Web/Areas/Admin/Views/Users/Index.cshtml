@@ -1,71 +1,74 @@
-﻿@model IEnumerable<StThomasMission.Web.Areas.Admin.Models.UserViewModel>
-
+﻿@model StThomasMission.Web.Areas.Admin.Models.UserIndexViewModel
 @{
     ViewData["Title"] = "Manage Users";
 }
 
-<div class="container mt-4">
-    <div class="card shadow-sm">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h3 class="mb-0"><i class="fas fa-users me-2"></i>Manage Users</h3>
-            <a asp-action="Create" asp-area="Admin" class="btn btn-primary"><i class="fas fa-plus me-2"></i>Create User</a>
-        </div>
-        <div class="card-body">
-            @if (TempData["Success"] != null)
-            {
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    @TempData["Success"]
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            }
-
-            @if (!Model.Any())
-            {
-                <div class="alert alert-info text-center" role="alert">
-                    No users found.
-                </div>
-            }
-            else
-            {
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Email</th>
-                                <th>Full Name</th>
-                                <th>Ward ID</th>
-                                <th>Active</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var user in Model)
-                            {
-                                <tr>
-                                    <td>@user.Email</td>
-                                    <td>@user.FullName</td>
-                                    <td>@(user.WardId != 0 ? user.WardId.ToString() : "N/A")</td>
-                                    <td>
-                                        <span class="badge @(user.IsActive ? "bg-success" : "bg-secondary")">
-                                            @(user.IsActive ? "Yes" : "No")
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <a asp-action="Edit" asp-route-id="@user.Id" asp-area="Admin" class="btn btn-sm btn-warning">
-                                            <i class="fas fa-edit me-2"></i>Edit
-                                        </a>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
-        </div>
-    </div>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="fas fa-users-cog me-2"></i>Manage Users</h2>
+    <a asp-action="Create" class="btn btn-primary"><i class="fas fa-user-plus me-2"></i>Create New User</a>
 </div>
 
-@section Scripts {
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
-}
+<div class="card shadow-sm">
+    <div class="card-body">
+        <form asp-action="Index" method="get" class="mb-4">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label asp-for="SearchTerm" class="form-label">Search by Name or Email</label>
+                    <input asp-for="SearchTerm" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-2"></i>Search</button>
+                </div>
+            </div>
+        </form>
+
+        <partial name="_StatusMessage" />
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Full Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Ward</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model.PagedUsers)
+                    {
+                        <tr>
+                            <td>@user.FullName</td>
+                            <td>@user.Email</td>
+                            <td><span class="badge bg-info text-dark">@user.Role</span></td>
+                            <td>@user.WardName</td>
+                            <td>
+                                <span class="badge @(user.IsActive ? "bg-success" : "bg-secondary")">
+                                    @(user.IsActive ? "Active" : "Inactive")
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <a asp-action="Edit" asp-route-id="@user.Id" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i> Edit</a>
+                                @if (user.IsActive)
+                                {
+                                    <form asp-action="Deactivate" asp-route-id="@user.Id" method="post" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-user-slash"></i> Deactivate</button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form asp-action="Reactivate" asp-route-id="@user.Id" method="post" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-user-check"></i> Reactivate</button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <pagination-controls for="Model.PagedUsers" />
+    </div>
+</div>

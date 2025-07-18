@@ -1,0 +1,46 @@
+﻿@model StThomasMission.Web.Areas.Church.Models.FamilyFormViewModel
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+<input type="hidden" asp-for="Id" />
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <label asp-for="FamilyName" class="form-label"></label>
+        <input asp-for="FamilyName" class="form-control" />
+        <span asp-validation-for="FamilyName" class="text-danger"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="WardId" class="form-label"></label>
+        <select asp-for="WardId" class="form-select" asp-items="Model.AvailableWards">
+            <option value="">-- Select Ward --</option>
+        </select>
+        <span asp-validation-for="WardId" class="text-danger"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="Email" class="form-label"></label>
+        <input asp-for="Email" class="form-control" type="email" />
+        <span asp-validation-for="Email" class="text-danger"></span>
+    </div>
+    <div class="col-md-6 d-flex align-items-end">
+        <div class="form-check">
+            <input asp-for="GiftAid" class="form-check-input" />
+            <label asp-for="GiftAid" class="form-check-label"></label>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <label asp-for="HouseNumber" class="form-label"></label>
+        <input asp-for="HouseNumber" class="form-control" />
+    </div>
+    <div class="col-md-9">
+        <label asp-for="StreetName" class="form-label"></label>
+        <input asp-for="StreetName" class="form-control" />
+    </div>
+    <div class="col-md-6">
+        <label asp-for="City" class="form-label"></label>
+        <input asp-for="City" class="form-control" />
+    </div>
+    <div class="col-md-6">
+        <label asp-for="PostCode" class="form-label"></label>
+        <input asp-for="PostCode" class="form-control" />
+    </div>
+</div>

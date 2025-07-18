@@ -1,10 +1,12 @@
-﻿using StThomasMission.Web.Models;
+﻿using StThomasMission.Core.DTOs;
+using StThomasMission.Core.Interfaces;
 
 namespace StThomasMission.Web.Areas.Admin.Models
 {
     public class AuditLogIndexViewModel
     {
-        public AuditLogFilterViewModel Filter { get; set; } = new AuditLogFilterViewModel();
-        public PaginatedList<AuditLogViewModel> Logs { get; set; }
+        public AuditLogFilterViewModel Filter { get; set; } = new();
+        public IPaginatedList<AuditLogDto> Logs { get; set; } = null!;
+        public string? CurrentSort { get; set; } // <-- Add this property
     }
 }
